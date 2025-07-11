@@ -8,9 +8,7 @@ django-crispy-forms==2.4
 crispy-bootstrap5==2025.6
 django-redis==5.4.0
 redis==5.0.1
-
-# Additional required packages
-mysqlclient==2.2.0
+# mysqlclient==2.2.0   ← 일단 주석 처리
 django-extensions==3.2.3
 django-debug-toolbar==4.2.0
 python-dotenv==1.0.0
@@ -18,8 +16,6 @@ requests==2.31.0
 celery==5.3.4
 django-celery-beat==2.5.0
 django-celery-results==2.5.1
-
-# Deployment packages
 gunicorn==21.2.0
 whitenoise==6.6.0
 dj-database-url==2.1.0
