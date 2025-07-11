@@ -1,3 +1,5 @@
+from .settings import *  # 반드시 맨 위에!
+
 import os
 import dj_database_url
 import pymysql
