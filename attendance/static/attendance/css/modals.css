@@ -1,0 +1,137 @@
+/*
+ * modals.css - 모달 관련 스타일
+ * 
+ * 포함 내용:
+ * - 기본 모달 오버레이 및 컨텐츠
+ * - 모달 헤더
+ * - 연도/월 선택기 (year-nav, month-grid)
+ * - PDF 미리보기 모달
+ * - 파일 타입 선택 모달
+ */
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #333;
+}
+
+/* Styles for Year/Month Picker */
+.picker-content {
+    width: 320px;
+}
+
+.year-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.year-nav h4 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 20px;
+}
+
+/* PDF Preview Modal */
+.pdf-modal-content {
+    width: 90vw;
+    max-width: 1200px;
+    height: 90vh;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pdf-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.pdf-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.pdf-preview-container {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: auto; /* 스크롤 가능 */
+    height: 100%;
+    background: #fff;
+}
+
+#pdf-iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    border: none;
+    display: block;
+}
+
+/* ファイル種別選択モーダル */
+.file-type-modal-content {
+    width: 350px;
+    max-width: 90vw;
+    padding: 0;
+}
+
+.file-type-modal-body {
+    padding: 24px 20px 20px 20px;
+    text-align: center;
+}
+
+.file-type-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 18px;
+}

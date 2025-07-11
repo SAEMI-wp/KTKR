@@ -1,0 +1,44 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>給与明細書管理</h1>
+<div style="margin-bottom: 1em;">
+  <a href="?year={{ prev_year }}&month={{ prev_month }}">&#8592; 前月</a>
+  <span style="margin:0 1em;">{{ year }}年 {{ month }}月</span>
+  <a href="?year={{ next_year }}&month={{ next_month }}">翌月 &#8594;</a>
+</div>
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>社員番号</th>
+      <th>氏名</th>
+      <th>勤務先</th>
+      <th>支給額</th>
+      <th>控除額</th>
+      <th>差引支給額</th>
+      <th>備考</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.employee.employee_no }}</td>
+      <td>{{ row.employee.last_name }}{{ row.employee.first_name }}</td>
+      <td>{{ row.employee.place_work }}</td>
+      <td>{% if row.payslip %}{{ row.payslip.payment }}{% else %}-{% endif %}</td>
+      <td>{% if row.payslip %}{{ row.payslip.deduction }}{% else %}-{% endif %}</td>
+      <td>{% if row.payslip %}{{ row.payslip.net_payment }}{% else %}-{% endif %}</td>
+      <td>{% if row.payslip %}{{ row.payslip.notes }}{% else %}-{% endif %}</td>
+      <td><a class="button" href="/admin/payroll/{{ row.employee.employee_no }}/{{ year }}/{{ month }}/">詳細</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8">データがありません</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div style="margin-top:1em;">
+  <button type="button" class="button">PDF保存</button>
+  <button type="button" class="button">印刷</button>
+  <span style="color:#888;">※ PDF保存・印刷機能は今後実装予定です。</span>
+</div>
+{% endblock %} 

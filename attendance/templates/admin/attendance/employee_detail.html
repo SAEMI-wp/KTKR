@@ -1,0 +1,56 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>{{ employee.last_name }}{{ employee.first_name }} ({{ employee.employee_no }}) 勤怠詳細</h1>
+<div style="margin-bottom: 1em;">
+  <strong>勤務先:</strong> {{ employee.place_work }}<br>
+  <strong>月:</strong>
+  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ prev_year }}/{{ prev_month }}/">&#8592; 前月</a>
+  <span style="margin:0 1em;">{{ year }}年 {{ month }}月</span>
+  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ next_year }}/{{ next_month }}/">翌月 &#8594;</a>
+</div>
+<div style="margin-bottom: 1em;">
+  <strong>今月の残業時間:</strong> {{ overtime_total }}時間
+  <strong style="margin-left:2em;">有給休暇使用日数:</strong> {{ paid_leave_used }}日
+</div>
+{% if monthly %}
+  <div style="margin-bottom:1em;">
+    {# 승인 상태별 버튼 표시 #}
+    {% if not monthly.is_required and not monthly.is_confirmed %}
+      <button class="button" style="background:#ccc; color:#fff;" disabled>承認申請前</button>
+      <a href="/admin/monthly/{{ monthly.monthly_id }}/request/" class="button" style="background:#ff9800; color:#fff;">承認申請</a>
+    {% elif monthly.is_required and not monthly.is_confirmed %}
+      <button class="button" style="background:#ff9800; color:#fff;" disabled>承認申請中</button>
+      <a href="/admin/monthly/{{ monthly.monthly_id }}/approve/" class="button" style="background:#8bc34a; color:#fff;">承認確定</a>
+      <a href="/admin/monthly/{{ monthly.monthly_id }}/cancel/" class="button" style="background:#f44336; color:#fff;">承認取消</a>
+      <a href="/admin/monthly/{{ monthly.monthly_id }}/revise/" class="button" style="background:#e91e63; color:#fff;">修正依頼</a>
+    {% elif monthly.is_confirmed %}
+      <button class="button" style="background:#8bc34a; color:#fff;" disabled>承認確定</button>
+      <a href="/admin/monthly/{{ monthly.monthly_id }}/revise/" class="button" style="background:#e91e63; color:#fff;">修正依頼</a>
+    {% endif %}
+  </div>
+{% endif %}
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>日付</th>
+      <th>勤務区分</th>
+      <th>開始</th>
+      <th>終了</th>
+      <th>備考</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in daily_list %}
+    <tr>
+      <td>{{ d.date }}</td>
+      <td>{{ d.work_type }}</td>
+      <td>{{ d.start_time }}</td>
+      <td>{{ d.end_time }}</td>
+      <td>{{ d.notes }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">データ無し</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %} 

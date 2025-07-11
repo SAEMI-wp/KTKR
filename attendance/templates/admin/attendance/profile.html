@@ -1,0 +1,13 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>내 프로필</h1>
+<ul>
+  <li><strong>이름:</strong> {{ employee.last_name }}{{ employee.first_name }}</li>
+  <li><strong>사번:</strong> {{ employee.employee_no }}</li>
+  <li><strong>근무지:</strong> {{ employee.place_work }}</li>
+  <li><strong>소속 그룹:</strong> {{ groups|join:', ' }}</li>
+</ul>
+<div style="margin-top:2em;">
+  <a href="{% url 'attendance:password_change' %}" class="button">パスワード変更</a>
+</div>
+{% endblock %} 

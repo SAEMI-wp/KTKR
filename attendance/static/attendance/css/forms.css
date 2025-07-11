@@ -1,0 +1,163 @@
+/*
+ * forms.css - 폼 관련 스타일
+ * 
+ * 포함 내용:
+ * - 근태 등록 폼
+ * - 모달 폼 컨트롤
+ * - 날짜 입력 그룹
+ * - 폼 비활성화 스타일
+ * - 비활성화 메시지
+ */
+
+/* Daily Entry Form */
+.attendance-entry .form-group, .attendance-entry .form-group-full {
+    display: flex;
+    flex-direction: column;
+}
+
+.attendance-entry .form-group-full {
+    grid-column: 1 / -1;
+}
+
+.attendance-entry form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.attendance-entry .daily-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+/* Modal Form Controls */
+.modal-body .form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for padding and width */
+}
+
+.modal-body .form-actions {
+    text-align: right;
+    margin-top: 20px;
+}
+
+/* Date Input Group */
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-full {
+    width: 115px;
+    flex-shrink: 0;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #005A9C;
+    text-align: center;
+}
+#day-display {
+    margin-left: 0;
+}
+
+/* 근태 등록 섹션 비활성화 스타일 */
+.attendance-entry.disabled {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.7;
+    position: relative;
+}
+
+.attendance-entry.disabled .form-control,
+.attendance-entry.disabled select,
+.attendance-entry.disabled input,
+.attendance-entry.disabled textarea,
+.attendance-entry.disabled button {
+    cursor: not-allowed;
+}
+
+.attendance-entry.disabled .form-control:focus,
+.attendance-entry.disabled select:focus,
+.attendance-entry.disabled input:focus,
+.attendance-entry.disabled textarea:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+.attendance-entry.disabled .btn-normal:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.disabled-message {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.disabled-message p {
+    margin: 0;
+    color: #856404;
+    font-weight: 500;
+}
+
+.disabled-message i {
+    margin-right: 8px;
+    color: #f39c12;
+}
+
+.day-arrow {
+    background: #fff;
+    color: #1976d2;
+    border: 1.2px solid #1976d2;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: normal;
+    height: 30px;
+    min-width: 70px;
+    padding: 0 12px;
+    margin: 0 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border 0.15s;
+    box-shadow: 0 1px 2px rgba(25, 118, 210, 0.04);
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.day-arrow:hover, .day-arrow:focus {
+    background: #e3f2fd;
+    color: #1565c0;
+    border-color: #1565c0;
+}
+
+.form-warning {
+    display: flex;
+    align-items: center;
+    background: #fff4f4;
+    color: #d32f2f;
+    border: 1.5px solid #f5c6cb;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    min-height: 40px;
+    gap: 8px;
+}
+.warning-icon {
+    font-size: 1.3em;
+    margin-right: 6px;
+    flex-shrink: 0;
+}

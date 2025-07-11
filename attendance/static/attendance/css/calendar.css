@@ -1,0 +1,353 @@
+/*
+ * calendar.css - 캘린더 테이블 및 관련 스타일
+ * 
+ * 포함 내용:
+ * - 캘린더 컨테이너
+ * - 캘린더 테이블 (th, td, date-number, record-time)
+ * - 캘린더 상태 (today, selected, has-record, other-month)
+ * - 캘린더 비활성화 스타일
+ * - 반응형 캘린더 스타일
+ * 
+ * 주의사항:
+ * - delete-daily-btn 호버 효과는 buttons.css와 공유됨
+ * - 공휴일 스타일은 holidays.css에서 관리
+ */
+
+/* Calendar and List View Styles */
+.calendar-container, .list-container {
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.calendar-container {
+    background-color: #ffffff;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.list-container {
+    background-color: #ffffff;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.calendar-table, .list-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #fff;
+}
+
+.calendar-table th {
+    background-color: #e9f2f9;
+    color: #000000;
+    font-weight: bold;
+    font-size: 15px;
+    border: 1px solid #e0e0e0;
+    padding: 0;
+    text-align: center;
+    height: 38px;
+    min-width: 38px;
+    max-width: 38px;
+}
+
+.calendar-table td {
+    aspect-ratio: 1 / 1;
+    width: 38px;      /* PC 기준 */
+    min-width: 70px;  /* 더 넓게 */
+    max-width: 120px;
+    min-height: 38px;
+    max-height: 70px;
+    border: 1px solid #e0e0e0;
+    padding: 0;
+    text-align: center;
+    vertical-align: top;
+    background: #fff;
+    position: relative; /* delete-daily-btn의 절대 위치 기준 */
+    font-size: 14px;
+    transition: background 0.2s;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.calendar-table td .cell-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 38px;
+    min-width: 38px;
+    box-sizing: border-box;
+    padding: 2px 2px 2px 2px;
+}
+
+.cell-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2em; /* 원하는 간격 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.5em;
+    width: 100%;
+}
+
+.cell-header .date-number,
+.cell-header .holiday-category {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+.cell-header .date-number {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: inherit;
+    margin-right: 0;
+}
+
+.cell-header .holiday-category {
+    color: #e53935;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+.record-time {
+    font-size: 30px;
+    color: black;
+    background: none;
+    border: none;
+    font-weight: 500;
+    padding-left: 2px;
+    min-height: 30px;
+    text-align: left;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: flex-start;
+}
+
+.cell-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-end;
+    min-height: 14px;
+    height: 14px;
+}
+
+.approval-icon {
+    width: 18px;
+    height: 18px;
+    display: none; /* 임시로 숨김 */
+}
+
+.calendar-table td .date-number {
+    font-weight: normal;
+    font-size: 14px;
+    color: #222;
+    padding: 6px 0 2px 0;
+    align-self: flex-start;
+    margin-left: 4px;
+    margin-top: 4px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 90%;
+}
+
+.calendar-table td.other-month .date-number {
+    color: #ccc;
+}
+
+.calendar-table th:first-child, .calendar-table td:first-child {
+    color: #e57373;
+}
+
+.calendar-table th:last-child, .calendar-table td:last-child {
+    color: #80b9f1;
+}
+
+.calendar-table td.has-record {
+    background: #fff;
+}
+
+.calendar-table .record-time {
+    font-size: 15px;
+    color: #1976d2;
+    font-weight: 500;
+    padding: 2px 4px;
+    margin: 2px auto 0 auto;
+    border-radius: 3px;
+    display: block;
+    line-height: 1.2;
+    max-width: 90%;
+    margin-top: auto;
+    margin-bottom: 4px;
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.calendar-table td.today {
+    background: #fffde7 !important;
+}
+
+.calendar-table td.today .date-number {
+    color: #222;
+    font-weight: bold;
+}
+
+.calendar-table td.selected {
+    background: #e3f2fd !important;
+}
+
+.calendar-table td.selected .date-number {
+    color: #1565c0;
+}
+
+.calendar-table td.selected .record-time {
+    color: #1565c0;
+}
+
+.calendar-table td .delete-daily-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #e57373;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 캘린더 셀 내 삭제 버튼 호버 효과 - buttons.css에서 기본 스타일 관리 */
+/* 주의: buttons.css의 .delete-daily-btn:hover와 충돌 가능성 있음 */
+.calendar-table td:hover .delete-daily-btn {
+    opacity: 1;
+}
+
+.calendar-table td .delete-daily-btn:hover {
+    background: #c62828;
+    transform: scale(1.1);
+}
+
+/* 캘린더 비활성화 스타일 (월별 데이터가 없을 때) */
+.calendar-view.disabled {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.8;
+}
+
+.calendar-view.disabled .calendar-table {
+    opacity: 0.6;
+}
+
+.calendar-view.disabled .delete-daily-btn {
+    display: none;
+}
+
+.calendar-view.disabled .record-time {
+    display: none;
+}
+
+/* 공휴일 관련 스타일은 holidays.css에서 관리 */
+
+/* 캘린더 테이블 스타일링 */
+@media (max-width: 768px) {
+    .calendar-table td, .calendar-table th {
+        width: 28px;
+        min-width: 28px;
+        max-width: 28px;
+        min-height: 28px;
+        max-height: 28px;
+        aspect-ratio: 1 / 1;
+        font-size: 12px;
+        overflow: hidden;
+    }
+    .calendar-table td .cell-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    .calendar-table td .date-number,
+    .calendar-table .record-time {
+        font-size: 11px;
+        max-width: 90%;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-table td, .calendar-table th {
+        width: 22px;
+        min-width: 22px;
+        max-width: 22px;
+        min-height: 22px;
+        max-height: 22px;
+        aspect-ratio: 1 / 1;
+        font-size: 10px;
+        overflow: hidden;
+    }
+    .calendar-table td .cell-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    .calendar-table td .date-number,
+    .calendar-table .record-time {
+        font-size: 9px;
+        max-width: 90%;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+}
+
+.holiday-category {
+    display: inline-block;
+    white-space: nowrap;
+    color: #e53935;
+    font-size: 0.9em;
+    margin-left: 2px;
+    vertical-align: middle;
+}
+.holiday-cat-item {
+    display: inline;
+    margin-right: 2px;
+    color: #e53935;
+    font-size: 0.9em;
+}

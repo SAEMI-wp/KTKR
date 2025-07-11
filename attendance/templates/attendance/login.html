@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techave 勤怠管理 - ログイン</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'attendance/css/login_card.css' %}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <i class="fa-solid fa-laptop-code"></i>
+                <h1>勤怠管理</h1>
+                <p></p>
+            </div>
+            
+            {% if form.errors %}
+                <div class="error-message">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    社員番号またはパスワードが正しくありません。
+                </div>
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.employee_no.id_for_label }}">
+                        <i class="fa-solid fa-id-card"></i> 社員番号
+                    </label>
+                    {{ form.employee_no }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">
+                        <i class="fa-solid fa-lock"></i> パスワード
+                    </label>
+                    {{ form.password }}
+                </div>
+                <button type="submit" class="login-button">
+                    <i class="fa-solid fa-sign-in-alt"></i> ログイン
+                </button>
+            </form>
+            
+            <div class="help-text">
+                <p>Copyright © 2025 TechAve</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

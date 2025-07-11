@@ -1,0 +1,136 @@
+/*
+ * list.css - 리스트 테이블 관련 스타일
+ * 
+ * 포함 내용:
+ * - 리스트 테이블 기본 스타일
+ * - 리스트 테이블 헤더 (th)
+ * - 리스트 테이블 셀 (td)
+ * - 리스트 행 호버 효과
+ * - 빈 데이터 셀 스타일
+ */
+
+/* 리스트 테이블 스타일링 */
+.list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.list-table th {
+    background-color: #e9f2f9;
+    color: #005A9C;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 14px;
+    border-bottom: 2px solid #005A9C;
+}
+
+.list-table td {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 8px;
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+.list-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.list-table tbody tr:hover {
+    background-color: #e8f4fd;
+}
+
+.list-table .no-data-cell {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* 日付/曜日 열 너비 및 색상 */
+.date-col, .weekday-col {
+  width: 48px;
+  min-width: 40px;
+  max-width: 60px;
+  text-align: center;
+  padding: 4px 2px;
+}
+.saturday {
+  color: #1976d2 !important;
+}
+.sunday, .holiday {
+  color: #e53935 !important;
+}
+
+/* 日々承認 열 너비 
+.approval-col {
+  width: 56px;
+  min-width: 40px;
+  text-align: center;
+  border-left: 2px solid #e0e0e0;
+  border-right: 2px solid #e0e0e0;
+  display: none; 
+}
+*/
+
+/* 리스트 테이블 열 구분선 */
+.list-table th, .list-table td {
+  border-right: 1.5px solid #e0e0e0;
+}
+.list-table th:last-child, .list-table td:last-child {
+  border-right: none;
+}
+
+/* 승인 아이콘 버튼 스타일 */
+.approval-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.approval-btn:active {
+  outline: none;
+}
+
+/* 비고 셀 스타일 */
+.notes-cell {
+  position: relative;
+  min-width: 120px;
+}
+
+.notes-content {
+  position: relative;
+  padding-right: 30px; /* 삭제 버튼 공간 확보 */
+  word-wrap: break-word;
+  min-height: 20px;
+}
+
+/* 리스트 테이블 삭제 버튼 스타일 */
+.list-table .delete-daily-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: none;
+  color: #e53935;
+  border: none;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  line-height: 1;
+}
+
+.list-table tbody tr:hover .delete-daily-btn {
+  opacity: 0.8;
+}

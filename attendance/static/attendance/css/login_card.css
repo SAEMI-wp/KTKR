@@ -1,0 +1,171 @@
+/*
+ * login_card.css
+ * 로그인/비밀번호 변경 등 카드형 폼 레이아웃 공통 스타일
+ * - login.html, password_change.html 등에서 import
+ * - 버튼, 에러, 카드, 폼 등 공통 요소 포함
+ */
+
+/* 전체 페이지 중앙 정렬 및 배경 */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f7f6;
+}
+
+/* 카드 레이아웃 */
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+/* 카드 상단 헤더 */
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.login-header h1 {
+    color: #005A9C;
+    margin: 0;
+    font-size: 28px;
+}
+.login-header i {
+    font-size: 48px;
+    color: #005A9C;
+    margin-bottom: 15px;
+}
+
+/* 폼 그룹 및 입력 필드 */
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: bold;
+}
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+.form-group input:focus {
+    outline: none;
+    border-color: #005A9C;
+    box-shadow: 0 0 5px rgba(0, 90, 156, 0.3);
+}
+
+/* 로그인/저장 버튼 (공통) */
+.login-button, .submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #005A9C;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.login-button:hover, .submit-button:hover {
+    background-color: #003f6b;
+}
+
+/* 취소 버튼 (비밀번호 변경 등) */
+.cancel-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    text-decoration: none;
+    text-align: center;
+    margin-top: 10px;
+}
+.cancel-button:hover {
+    background-color: #5a6268;
+}
+
+/* 버튼 그룹(저장+취소 나란히) */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* 에러/성공 메시지 */
+.error-message {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #ffcdd2;
+}
+.success-message {
+    color: #2e7d32;
+    background-color: #e8f5e8;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #c8e6c9;
+}
+
+/* 도움말 텍스트 */
+.help-text {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* 버튼 공통화: button, a.cancel-button 모두 동일하게 */
+.submit-button,
+.cancel-button {
+    display: inline-flex;         /* flex로 아이콘+텍스트 정렬 */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    border: none;
+    transition: background-color 0.3s;
+    min-height: 48px;             /* 높이 고정(원하면) */
+    box-sizing: border-box;
+}
+
+.submit-button {
+    background-color: #005A9C;
+    color: white;
+}
+.submit-button:hover {
+    background-color: #003f6b;
+}
+
+.cancel-button {
+    background-color: #6c757d;
+    color: white;
+}
+.cancel-button:hover {
+    background-color: #5a6268;
+} 

@@ -1,0 +1,446 @@
+{% load static %}
+{% load attendance_extras %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techave 勤怠管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Modular CSS files (attendance/static/attendance/css/) -->
+    <link rel="stylesheet" href="{% static 'attendance/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/calendar.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/list.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/buttons.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/modals.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/email.css' %}">
+    <link rel="stylesheet" href="{% static 'attendance/css/holidays.css' %}">
+    <link rel="icon" href="{% static 'attendance/favicon.ico' %}">
+    <script>
+      var csrfToken = '{{ csrf_token }}';
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- 해더 섹션 -->
+        <header class="header">
+            <div class="header-left">
+                <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo"> <!-- 로고 클릭 시 현재 월로 이동 -->
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <i class="fa-solid fa-user"></i>
+                    <span>
+                        {% if user.display_name %}
+                            {{ user.display_name }} ({{ user.employee_no }})
+                        {% elif user.employee_no %}
+                            {{ user.employee_no }}
+                        {% else %}
+                            &nbsp;
+                        {% endif %}
+                    </span> <!-- 로그인한 사용자 정보 -->
+                </div>
+                <a href="{% url 'attendance:password_change' %}" class="password-change-button"><i class="fa-solid fa-key"></i> パスワード変更</a>
+                <a href="{% url 'attendance:logout' %}" class="logout-button"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="main-flex">
+                <aside class="form-panel">
+                    <section class="attendance-entry">
+                        <div class="entry-header">
+                            <h3 id="daily-entry-title">勤怠登録</h3>
+                            <button id="normal-hours-btn" class="btn-normal" title="通常勤務時間を設定" 
+                                    {% if not monthly_data %}disabled{% endif %}
+                                    data-base-calendar="{% if monthly_data %}{{ monthly_data.base_calendar }}{% endif %}">
+                                <i class="fa-solid fa-clock"></i> 通常
+                            </button>
+                        </div>
+                        <!-- 일별 근태 입력 폼 -->
+                        <form id="daily-entry-form" action="{% url 'attendance:daily_update' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="daily-form-grid">
+                                <div class="form-group">
+                                    <label for="day-input"></label>
+                                    <div class="date-input-group">
+                                        <button type="button" id="day-arrow-left" class="day-arrow">&lt; 前の日</button>
+                                        <div class="date-full">
+                                            {{ current_date|date:"Y/n/" }}<span id="day-display">{{ default_day }}</span>
+                                        </div>
+                                        <input type="hidden" id="day-input-hidden" name="day" value="{{ default_day }}">
+                                        <button type="button" id="day-arrow-right" class="day-arrow">次の日 &gt;</button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ daily_form.work_type.id_for_label }}">勤務区分</label>
+                                    {{ daily_form.work_type }}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ daily_form.start_time.id_for_label }}">作業開始時刻</label>
+                                    {{ daily_form.start_time }}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
+                                    {{ daily_form.end_time }}
+                                </div>
+                                 <div class="form-group">
+                                    <label for="{{ daily_form.alternative_work_date.id_for_label }}">代休/振替の勤務日</label>
+                                    {{ daily_form.alternative_work_date }}
+                                </div>
+                                <div class="form-group-full">
+                                    <label for="{{ daily_form.notes.id_for_label }}">実施作業内容/備考</label>
+                                    {{ daily_form.notes }}
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">登録・更新</button>
+                                <div id="form-warning" class="form-warning" style="display:none;">
+                                    <span class="warning-icon">⚠️</span>
+                                    <span class="warning-text"></span>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="disabled-message" style="display:none;">
+                            <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
+                        </div>
+                    </section>
+                    <section class="email-section">
+                        <h3>メール送信</h3>
+                        <form id="email-send-form" class="email-form" autocomplete="off" method="post">
+                            {% csrf_token %}
+                            <label for="email-host-user">発信者メール</label>
+                            <input type="email" id="email-host-user" name="email_host_user" class="form-control" placeholder="your@gmail.com">
+                            <label for="email-host-password">アプリのパスワード</label>
+                            <input type="password" id="email-host-password" name="email_host_password" class="form-control" placeholder="abcd efgh ijkl mnop">
+                            <label for="email-to">受信者メール</label>
+                            <input type="email" id="email-to" name="email" class="form-control" placeholder="@techave.jp">
+                            <button type="submit" id="email-send-btn" class="btn-primary">送信</button>
+                        </form>
+                        <div id="email-status-message" class="email-status-message" style="display:none;"></div>
+                        <!-- ファイル種別選択モーダル -->
+                        <div id="file-type-modal" class="modal-overlay" style="display:none;">
+                            <div class="modal-content file-type-modal-content">
+                                <div class="modal-header">
+                                    <h3>添付ファイルの選択</h3>
+                                    <button id="close-file-type-modal-btn" class="close-button">&times;</button>
+                                </div>
+                                <div class="modal-body file-type-modal-body">
+                                    <p>どちらのファイルを添付して送信しますか？</p>
+                                    <div class="file-type-buttons">
+                                        <button type="button" id="send-pdf-btn" class="btn-primary"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                        <button type="button" id="send-excel-btn" class="btn-primary"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+                <section class="calendar-panel">
+                    <div class="date-selector">
+                        <button id="prev-month-btn" class="nav-button"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 id="current-month-display" class="current-month" data-year="{{ current_date.year }}" data-month="{{ current_date.month }}">{{ current_date|date:"Y年 n月" }}</h2>
+                        <button id="next-month-btn" class="nav-button"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button id="print-preview-btn" class="print-preview-button" title="稼働報告書 印刷・保存" {% if not monthly_data %}disabled{% endif %}>
+                            <i class="fa-solid fa-print"></i>
+                        </button>
+                    </div>
+                    <!-- 월情報セクションのトグルボタン（단독 +） -->
+                    <button id="show-monthly-info-btn" class="toggle-btn green" title="月情報を表示">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>詳細表示</span>
+                    </button>
+                    <!-- 월情報セクションのトグルボタン（단독 -） -->
+                    <button id="hide-monthly-info-btn" class="toggle-btn red" title="月情報を隠す" style="display:none;">
+                        <i class="fa-solid fa-minus"></i>
+                        <span>閉じる</span>
+                    </button>
+                    <!-- 월정보가 없을 때만 표시 -->
+                    {% if not monthly_data and prev_monthly_data %}
+                    <button id="copy-prev-month-btn" style="background:#43a047; color:white; border:none; border-radius:4px; padding:2px 8px; margin-left:8px; font-weight:bold;">
+                    前月複写
+                    </button>
+                    {% endif %}
+                    <section class="monthly-info" id="monthly-info-section" style="display:none;">
+                        <div class="section-header">
+                            <h3 style="display:inline; vertical-align:middle;">月情報</h3>
+                            {% if monthly_data%}
+                            <div class="section-actions" id="monthly-info-actions">
+                                <button id="edit-monthly-btn" class="btn-edit">修正</button>
+                            </div>
+                            {% endif%}
+                        </div>
+                        <div id="monthly-info-content">
+                        {% if monthly_data %}
+                            <div class="monthly-details-grid">
+                                <div class="detail-item"><span>PJ名:</span> <strong>{{ monthly_data.project_name }}</strong></div>
+                                <div class="detail-item"><span>基準カレンダー:</span> <strong>{{ monthly_data.base_calendar }}</strong></div>
+                                <div class="detail-item"><span>昼休み区分:</span> <strong>{{ monthly_data.break_minutes }}分</strong></div>
+                                <div class="detail-item"><span>基準時間:</span> <strong>{{ monthly_data.standard_work_hours }}時間</strong></div>
+                                <div class="detail-item"><span>出勤日:</span> <strong>{{ monthly_data.work_days }}日</strong></div>
+                                <div class="detail-item"><span>年次有給:</span> <strong>{{ monthly_data.paid_leave_days }}日</strong></div>
+                                <div class="detail-item"><span>常勤:</span> <strong>{{ monthly_data.total_regular_work_hours|floatformat:2 }}h</strong></div>
+                                <div class="detail-item"><span>控除:</span> <strong>{{ monthly_data.total_deduction_hours|floatformat:2 }}h</strong></div>
+                                <div class="detail-item"><span>残業:</span> <strong>{{ monthly_data.total_overtime_hours|floatformat:2 }}h</strong></div>
+                                <div class="detail-item"><span>深夜:</span> <strong>{{ monthly_data.total_late_night_overtime_hours|floatformat:2 }}h</strong></div>
+                                <div class="detail-item"><span>休日:</span> <strong>{{ monthly_data.total_holiday_work_hours|floatformat:2 }}h</strong></div>
+                                <div class="detail-item"><span>休日深夜:</span> <strong>{{ monthly_data.holiday_work_hours_night|floatformat:2 }}h</strong></div>
+                            </div>
+                        {% else %}
+                            <div class="no-data-prompt">
+                                <p>{{ current_date|date:"Y年n月" }}の月勤怠情報が登録されていません。</p>
+                                <button id="create-monthly-btn" class="btn-primary">月情報を登録する</button>
+                            </div>
+                        {% endif %}
+                        </div>
+                    </section>
+                    <!-- 탭 버튼 -->
+                    <div class="tab-switcher">
+                        <button id="tab-calendar" class="tab-btn active">カレンダー</button>
+                        <button id="tab-list" class="tab-btn{% if not monthly_data %} disabled{% endif %}" {% if not monthly_data %}disabled style="pointer-events:none;opacity:0.5;"{% endif %}>リスト</button>
+                    </div>
+                    <!-- 탭 컨텐츠 -->
+                    <div id="calendar-tab">
+                        <section class="calendar-view">
+                            <h3>{{ current_date|date:"Y年n月" }}の勤務実績カレンダー</h3>
+                            <div class="calendar-container">
+                                <table class="calendar-table">
+                                    <thead>
+                                        <tr>
+                                            {% for day in weekdays %}
+                                                <th>{{ day }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for week in calendar %}
+                                        <tr>
+                                            {% for day in week %}
+                                                <td class="{% if day.date.month != current_date.month %}other-month{% endif %}{% if day.record %} has-record{% endif %}{% if day.date == today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}">
+                                                    <div class="cell-inner">
+                                                        <div class="cell-header">
+                                                            <span class="date-number">{{ day.date.day }}</span>
+                                                        </div>
+                                                        <div class="record-time">{% if day.record and day.record.start_time and day.record.end_time %}{{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}{% endif %}</div>
+                                                        <div class="cell-footer">
+                                                            <!-- <span class="approval-icon"
+                                                                  data-required="{{ day.record.is_required|default:0 }}"
+                                                                  data-confirmed="{{ day.record.is_confirmed|default:0 }}">
+                                                            </span> -->
+                                                        </div>
+
+                                                    </div>
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                    <script id="holidays-db-data" type="application/json">
+                        {{ holidays_db_json|safe }}
+                    </script>
+                    {% if monthly_data %}
+                    <div id="list-tab" style="display:none;">
+                        <section class="list-view">
+                            <h3>{{ current_date|date:"Y年n月" }}の勤務実績表</h3>
+                            <div class="list-container">
+                                <table class="list-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="date-col">日付</th>
+                                            <th class="weekday-col">曜日</th>
+                                            <th>勤務区分</th>
+                                            <th>代休/振替日</th>
+                                            <th>出勤時間</th>
+                                            <th>退勤時間</th>
+                                            <th>実施作業内容・備考</th>
+                                            <!-- <th class="approval-col">日々承認</th> -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day in month_days_list %}
+                                            <tr class="attendance-list-row" data-date="{{ day.date|date:'Y-m-d' }}">
+                                                {# 日付, 曜日: 색상/너비/붙이기 #}
+                                                <td class="date-col {% if day.date|date:'w' == '0' or day.is_holiday %}sunday{% elif day.date|date:'w' == '6' %}saturday{% endif %}">{{ day.date|date:"n/j" }}</td>
+                                                <td class="weekday-col {% if day.date|date:'w' == '0' or day.is_holiday %}sunday{% elif day.date|date:'w' == '6' %}saturday{% endif %}">
+                                                    {% with weekday_names="月,火,水,木,金,土,日"|split:"," %}
+                                                        {{ weekday_names|get_item:day.date.weekday }}
+                                                    {% endwith %}
+                                                </td>
+                                                <td>{% if day.record %}{{ day.record.work_type|default:"-" }}{% else %}-{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.alternative_work_date|date:"n/j"|default:"-" }}{% else %}-{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.start_time|time:"H:i"|default:"-" }}{% else %}-{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.end_time|time:"H:i"|default:"-" }}{% else %}-{% endif %}</td>
+                                                <td class="notes-cell">
+                                                    {% if day.record %}
+                                                        <div class="notes-content">
+                                                            {{ day.record.notes|default:"" }}
+                                                            <button class="delete-daily-btn" data-date="{{ day.date|date:'Y-m-d' }}" title="削除">×</button>
+                                                        </div>
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                                {# 日々承認 셀 #}
+                                                <!-- <td class="approval-col">
+                                                    {% if day.record %}
+                                                        {% if not day.record.is_required and not day.record.is_confirmed %}
+                                                            <button class="approval-btn request-btn" data-date="{{ day.date|date:'Y-m-d' }}" title="承認申請">
+                                                                <img src="/static/attendance/img/up-arrow.png" alt="申請" style="width:24px;height:24px;">
+                                                            </button>
+                                                        {% elif day.record.is_required and not day.record.is_confirmed %}
+                                                            <span class="approval-waiting" title="承認待ち">
+                                                                <img src="/static/attendance/img/waiting.png" alt="待機中" style="width:24px;height:24px;">
+                                                            </span>
+                                                        {% elif not day.record.is_required and day.record.is_confirmed %}
+                                                            <span class="approval-done" title="承認済み">
+                                                                <img src="/static/attendance/img/check-green.png" alt="承認済み" style="width:24px;height:24px;">
+                                                            </span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </td> -->
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="7" class="no-data-cell">この月の日別データはまだ登録されていません。</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Copyright © 2025 TechAve Co.,LTD. All Rights Reserved</p>
+        </footer>
+
+        <!-- Year/Month Picker Modal -->
+        <div id="year-month-picker-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content picker-content">
+                <div class="modal-header">
+                    <h3>年月選択</h3>
+                    <button id="close-picker-btn" class="close-button">&times;</button>
+                </div>
+                <div class="year-nav">
+                    <button id="prev-year-btn" class="nav-button"><i class="fa-solid fa-chevron-left"></i></button>
+                    <h4 id="picker-year">2025</h4>
+                    <button id="next-year-btn" class="nav-button"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="month-grid">
+                    <!-- Months will be generated by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal for creating monthly attendance -->
+        <div id="monthly-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">月別情報の登録</h3>
+                    <button id="close-modal-btn" class="close-button">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="monthly-form" action="{% url 'attendance:monthly_create' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="create-project-name">PJ名</label>
+                            <input type="text" id="create-project-name" name="project_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-base-calendar">基準カレンダー</label>
+                            <select id="create-base-calendar" name="base_calendar" class="form-control" required>
+                                <option value="基準">基準</option>
+                                <option value="H大甕">H大甕</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-lunch-break">昼休み区分 (分間)</label>
+                            <input type="number" id="create-lunch-break" name="break_minutes" class="form-control" min="0" step="1" value="60" required readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-standard-time">基準時間 (Hr)</label>
+                            <input type="number" id="create-standard-time" name="standard_work_hours" class="form-control" min="0" step="0.01" value="8.00" required readonly>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-submit">登録する</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal for updating monthly attendance -->
+        <div id="monthly-update-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>月別情報の修正</h3>
+                    <button id="close-update-modal-btn" class="close-button">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="monthly-update-form">
+                        <div class="form-group">
+                            <label for="update-project-name">PJ名</label>
+                            <input type="text" id="update-project-name" name="project_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="update-base-calendar">基準カレンダー</label>
+                            <select id="update-base-calendar" name="base_calendar" class="form-control" required>
+                                <option value="基準">基準</option>
+                                <option value="H大甕">H大甕</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="update-lunch-break">昼休み区分 (分間)</label>
+                            <input type="number" id="update-lunch-break" name="break_minutes" class="form-control" min="0" step="1" value="{{ monthly_data.break_minutes|default:'60' }}" required readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="update-standard-time">基準時間 (Hr)</label>
+                            <input type="number" id="update-standard-time" name="standard_work_hours" class="form-control" min="0" step="0.01" value="{{ monthly_data.standard_work_hours|default:'8.00' }}" required readonly>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-submit">修正する</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Preview Modal -->
+        <div id="pdf-preview-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content pdf-modal-content">
+                <div class="modal-header">
+                    <h3>稼働報告書 プレビュー</h3>
+                    <button id="close-pdf-modal-btn" class="close-button">&times;</button>
+                </div>
+                <div class="modal-body pdf-modal-body">
+                    <div class="pdf-controls">
+                        <button id="print-pdf-btn" class="btn-primary">
+                            <i class="fa-solid fa-print"></i> 印刷
+                        </button>
+                        <button id="download-pdf-btn" class="btn-primary">
+                            <i class="fa-solid fa-download"></i> PDF保存
+                        </button>
+                        <button id="download-excel-btn" class="btn-primary">
+                            <i class="fa-solid fa-file-excel"></i> Excel保存
+                        </button>
+                    </div>
+                    <div class="pdf-preview-container">
+                        <iframe id="pdf-iframe" src="" width="100%" height="600px" frameborder="0"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <script src="{% static 'attendance/js/jquery-3.7.1.min.js' %}"></script>
+        <script src="{% static 'attendance/js/main.js' %}?v=1.1"></script>
+</body>
+</html> 

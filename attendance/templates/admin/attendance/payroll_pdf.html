@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>給与明細書</title>
+  <style>
+    body { font-family: 'MS Gothic', 'MS Mincho', sans-serif; margin: 40px; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    .info-table { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>給与明細書</h1>
+  <div style="text-align:right; font-size:1.1em;">{{ company_name }}</div>
+  <table class="info-table">
+    <tr><th>社員番号</th><td>{{ employee.employee_no }}</td></tr>
+    <tr><th>氏名</th><td>{{ employee.last_name }}{{ employee.first_name }}</td></tr>
+    <tr><th>勤務先</th><td>{{ employee.place_work }}</td></tr>
+    <tr><th>年月</th><td>{{ year }}年 {{ month }}月</td></tr>
+  </table>
+  <table>
+    <tr><th>支給額</th><td>{{ payslip.payment }} 円</td></tr>
+    <tr><th>控除額</th><td>{{ payslip.deduction }} 円</td></tr>
+    <tr><th>差引支給額</th><td>{{ payslip.net_payment }} 円</td></tr>
+    <tr><th>備考</th><td>{{ payslip.notes }}</td></tr>
+  </table>
+</body>
+</html> 

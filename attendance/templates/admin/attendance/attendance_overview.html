@@ -1,0 +1,42 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>勤怠管理</h1>
+<div style="margin-bottom: 1em;">
+  <a href="?year={{ prev_year }}&month={{ prev_month }}">&#8592; 前月</a>
+  <span style="margin:0 1em;">{{ year }}年 {{ month }}月</span>
+  <a href="?year={{ next_year }}&month={{ next_month }}">翌月 &#8594;</a>
+</div>
+<div style="margin-bottom: 1em;">
+  <strong>チーム平均残業時間:</strong> {{ avg_overtime|floatformat:1 }} 時間
+</div>
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>社員番号</th>
+      <th>氏名</th>
+      <th>勤務先</th>
+      <th>残業時間</th>
+      <th>有給休暇（今年付与）</th>
+      <th>有給休暇（今年使用）</th>
+      <th>有給休暇（今月使用）</th>
+      <th>有給休暇（残り）</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.employee.employee_no }}</td>
+      <td>{{ row.employee.last_name }}{{ row.employee.first_name }}</td>
+      <td>{{ row.employee.place_work }}</td>
+      <td{% if row.overtime > avg_overtime %} style="border-bottom:2px solid red;"{% endif %}>{{ row.overtime }}</td>
+      <td>{{ row.total_days }}</td>
+      <td>{{ row.used_days }}</td>
+      <td>{{ row.paid_leave_used }}</td>
+      <td>{{ row.remain_days }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8">データがありません</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %} 

@@ -1,0 +1,12 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>CSVで従業員一括追加</h1>
+<p>CSVファイルをアップロードしてください。<br>
+フォーマット: <code>社員番号, 氏名(姓と名は半角スペース区切り), 勤務先, メール</code></p>
+<form method="post" enctype="multipart/form-data" style="margin:2em 0;">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="button">アップロード</button>
+  <a href="../" class="button">キャンセル</a>
+</form>
+{% endblock %} 

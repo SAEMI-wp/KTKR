@@ -1,0 +1,110 @@
+/*
+ * holidays.css - 공휴일 관련 스타일
+ * 
+ * 포함 내용:
+ * - 공휴일 날짜 스타일 (holiday)
+ * - 공휴일 이름 스타일 (holiday-name)
+ * - 요일별 색상 구분 (일요일: 빨강, 토요일: 파랑)
+ * - DB 공휴일 스타일 (holiday-db)
+ * - API 공휴일 스타일 (holiday-api)
+ * - 공휴일 타입별 색상 (common, base, green)
+ */
+
+/* 공휴일 관련 스타일 - holidays.css에 분리 */
+/* 祝日用赤字 */
+.date-number.holiday {
+    color: #e53935 !important;
+    font-weight: bold;
+}
+
+/* 祝日名（小さく控えめに） */
+.date-number .holiday-name {
+    display: block;
+    font-size: 0.7em;
+    color: #e53935;
+    margin-top: 2px;
+    font-weight: normal;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+/* カレンダー曜日色分け */
+.calendar-table th:nth-child(1), .calendar-table td:nth-child(1) .date-number {
+    color: #e53935; /* 日曜・祝日 赤 */
+}
+
+.calendar-table th:nth-child(7), .calendar-table td:nth-child(7) .date-number {
+    color: #1565c0; /* 土曜 青 */
+}
+
+/* 祝日（上書き） */
+.date-number.holiday {
+    color: #e53935 !important;
+    font-weight: bold;
+}
+
+/* holidays_db용 공휴일 스타일 */
+.calendar-table .holiday-db {
+    color: #e53935;
+    font-weight: bold;
+    position: relative;
+}
+
+.calendar-table .holiday-db-name {
+    display: block;
+    font-size: 0.8em;
+    color: #e53935;
+    margin-top: 2px;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+}
+
+/* 일본 공휴일 API용 스타일 */
+.calendar-table .holiday-api-name {
+    color: #e53935;
+    font-weight: bold;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 2px;
+}
+
+/* DB holidays_db - 共通 */
+.calendar-table .holiday-db-common-name {
+    color: #b71c1c;
+    font-weight: bold;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 2px;
+}
+
+/* DB holidays_db - base_calendar(Techave, H大甕 등) */
+.calendar-table .holiday-db-base-name {
+    color: #1976d2;
+    font-weight: bold;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 2px;
+}
+
+/* DB holidays_db - 年休収得(초록색) */
+.calendar-table .holiday-db-green-name {
+    color: #388e3c;
+    font-weight: bold;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 2px;
+}
+
+.holiday-category, .holiday-cat-item, .holiday-cat-item.api, .holiday-cat-item.db, .holiday-cat-item.common, .holiday-cat-item.green, .holiday-cat-item.base {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 1;
+    padding: 0;
+    margin: 0 2px 0 0;
+    color: #e53935;
+    font-size: 0.9em;
+    font-weight: normal;
+    background: none;
+    border: none;
+}

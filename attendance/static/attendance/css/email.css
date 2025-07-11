@@ -1,0 +1,87 @@
+/*
+ * email.css - 이메일 관련 스타일
+ * 
+ * 포함 내용:
+ * - 이메일 섹션 컨테이너
+ * - 이메일 폼 스타일
+ * - 이메일 입력 필드
+ * - 이메일 상태 메시지
+ * - 반응형 이메일 스타일
+ */
+
+/* 이메일 송신 섹션 디자인 개선 */
+.email-section {
+    background: #f9fbfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 24px 20px 18px 20px;
+    margin: 24px 0 0 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    max-width: 420px;
+}
+
+.email-section h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 18px;
+    color: #1976d2;
+    font-weight: bold;
+    text-align: left;
+}
+
+.email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.email-form label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 2px;
+    text-align: left;
+}
+
+.email-form input[type="email"] {
+    font-size: 15px;
+    padding: 8px 10px;
+    border: 1px solid #b0bec5;
+    border-radius: 5px;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#email-status-message {
+    margin-top: 14px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+    text-align: left;
+    min-height: 20px;
+}
+
+#email-status-message[style*="display:none"] {
+    min-height: 0;
+    padding: 0;
+    border: none;
+}
+
+@media (max-width: 600px) {
+    .email-section {
+        padding: 14px 6px 10px 6px;
+        max-width: 100%;
+    }
+    
+    .email-section h3 {
+        font-size: 16px;
+    }
+    
+    #email-send-btn {
+        width: 100%;
+        align-self: stretch;
+    }
+}
