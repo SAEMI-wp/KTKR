@@ -1,6 +1,7 @@
 import os
 import dj_database_url
-from .settings import *
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
