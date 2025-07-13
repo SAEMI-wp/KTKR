@@ -28,6 +28,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.herokuapp.com',
     'https://*.pythonanywhere.com',
 ]
+# 환경 변수 값 확인용 코드 (배포 후 삭제)
+_db_url_from_env = os.environ.get('DATABASE_URL')
+print(f"DEBUG: DATABASE_URL from environment: {_db_url_from_env}")
 
 # 데이터베이스 설정 (환경변수에서 가져오기)
 DATABASES = {
