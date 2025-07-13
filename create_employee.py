@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-새로운 Employee 계정을 생성하는 스크립트
+새로운 Employee 계정을 생성하는 스크립트 (비대화형)
 """
 import os
 import sys
@@ -12,10 +12,18 @@ django.setup()
 
 from attendance.models import Employee
 
-def create_employee_from_args(employee_no, password, first_name, last_name, email, place_work, is_superuser=False):
-    """명령줄 인수를 받아 새로운 Employee 계정을 생성합니다."""
+def create_initial_employee():
+    """초기값으로 새로운 Employee 계정을 생성합니다."""
 
-    print("=== 새로운 Employee 계정 생성 ===")
+    print("=== 초기 Employee 계정 생성 ===")
+
+    # 여기에 원하는 초기값 설정
+    employee_no = "200370"
+    password = "0000" # 실제 사용할 안전한 비밀번호로 변경하세요!
+    first_name = "セミ"
+    last_name = "けん"
+    email = "admin@yourけんcompany.com" # 실제 이메일로 변경
+    place_work = "경영지원팀"
 
     try:
         employee = Employee.objects.create_user(
@@ -25,54 +33,24 @@ def create_employee_from_args(employee_no, password, first_name, last_name, emai
             last_name=last_name,
             email=email,
             place_work=place_work,
-            is_superuser=is_superuser # 인수로 받도록 변경
+            is_superuser=True # 슈퍼유저로 설정
         )
-        print("\n✅ 계정 생성 완료!")
+        print("\n✅ 초기 계정 생성 완료!")
         print(f"사원번호: {employee.employee_no}")
         print(f"이름: {employee.last_name}{employee.first_name}")
         print(f"이메일: {employee.email}")
-        print("\n로그인 URL: http://127.0.0.1:8000/login/")
+        print("\n로그인 URL: http://도메인주소/login/") # 실제 Railway 도메인으로 변경 안내
     except Exception as e:
-        print(f"❌ 계정 생성 실패: {e}")
+        # 이미 존재하는 계정인 경우 오류를 무시하거나 특정 메시지 출력
+        if "duplicate key" in str(e).lower() or "already exists" in str(e).lower():
+            print(f"⚠️ 계정이 이미 존재합니다. (사원번호: {employee_no})")
+        else:
+            print(f"❌ 계정 생성 실패: {e}")
         return False
     return True
 
-def list_employees():
-    """기존 Employee 목록을 출력합니다."""
-    print("\n=== 기존 Employee 목록 ===")
-    employees = Employee.objects.all().order_by('employee_no')
-    if not employees:
-        print("등록된 Employee가 없습니다.")
-        return
-    for emp in employees:
-        print(f"사원번호: {emp.employee_no} | 이름: {emp.last_name}　{emp.first_name} | 이메일: {emp.email} | 부서: {emp.place_work}")
-
-
 if __name__ == "__main__":
-    # 명령줄 인수가 충분한지 확인 (스크립트 이름 제외 6개 필요)
-    if len(sys.argv) == 1:
-        print("Employee 계정 관리 도구")
-        print("1. 새 계정 생성 (예: python create_employee.py create <사원번호> <비밀번호> <명> <성> <이메일> <부서> [is_superuser True/False])")
-        print("2. 기존 계정 목록 보기 (예: python create_employee.py list)")
-        print("\n선택하세요.")
-    elif sys.argv[1] == "create":
-        if len(sys.argv) < 7: # 최소 6개 인자 + 'create' 명령
-            print("사용법: python create_employee.py create <사원번호> <비밀번호> <명> <성> <이메일> <부서> [is_superuser True/False]")
-            sys.exit(1)
-
-        # is_superuser는 옵션이므로 기본값을 False로 설정하고, 8번째 인자가 있다면 True로 설정
-        is_superuser_arg = sys.argv[8].lower() == 'true' if len(sys.argv) > 8 else False
-
-        create_employee_from_args(
-            employee_no=sys.argv[2],
-            password=sys.argv[3],
-            first_name=sys.argv[4],
-            last_name=sys.argv[5],
-            email=sys.argv[6],
-            place_work=sys.argv[7],
-            is_superuser=is_superuser_arg
-        )
-    elif sys.argv[1] == "list":
-        list_employees()
-    else:
-        print("잘못된 명령입니다. 'create' 또는 'list'를 사용하세요.")
+    # 이 스크립트는 매번 실행될 필요는 없으므로,
+    # 개발 환경에서 한 번만 실행하거나,
+    # 배포 자동화에 포함하려면 조건을 추가해야 합니다.
+    create_initial_employee()
