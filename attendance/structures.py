@@ -41,7 +41,7 @@ class DailyData:
         # end_time이 비어있는 경우 처리
         if not self.end_time:
             # 휴일/공휴일/대체휴일인 경우 null
-            holiday_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)']
+            holiday_types = ['休日(法)', '祝日', '振替', '休日']  #, '振替(休)'
             if self.work_type in holiday_types:
                 self.regular_work_hours = None
             else:
@@ -78,7 +78,7 @@ class DailyData:
             return
         
         # 휴일/공휴일/대체휴일인 경우 null
-        holiday_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)']
+        holiday_types = ['休日(法)', '祝日', '振替', '休日'] #, '振替(休)'
         if self.work_type in holiday_types:
             self.deduction_hours = None
             return
@@ -109,7 +109,7 @@ class DailyData:
             end_dt += timedelta(days=1)
         
         # 휴일/공휴일/대체휴일인 경우: 전체 근무시간이 잔업시간
-        holiday_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)']
+        holiday_types = ['休日(法)', '祝日', '振替', '休日'] #'振替(休)'
         if self.work_type in holiday_types:
             # 전체 근무시간 계산 (분 단위)
             total_work_minutes = (end_dt - start_dt).total_seconds() / 60
@@ -316,7 +316,7 @@ class MonthlyData:
     def total_regular_work_hours(self) -> float:
         """상근시간 합계: 휴일(법), 공휴일, 대체(법) 제외한 나머지 날들의 상근시간 합"""
         total = 0.0
-        exclude_types = ['休日(法)', '祝日', '振替(法)']
+        exclude_types = ['休日(法)', '祝日', '振替']
         
         for daily in self.daily_list:
             if (daily.work_type not in exclude_types and 
@@ -360,9 +360,9 @@ class MonthlyData:
 
     @property
     def total_holiday_work_hours(self) -> float:
-        """휴일 근무시간 합계: 법정 휴일(休日(法)、祝日、振替(法))에 일한 잔업시간의 합"""
+        """휴일 근무시간 합계: 법정 휴일(休日(法)、祝日、振替)에 일한 잔업시간의 합"""
         total = 0.0
-        legal_holiday_types = ['休日(法)', '祝日', '振替(法)']
+        legal_holiday_types = ['休日(法)', '祝日', '振替']
         
         for daily in self.daily_list:
             if (daily.work_type in legal_holiday_types and 
@@ -375,7 +375,7 @@ class MonthlyData:
     def holiday_work_hours_night(self) -> float:
         """휴일 심야근무시간 합계: 법정 휴일에 심야근무한 시간의 합"""
         total = 0.0
-        legal_holiday_types = ['休日(法)', '祝日', '振替(法)']
+        legal_holiday_types = ['休日(法)', '祝日', '振替']
         
         for daily in self.daily_list:
             if (daily.work_type in legal_holiday_types and 

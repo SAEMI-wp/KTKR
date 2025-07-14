@@ -96,12 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
             pendingHostUser = hostUser;
             pendingHostPassword = hostPassword;
             // 파일 종류 선택 모달 표시
-            fileTypeModal.style.display = 'flex';
+            fileTypeModal.classList.add('show');
         });
     }
     if (closeFileTypeModalBtn && fileTypeModal) {
         closeFileTypeModalBtn.addEventListener('click', function() {
-            fileTypeModal.style.display = 'none';
+            fileTypeModal.classList.remove('show');
         });
     }
     function showEmailStatus(msg, isError=false) {
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             showEmailStatus('送信中にエラーが発生しました。', true);
         }
-        fileTypeModal.style.display = 'none';
+        fileTypeModal.classList.remove('show');
         pendingEmail = '';
         pendingHostUser = '';
         pendingHostPassword = '';
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} date - 'YYYY-MM-DD'形式の日付
      */
     async function populateDailyForm(date) {
-        // 選択されたセルのハイライトを更新
+        // 選択된セルのハイライトを更新
         const selectedCell = document.querySelector('.calendar-table td.selected');
         if (selectedCell) {
             selectedCell.classList.remove('selected');
@@ -239,11 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (dayInputHidden) {
                     dayInputHidden.value = day;
                 }
-                // 勤務区分のデフォルト値を設定
-                const workTypeSelect = form.querySelector('[name="work_type"]');
-                if (workTypeSelect) {
-                    workTypeSelect.value = '出勤';
-                }
                 // その他のフィールドをクリア
                 form.querySelector('[name="alternative_work_date"]').value = '';
                 form.querySelector('[name="start_time"]').value = '';
@@ -267,17 +262,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (monthlyModal) {
         if (createMonthlyBtn) {
             createMonthlyBtn.addEventListener('click', () => {
-                monthlyModal.style.display = 'flex';
+                monthlyModal.classList.add('show');
             });
         }
         if (closeModalBtn) {
             closeModalBtn.addEventListener('click', () => {
-                monthlyModal.style.display = 'none';
+                monthlyModal.classList.remove('show');
             });
         }
         monthlyModal.addEventListener('click', (e) => {
             if (e.target === monthlyModal) {
-                monthlyModal.style.display = 'none';
+                monthlyModal.classList.remove('show');
             }
         });
     }
@@ -526,13 +521,13 @@ document.addEventListener('DOMContentLoaded', () => {
         monthDisplay.addEventListener('click', () => {
             console.log('Month display clicked');
             updateYearMonthPicker(currentYear);
-            pickerModal.style.display = 'flex';
+            pickerModal.classList.add('show');
         });
     }
 
     if (closePickerBtn) {
         closePickerBtn.addEventListener('click', () => {
-            pickerModal.style.display = 'none';
+            pickerModal.classList.remove('show');
         });
     }
 
@@ -555,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.tagName === 'BUTTON') {
                 const selectedMonth = e.target.dataset.month;
                 navigate(currentYear, parseInt(selectedMonth));
-                pickerModal.style.display = 'none';
+                pickerModal.classList.remove('show');
             }
         });
     }
@@ -564,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pickerModal) {
         pickerModal.addEventListener('click', (e) => {
             if (e.target === pickerModal) {
-                pickerModal.style.display = 'none';
+                pickerModal.classList.remove('show');
             }
         });
     }
@@ -680,19 +675,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (lunchBreakInput) lunchBreakInput.value = lunchBreakValue;
                 if (standardTimeInput) standardTimeInput.value = standardTimeValue;
                 
-                monthlyUpdateModal.style.display = 'flex';
+                monthlyUpdateModal.classList.add('show');
             });
         }
         
         if (closeUpdateModalBtn) {
             closeUpdateModalBtn.addEventListener('click', () => {
-                monthlyUpdateModal.style.display = 'none';
+                monthlyUpdateModal.classList.remove('show');
             });
         }
         
         monthlyUpdateModal.addEventListener('click', (e) => {
             if (e.target === monthlyUpdateModal) {
-                monthlyUpdateModal.style.display = 'none';
+                monthlyUpdateModal.classList.remove('show');
             }
         });
     }
@@ -734,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Monthly update response data:', result);
                 
                 if (result.status === 'success') {
-                    monthlyUpdateModal.style.display = 'none';
+                    monthlyUpdateModal.classList.remove('show');
                     window.location.reload();
                 } else {
                     let errorMessage = '에러가 발생했습니다。';
@@ -765,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addMonthlyBtn.addEventListener('click', () => {
             const monthlyModal = document.getElementById('monthly-modal');
             if (monthlyModal) {
-                monthlyModal.style.display = 'flex';
+                monthlyModal.classList.add('show');
             }
         });
     }
@@ -805,7 +800,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 모달 표시
             const pdfModal = document.getElementById('pdf-preview-modal');
-            if (pdfModal) pdfModal.style.display = 'flex';
+            if (pdfModal) pdfModal.classList.add('show');
         });
     }
 
@@ -814,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closePdfModalBtn) {
         closePdfModalBtn.addEventListener('click', function() {
             const pdfModal = document.getElementById('pdf-preview-modal');
-            if (pdfModal) pdfModal.style.display = 'none';
+            if (pdfModal) pdfModal.classList.remove('show');
             const pdfIframe = document.getElementById('pdf-iframe');
             if (pdfIframe) pdfIframe.src = '';
         });
@@ -899,15 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * 일본 공휴일 API에서 이번 달 데이터만 추출하여 캘린더에 표시
      */
     async function applyApiHolidaysToCalendar() {
-        const url = 'https://holidays-jp.github.io/api/v1/date.json';
-        let apiHolidays = {};
-        try {
-            const res = await fetch(url);
-            apiHolidays = await res.json();
-        } catch (e) {
-            console.error('API 공휴일 fetch 오류:', e);
-            return;
-        }
+        let apiHolidays = window.apiHolidays || {};
         const year = currentYear || (new Date()).getFullYear();
         const month = currentMonth || (new Date()).getMonth() + 1;
         const monthStr = String(month).padStart(2, '0');
@@ -1356,11 +1343,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.attendance-list-row').forEach(row => {
         row.addEventListener('click', function() {
             const date = this.dataset.date;
-            console.log('리스트 클릭 date:', date);
+            const defaultWorkType = this.dataset.defaultWorkType;
             hideFormWarning();
             populateDailyForm(date);
 
-            // 연/월/일 표시 갱신
+            // 연/월/일 표시 갱식
             if (date) {
                 const [year, month, day] = date.split('-');
                 // 연/월 부분 갱신
@@ -1374,7 +1361,57 @@ document.addEventListener('DOMContentLoaded', () => {
                     dayInputHidden.value = parseInt(day);
                 }
             }
+
+            // 勤務区分 자동 입력
+            if (defaultWorkType) {
+                const workTypeSelect = document.querySelector('[name="work_type"]');
+                if (workTypeSelect) {
+                    workTypeSelect.value = defaultWorkType;
+                }
+            }
         });
+    });
+
+    // 리스트 행 클릭 시 勤務区分 자동입력
+    $(document).on('click', '.attendance-list-row', function() {
+        const workType = $(this).data('default-work-type');
+        if (workType) {
+            $('select[name="work_type"]').val(workType).trigger('change');
+        }
+    });
+
+    // 캘린더 셀 클릭 시도 동일하게
+    $(document).on('click', '.calendar-table td', function() {
+        const workType = $(this).data('default-work-type');
+        if (workType) {
+            $('select[name="work_type"]').val(workType).trigger('change');
+        }
+    });
+
+    // 캘린더 셀/리스트 행 클릭 시
+    $(document).on('click', '.calendar-table td, .attendance-list-row', function() {
+        const date = $(this).data('date');
+        const workType = $(this).data('default-work-type');
+        const hasRecord = $(this).data('has-record');
+        console.log('[DEBUG] 클릭됨:', {date, workType, hasRecord});
+        if (date) {
+            populateDailyForm(date).then(() => {
+                const $workTypeSelect = $('select[name="work_type"]');
+                // 1. 데이터가 있으면 아무것도 하지 않음(기존 값 유지)
+                if (hasRecord) {
+                    console.log('[DEBUG] 기존 데이터 있음, 勤務区分 유지:', $workTypeSelect.val());
+                    return;
+                }
+                // 2. workType이 null/undefined/빈문자열/None 등 falsy면 "出勤" 세팅
+                if (workType && workType !== "None") {
+                    $workTypeSelect.val(workType).trigger('change');
+                    console.log('[DEBUG] workType 세팅:', workType, $workTypeSelect.val());
+                } else {
+                    $workTypeSelect.val("出勤").trigger('change');
+                    console.log('[DEBUG] 出勤 세팅:', $workTypeSelect.val());
+                }
+            });
+        }
     });
 
     const today = new Date();

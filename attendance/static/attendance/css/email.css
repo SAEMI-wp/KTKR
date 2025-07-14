@@ -85,3 +85,55 @@
         align-self: stretch;
     }
 }
+
+/* 모바일 이메일 최적화 */
+@media (max-width: 768px) {
+    .email-section {
+        padding: 20px 15px 15px 15px;
+        margin: 20px 0 0 0;
+        border-radius: 8px;
+    }
+    
+    .email-section h3 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+    
+    .email-form {
+        gap: 8px;
+    }
+    
+    .email-form label {
+        font-size: 14px;
+    }
+    
+    .email-form input[type="email"],
+    .email-form input[type="password"] {
+        font-size: 16px; /* iOS에서 확대 방지 */
+        padding: 12px 10px;
+        min-height: 44px;
+    }
+    
+    #email-status-message {
+        margin-top: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+}
+
+/* 더 작은 화면에서의 최적화 */
+@media (max-width: 480px) {
+    .email-section {
+        padding: 15px 12px 12px 12px;
+    }
+    
+    .email-section h3 {
+        font-size: 15px;
+    }
+    
+    .email-form input[type="email"],
+    .email-form input[type="password"] {
+        font-size: 16px;
+        padding: 10px 8px;
+    }
+}

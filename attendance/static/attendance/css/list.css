@@ -134,3 +134,95 @@
 .list-table tbody tr:hover .delete-daily-btn {
   opacity: 0.8;
 }
+
+/* 모바일 리스트 최적화 - 가로 스크롤 */
+@media (max-width: 768px) {
+    .calendar-panel{
+        max-width: 90%;
+    }
+
+    .list-container {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 6px;
+    }
+    .list-table {
+        min-width: 600px;      /* 또는 500px, 400px 등 */
+        width: max-content;    /* 내용에 맞게 테이블이 늘어남 */
+        font-size: 13px;
+    }
+    
+    .list-table th {
+        padding: 10px 6px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .list-table td {
+        padding: 8px 6px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .date-col, .weekday-col {
+        width: 40px;
+        min-width: 40px;
+        max-width: 40px;
+        padding: 4px 2px;
+        font-size: 12px;
+    }
+    
+    .notes-cell {
+        min-width: 100px;
+        max-width: 150px;
+    }
+    
+    .notes-content {
+        padding-right: 25px;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    
+    .list-table .delete-daily-btn {
+        width: 14px;
+        height: 14px;
+        font-size: 12px;
+        top: 1px;
+        right: 1px;
+    }
+}
+
+/* 더 작은 화면에서의 최적화 */
+@media (max-width: 480px) {
+    .list-table {
+        min-width: 500px;
+        font-size: 12px;
+    }
+    
+    .list-table th {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
+    
+    .list-table td {
+        padding: 6px 4px;
+        font-size: 12px;
+    }
+    
+    .date-col, .weekday-col {
+        width: 35px;
+        min-width: 35px;
+        max-width: 35px;
+        font-size: 11px;
+    }
+
+    /* 리스트 행/셀과 동일한 폰트/여백 */
+    .list-table td, .list-table th {
+      font-size: 1rem;
+      padding: 8px 4px;
+    }
+}
+

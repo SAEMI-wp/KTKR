@@ -17,12 +17,14 @@ body {
     background-color: #f4f7f6;
     color: #333;
     font-size: 14px;
+    line-height: 1.6;
 }
 
 .container {
     margin: 0 auto;
     padding-left: 10px;
     padding-right: 10px;
+    max-width: 1400px;
 }
 
 /* Header */
@@ -34,6 +36,50 @@ body {
     background-color: #ffffff;
     border-bottom: 3px solid #005A9C;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 모바일 헤더 최적화 */
+@media (max-width: 768px) {
+    .header {
+        flex-wrap: nowrap;         /* 줄바꿈 방지 */
+        align-items: center;
+        gap: 6px;
+        padding: 8px 4px;
+    }
+    .header-left {
+        flex: 0 0 auto;
+        margin-right: 8px;
+    }
+    .techave-logo {
+        height: 4px;
+        width: auto;
+        max-width: 170px;
+    }
+    .header-right {
+        flex: 1 1 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-end;
+        min-width: 0;
+    }
+    .user-info {
+        font-size: 13px;
+        margin-right: 4px;
+        white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .password-change-button,
+    .logout-button {
+        font-size: 12px;
+        padding: 4px 8px;
+        min-width: 0;
+        max-width: 90px;
+        white-space: nowrap;
+    }
 }
 
 .header-left h1 {
@@ -96,7 +142,7 @@ body {
 .techave-logo {
     display: flex;
     align-items: center;
-    height: 60px; /* 헤더 높이에 맞게 조정 */
+    height: 60px;
 }
 
 .techave-logo img {
@@ -128,6 +174,20 @@ section {
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
+}
+
+/* 모바일 메인 컨텐츠 최적화 */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+        border-radius: 6px;
+    }
+    
+    section {
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+    }
 }
 
 section h3 {
@@ -173,12 +233,30 @@ section h3 {
 @media (max-width: 900px) {
     .main-flex {
         flex-direction: column;
+        gap: 20px;
     }
     .calendar-panel {
         order: 1;
     }
     .form-panel {
         order: 2;
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* 모바일 레이아웃 최적화 */
+@media (max-width: 768px) {
+    .main-flex {
+        gap: 15px;
+    }
+    
+    .form-panel {
+        min-width: auto;
+    }
+    
+    .calendar-panel {
+        min-width: auto;
     }
 }
 
@@ -237,6 +315,23 @@ section h3 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 15px;
+}
+
+/* 모바일 그리드 최적화 */
+@media (max-width: 768px) {
+    .monthly-details-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .detail-item {
+        padding: 12px 15px;
+        font-size: 14px;
+    }
+    
+    .detail-item strong {
+        font-size: 14px;
+    }
 }
 
 .detail-item {
@@ -299,3 +394,79 @@ section h3 {
     display: flex;
     gap: 10px;
 }
+
+/* 추가 클래스들 */
+.section-title {
+    display: inline;
+    vertical-align: middle;
+}
+
+.copy-prev-month-btn {
+    background: #43a047;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.copy-prev-month-btn:hover {
+    background: #388e3c;
+}
+
+/* 모바일 섹션 액션 최적화 */
+@media (max-width: 768px) {
+    .section-actions {
+        gap: 8px;
+    }
+    
+    .copy-prev-month-btn {
+        padding: 4px 6px;
+        font-size: 12px;
+        margin-left: 6px;
+    }
+}
+
+/* 숨김 요소들 */
+.modal, .modal-overlay {
+  display: none !important;
+}
+.modal.show, .modal-overlay.show {
+  display: flex !important;
+}
+
+.form-warning {
+    display: none;
+}
+
+.form-warning.show {
+    display: flex;
+}
+
+.disabled-message {
+    display: none;
+}
+
+.disabled-message.show {
+    display: block;
+}
+
+.email-status-message {
+    display: none;
+}
+
+.email-status-message.show {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .password-change-button span,
+    .logout-button span {
+        display: none;
+    }
+}
+
+    

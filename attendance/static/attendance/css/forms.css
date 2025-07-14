@@ -9,6 +9,7 @@
  * - 비활성화 메시지
  */
 
+.form-warning { display: none; }
 /* Daily Entry Form */
 .attendance-entry .form-group, .attendance-entry .form-group-full {
     display: flex;
@@ -32,6 +33,61 @@
     gap: 20px;
 }
 
+/* 모바일 폼 그리드 최적화 */
+@media (max-width: 768px) {
+    .attendance-entry .daily-form-grid {
+        width: auto;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .form-control {
+        font-size: 16px; /* iOS에서 확대 방지 */
+        padding: 12px;
+        min-height: 44px;
+    }
+    
+    .date-input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .date-full {
+        width: 100%;
+        font-size: 1.2em;
+    }
+
+    /* 등록 폼 인풋/셀렉트/버튼 통일 */
+    .form-control, .btn-primary, .btn-normal {
+     width: 100%;
+     max-width: 300px;
+     font-size: 1rem;
+     box-sizing: border-box;
+     margin-bottom: 8px;
+    }
+
+    /* 날짜/버튼 정렬 개선 */
+    .date-input-group, .form-actions {
+     display: flex;
+     align-items: center;
+     gap: 8px;
+    }
+
+    .date-input-group {
+        flex-direction: row;   /* ← 세로(column)에서 가로(row)로 변경 */
+        gap: 8px;
+    }
+    .date-full {
+        width: 100px;          /* 필요시 날짜 영역 너비 조정 */
+        font-size: 1.2em;
+    }
+    .day-arrow {
+        min-width: 60px;       /* 버튼 크기 조정 (선택) */
+        font-size: 0.95em;
+    }
+}
+
 /* Modal Form Controls */
 .modal-body .form-control {
     width: 100%;
@@ -47,7 +103,7 @@
     margin-top: 20px;
 }
 
-/* Date Input Group */
+/* 날짜 입력 그룹 및 네비게이션 버튼 정렬 */
 .date-input-group {
     display: flex;
     align-items: center;
@@ -62,8 +118,37 @@
     color: #005A9C;
     text-align: center;
 }
+
 #day-display {
     margin-left: 0;
+}
+
+.day-arrow {
+    background: #fff;
+    color: #1976d2;
+    border: 1.2px solid #1976d2;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: normal;
+    height: 30px;
+    min-width: 70px;
+    padding: 0 12px;
+    margin: 0 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border 0.15s;
+    box-shadow: 0 1px 2px rgba(25, 118, 210, 0.04);
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.day-arrow:hover,
+.day-arrow:focus {
+    background: #e3f2fd;
+    color: #1565c0;
+    border-color: #1565c0;
 }
 
 /* 근태 등록 섹션 비활성화 스타일 */
@@ -115,34 +200,7 @@
     color: #f39c12;
 }
 
-.day-arrow {
-    background: #fff;
-    color: #1976d2;
-    border: 1.2px solid #1976d2;
-    border-radius: 6px;
-    font-size: 0.75em;
-    font-weight: normal;
-    height: 30px;
-    min-width: 70px;
-    padding: 0 12px;
-    margin: 0 2px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border 0.15s;
-    box-shadow: 0 1px 2px rgba(25, 118, 210, 0.04);
-    outline: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-.day-arrow:hover, .day-arrow:focus {
-    background: #e3f2fd;
-    color: #1565c0;
-    border-color: #1565c0;
-}
-
 .form-warning {
-    display: flex;
     align-items: center;
     background: #fff4f4;
     color: #d32f2f;

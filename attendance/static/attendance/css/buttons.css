@@ -208,10 +208,11 @@ button:hover {
 
 /* 모바일 터치 최적화 */
 @media (max-width: 768px) {
-    .btn-normal {
-        padding: 12px 20px;
+    #normal-hours-btn {
+        padding: 3px 3px;
         font-size: 16px;
-        min-height: 44px; /* 터치 최소 크기 */
+        min-height: 12px;
+        max-width: 30%;
     }
     
     .day-arrow {
@@ -225,6 +226,67 @@ button:hover {
         min-width: 44px;
         font-size: 20px;
     }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-edit,
+    .btn-add {
+        padding: 12px 20px;
+        font-size: 16px;
+        min-height: 20px;
+    }
+    
+    .close-button {
+        font-size: 24px;
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .toggle-btn {
+        min-height: 36px;
+        padding: 4px 12px;
+        font-size: 14px;
+    }
+    
+    .month-grid button {
+        padding: 12px 8px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+    
+    .pdf-controls button {
+        padding: 10px 16px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+    
+    #email-send-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+    
+    .file-type-buttons .btn-primary {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+
+    .current-month {
+        font-size: 22px;
+        font-weight: bold;
+        color: #333;
+        margin: 0 20px;
+        cursor: pointer;
+        padding: 10px 15px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+        user-select: none;
+    }
+    
 }
 
 .btn-normal:disabled {
