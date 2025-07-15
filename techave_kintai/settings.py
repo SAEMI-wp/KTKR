@@ -162,7 +162,7 @@ CACHES = {
     }
 }
 
-# 캐시 백엔드로 세션 저장
+# キャッシュバックエンドでセッション保存
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
 
