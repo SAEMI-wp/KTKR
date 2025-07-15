@@ -1,3 +1,21 @@
+<!--
+社内勤怠管理システム メインページ (attendance/templates/attendance/main.html)
+目的: 従業員の日次勤怠登録・月次勤怠確認・レポート機能を提供するメイン画面
+入出力:
+  入力: 従業員ログイン情報、日次勤怠データ(開始時刻・終了時刻・勤務区分)
+  出力: カレンダー表示、月次集計、PDF/Excelレポート、メール送信
+製作者: 権 セミ
+作成日時: 2025.07.
+
+主要構成:
+- ヘッダー:         ロゴ、ユーザー情報、ログアウト/パスワード変更ボタン
+- フォームパネル:   日次勤怠登録フォーム(勤務区分、開始時刻、終了時刻)
+- カレンダーパネル: 月次カレンダー表示、勤怠記録確認
+- リスト表示:      月次勤怠データ一覧表示
+- 月次集計:        勤務時間、残業時間、有給休暇等の月次統計
+- レポート機能:    PDF印刷、Excel出力、メール送信
+- タブ切り替え:    カレンダー表示 ↔ リスト表示
+-->
 {% load static %}
 {% load attendance_extras %}
 <!DOCTYPE html>
@@ -7,7 +25,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techave 勤怠管理</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Modular CSS files (attendance/static/attendance/css/) -->
     <link rel="stylesheet" href="{% static 'attendance/css/base.css' %}">
     <link rel="stylesheet" href="{% static 'attendance/css/calendar.css' %}">
     <link rel="stylesheet" href="{% static 'attendance/css/list.css' %}">
@@ -19,16 +36,22 @@
     <link rel="icon" href="{% static 'attendance/favicon.ico' %}">
     <script>
       var csrfToken = '{{ csrf_token }}';
-      // API 공휴일 데이터를 window 객체에 할당
-      window.apiHolidays = {{ api_holidays_json|default:'{}'|safe }};
+      window.apiHolidays = {{ api_holidays_json|default:'{}'|safe }};  // 日本の祝日 API（昨年-今年-来年）
     </script>
 </head>
 <body>
     <div class="container">
-        <!-- 해더 섹션 -->
+        <!-- ヘッダー·セクション-->
+        <!-- 
+        [ header-left ]
+        会社のロゴ：クリックすると現在の日付に移動
+        [ header-right ]
+        社員情報：氏名(display_name)、 社員番号
+        パスワード変更・ログアウトの釦：
+        -->        
         <header class="header">
             <div class="header-left">
-                <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo"> <!-- 로고 클릭 시 현재 월로 이동 -->
+                <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo">
             </div>
             <div class="header-right">
                 <div class="user-info">
@@ -36,22 +59,29 @@
                     <span>
                         {% if user.display_name %}
                             {{ user.display_name }} ({{ user.employee_no }})
-                        {% elif user.employee_no %}
-                            {{ user.employee_no }}
                         {% else %}
                             &nbsp;
                         {% endif %}
-                    </span> <!-- 로그인한 사용자 정보 -->
+                    </span> 
                 </div>
                 <a href="{% url 'attendance:password_change' %}" class="password-change-button"><i class="fa-solid fa-key"></i><span>パスワード変更</span></a>
                 <a href="{% url 'attendance:logout' %}" class="logout-button"><i class="fa-solid fa-right-from-bracket"></i><span>ログアウト</span></a>
             </div>
         </header>
 
+        <!-- メイン -->
+        <!--
+        [ aside form-panel ]
+        日々の勤怠登録：
+        [ aside form-panel ]
+
+        -->   
         <main class="main-content">
             <div class="main-flex">
                 <aside class="form-panel">
+                    <!-- 日々の勤怠登録セクション -->
                     <section class="attendance-entry">
+                        <!-- -->
                         <div class="entry-header">
                             <h3 id="daily-entry-title">勤怠登録</h3>
                             <button id="normal-hours-btn" class="btn-normal" title="通常勤務時間を設定" 
@@ -60,7 +90,7 @@
                                 <i class="fa-solid fa-clock"></i> 通常
                             </button>
                         </div>
-                        <!-- 일별 근태 입력 폼 -->
+                        <!-- 入力フォーム -->
                         <form id="daily-entry-form" action="{% url 'attendance:daily_update' %}" method="POST">
                             {% csrf_token %}
                             <div class="daily-form-grid">
@@ -104,10 +134,13 @@
                                 </div>
                             </div>
                         </form>
+                        <!-- 警告文ボックス -->
                         <div class="disabled-message">
                             <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
                         </div>
                     </section>
+
+                    <!-- メール送信 -->
                     <section class="email-section">
                         <h3>メール送信</h3>
                         <form id="email-send-form" class="email-form" autocomplete="off" method="post">
@@ -139,6 +172,8 @@
                         </div>
                     </section>
                 </aside>
+
+                <!--  -->
                 <section class="calendar-panel">
                     <div class="date-selector">
                         <button id="prev-month-btn" class="nav-button"><i class="fa-solid fa-chevron-left"></i></button>
@@ -148,22 +183,25 @@
                             <i class="fa-solid fa-print"></i>
                         </button>
                     </div>
-                    <!-- 월情報セクションのトグルボタン（단독 +） -->
-                    <button id="show-monthly-info-btn" class="toggle-btn green" title="月情報を表示">
+
+                    <!-- トグル(月情報`を閲覧) -->
+                    <button id="show-monthly-info-btn" class="toggle-btn green" title="月情報を閲覧">
                         <i class="fa-solid fa-plus"></i>
                         <span>詳細表示</span>
                     </button>
-                    <!-- 월情報セクションのトグルボタン（단독 -） -->
+                    <!-- トグル(月情報`を隠す) -->
                     <button id="hide-monthly-info-btn" class="toggle-btn red" title="月情報を隠す" style="display:none;">
                         <i class="fa-solid fa-minus"></i>
                         <span>閉じる</span>
                     </button>
-                    <!-- 월정보가 없을 때만 표시 -->
+                    <!-- 月情報がないときにのみ表示 -->
                     {% if not monthly_data and prev_monthly_data %}
                     <button id="copy-prev-month-btn" class="copy-prev-month-btn">
                     前月複写
                     </button>
                     {% endif %}
+
+                    <!-- 月情報セクション -->
                     <section class="monthly-info" id="monthly-info-section">
                         <div class="section-header">
                             <h3 class="section-title">月情報</h3>
@@ -333,11 +371,18 @@
             </div>
         </main>
 
+        <!--  -->
+        <!-- 構成要素 :
+        著作権表示
+        -->   
         <footer class="footer">
             <p>Copyright © 2025 TechAve Co.,LTD. All Rights Reserved</p>
         </footer>
 
-        <!-- Year/Month Picker Modal -->
+        <!--  -->
+        <!-- 構成要素 :
+        著作権表示
+        --> 
         <div id="year-month-picker-modal" class="modal-overlay">
             <div class="modal-content picker-content">
                 <div class="modal-header">
