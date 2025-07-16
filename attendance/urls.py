@@ -6,6 +6,7 @@ from .views import (
     login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView #, signup_view
 )
 from .views import attendance_require_day
+from .views.utility_views import email_candidates
 
 
 app_name = 'attendance'
@@ -28,7 +29,7 @@ urlpatterns = [
     path('copy_prev_month/', copy_prev_month, name='copy_prev_month'),
     path('daily/approve/', DailyApproveView.as_view(), name='daily_approve'),
     path('attendance/require_day/', attendance_require_day, name='attendance_require_day'),
-
+    path('api/email_candidates/', email_candidates, name='email_candidates'),  # 推奨メール受信者API
 ]
 
 # 개발 환경에서 static 파일 서빙
