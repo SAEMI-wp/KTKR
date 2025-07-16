@@ -1,3 +1,5 @@
+
+
 function fetchWithCsrf(url, options = {}) {
     // CSRF 토큰을 input[name=csrfmiddlewaretoken]에서 가져옴
     const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -20,14 +22,16 @@ $.ajaxSetup({
     headers: { "X-CSRFToken": csrfToken }
 });
 
-console.log('main.js 열려라 참깨 콩떡!');
-console.log('print-preview-btn:', document.getElementById('print-preview-btn'));
-console.log('close-pdf-modal-btn:', document.getElementById('close-pdf-modal-btn'));
-console.log('print-pdf-btn:', document.getElementById('print-pdf-btn'));
-console.log('download-pdf-btn:', document.getElementById('download-pdf-btn'));
-console.log('download-excel-btn:', document.getElementById('download-excel-btn'));
-console.log('pdf-iframe:', document.getElementById('pdf-iframe'));
-console.log('pdf-preview-modal:', document.getElementById('pdf-preview-modal'));
+
+
+// console.log('main.js 열려라 참깨 콩떡!');
+// console.log('print-preview-btn:', document.getElementById('print-preview-btn'));
+// console.log('close-pdf-modal-btn:', document.getElementById('close-pdf-modal-btn'));
+// console.log('print-pdf-btn:', document.getElementById('print-pdf-btn'));
+// console.log('download-pdf-btn:', document.getElementById('download-pdf-btn'));
+// console.log('download-excel-btn:', document.getElementById('download-excel-btn'));
+// console.log('pdf-iframe:', document.getElementById('pdf-iframe'));
+// console.log('pdf-preview-modal:', document.getElementById('pdf-preview-modal'));
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Attendance application JavaScript is fully loaded.");
@@ -119,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = document.getElementById('current-month-display').dataset.month;
         showEmailStatus('送信中...', false);
         try {
-            const response = await fetch('/attendance/email/send/', {
+            const response = await fetchWithCsrf('/attendance/email/send/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,6 +163,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // === 유급(有給) 여부 및 폼 상태 동기화 함수: 어디서든 사용 가능하게 최상단에 선언 ===
+    function isPaidLeave(workType) {
+        return workType === '有給';
+    }
+    function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalHoursBtn) {
+        if (!startTimeInput || !endTimeInput || !normalHoursBtn) return;
+        if (isPaidLeave(workType)) {
+            startTimeInput.value = '00:00';
+            endTimeInput.value = '00:00';
+            startTimeInput.readOnly = true;
+            endTimeInput.readOnly = true;
+            normalHoursBtn.disabled = true;
+        } else {
+            startTimeInput.readOnly = false;
+            endTimeInput.readOnly = false;
+            normalHoursBtn.disabled = false;
+        }
+    }
+
     // ===================================================================
     //  UTILITY FUNCTIONS
     // ===================================================================
@@ -189,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = url;
     }
 
+    
     /**
      * 日別勤怠データをフォームに表示
      * @param {string} date - 'YYYY-MM-DD'形式の日付
@@ -207,11 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithCsrf(`/daily/get/?date=${date}`);
             if (!response.ok) {
+                console.error('fetchWithCsrf response not ok:', response.status, response.statusText);
                 throw new Error('日次データの取得に失敗しました。');
             }
             const data = await response.json();
+            console.log('Fetched data:', data);
             
             const form = document.getElementById('daily-entry-form');
+            if (!form) {
+                console.error('daily-entry-form not found');
+                return;
+            }
             
             // 日付から日(day)を抽出して設定
             const dateObj = new Date(date);
@@ -247,9 +277,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // 승인/대기/완료 상태에 따라 폼 비활성화
             handleDailyFormLock(data.record);
+            // work_type에 따라 버튼/readonly 상태 동기화
+            const workTypeField = form.querySelector('[name="work_type"]');
+            const startTimeField = form.querySelector('[name="start_time"]');
+            const endTimeField = form.querySelector('[name="end_time"]');
+            const normalHoursBtn = document.getElementById('normal-hours-btn');
+            if (workTypeField && startTimeField && endTimeField && normalHoursBtn) {
+                syncFormStateByWorkType(workTypeField.value, startTimeField, endTimeField, normalHoursBtn);
+            }
 
-            // ★ 폼 값 채운 후 원본값 저장!
-            saveOriginalFormData();
         } catch (error) {
             console.error('Populate form error:', error);
             alert('フォームのデータ取得中にエラーが発生しました。');
@@ -393,7 +429,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===================================================================
-    //  CALENDAR INTERACTIONS
+    //  カレンダー日付け選択イベント　
+    //　入力：
+    //　出力： updateDayDisplay(day) = 
+    //　　　　
     // ===================================================================
     if (calendarTable) {
         calendarTable.addEventListener('click', (e) => {
@@ -428,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //  DAILY FORM SUBMISSION
     // ===================================================================
     if (dailyForm) {
-        dailyForm.addEventListener('submit', async (e) => {
+        dailyForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             console.log('Daily form submission started');
             
@@ -444,16 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.querySelector('select[name="work_type"]').focus();
                 return;
             }
-            
-            if (!startTime) {
+            // 유급일 때는 00:00도 허용
+            if (workType !== '有給' && !startTime) {
                 alert('作業開始時刻を入力してください。');
                 form.querySelector('input[name="start_time"]').focus();
-                return;
-            }
-            
-            if (!endTime) {
-                alert('作業終了時刻を入力してください。');
-                form.querySelector('input[name="end_time"]').focus();
                 return;
             }
             
@@ -464,6 +497,12 @@ document.addEventListener('DOMContentLoaded', () => {
             data.year = currentYear;
             data.month = currentMonth;
             
+            // ★ 마지막 선택한 날짜를 localStorage에 저장
+            if (dayInputHidden && dayInputHidden.value) {
+                const lastSelectedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(dayInputHidden.value).padStart(2, '0')}`;
+                localStorage.setItem('lastSelectedDate', lastSelectedDate);
+            }
+
             console.log('Form data to be sent:', data);
         
             try {
@@ -1099,13 +1138,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 화살표 hover 효과
-    const style = document.createElement('style');
-    style.innerHTML = ` 
-        .input-error { border: 2px solid #e53935 !important; }
-        .btn-today:hover { background: #bbdefb; }
-    `;
-    document.head.appendChild(style);
+    // // 화살표 hover 효과
+    // const style = document.createElement('style');
+    // style.innerHTML = ` 
+    //     .input-error { border: 2px solid #e53935 !important; }
+    //     .btn-today:hover { background: #bbdefb; }
+    // `;
+    // document.head.appendChild(style);
 
     function moveDay(delta) {
         if (!dayDisplay || !dayInputHidden) return;
@@ -1205,6 +1244,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ===================================================================
+    //  カレンダー日付け選択イベント
+    //　呼び出し：　
+    //　入力： day = 
+    //　出力：  
+    //　　　　
+    // ===================================================================
     function updateDayDisplay(day) {
         if (dayDisplay) dayDisplay.textContent = day;
         if (dayInputHidden) dayInputHidden.value = day;
@@ -1219,7 +1265,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (td) td.classList.add('selected');
     }
 
-    // 승인/보내기 아이콘 클릭 이벤트
+    // ===================================================================
+    //  承認/送信アイコンクリックイベント　
+    //　入力：
+    //　出力：  
+    //　　　　
+    // ===================================================================
     document.querySelectorAll('.approval-icon').forEach(function(icon) {
         const required = parseInt(icon.dataset.required, 10);
         const confirmed = parseInt(icon.dataset.confirmed, 10);
@@ -1248,10 +1299,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         icon.dataset.required = '1';
                         icon.style.cursor = 'default';
                     } else {
-                        alert(data.message || '전송에 실패했습니다.');
+                        alert(data.message || '転送に失敗しました。');
                     }
                 })
-                .catch(() => alert('네트워크 오류로 전송에 실패했습니다.'));
+                .catch(() => alert('ネットワークエラーのため、送信に失敗しました。'));
             });
         }
     });
@@ -1437,6 +1488,21 @@ document.addEventListener('DOMContentLoaded', () => {
         hideMonthlyInfoBtn.style.display = 'none';
     }
 
+    // 페이지 로드 시 마지막 선택 날짜가 있으면 그 날짜로 표시
+    const lastSelectedDate = localStorage.getItem('lastSelectedDate');
+    if (lastSelectedDate) {
+        populateDailyForm(lastSelectedDate);
+        const dateObj = new Date(lastSelectedDate);
+        updateDayDisplay(dateObj.getDate());
+    } else {
+        // 오늘 날짜가 이번 달에 포함되어 있으면 자동 선택
+        if (currentYear === thisYear && currentMonth === thisMonth) {
+            populateDailyForm(todayStr);
+            updateDayDisplay(today.getDate());
+            // 캘린더 셀 하이라이트도 자동 적용됨
+        }
+    }
+
     // monthly_data가 있는지 체크 (템플릿에서 JS 변수로 넘겨주면 더 좋음)
     var hasMonthlyData = !!document.getElementById('list-tab'); // list-tab이 있으면 monthly_data 있음
 
@@ -1460,5 +1526,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ===================== 勤務区分「有給」 선택 시 시간 자동/비활성화 =====================
+    if (dailyForm) {
+        const workTypeSelect = dailyForm.querySelector('[name="work_type"]');
+        const startTimeInput = dailyForm.querySelector('[name="start_time"]');
+        const endTimeInput = dailyForm.querySelector('[name="end_time"]');
+        const normalHoursBtn = document.getElementById('normal-hours-btn');
 
+        function handleWorkTypeChange() {
+            syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+        }
+        workTypeSelect && workTypeSelect.addEventListener('change', handleWorkTypeChange);
+        // 페이지 로드 시에도 상태 반영
+        syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+    }
 }); 
