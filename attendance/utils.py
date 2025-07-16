@@ -151,10 +151,14 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
 
     # 첨부파일 처리
     if attachment and attachment_filename:
+        import urllib.parse  # 日本語ファイル名のエンコード用
         part = MIMEBase('application', 'octet-stream')
         part.set_payload(attachment)
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename="{attachment_filename}"')
+        # 日本語ファイル名対応: filename* も追加
+        encoded_filename = urllib.parse.quote(attachment_filename)
+        content_disp = f'attachment; filename="{attachment_filename}"; filename*=UTF-8''{encoded_filename}'
+        part.add_header('Content-Disposition', content_disp)
         if mime_type:
             part.add_header('Content-Type', mime_type)
         msg.attach(part)
