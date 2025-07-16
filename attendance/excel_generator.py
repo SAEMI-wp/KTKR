@@ -6,6 +6,8 @@ from .models import AttendanceMonthly, AttendanceDaily
 from .utils import get_or_create_monthly_structure
 from calendar import monthrange
 import calendar
+import tkinter as tk
+from tkinter import ttk
 
 # 스타일 상수 정의
 class ExcelStyles:
@@ -80,7 +82,7 @@ class ExcelReportGenerator:
             self._add_table_borders()
             
             # 4단계: 시트 보호 설정
-            self._apply_sheet_protection()
+            # self._apply_sheet_protection()
             
             # 5단계: 세로 중앙 정렬 적용
             self._apply_vertical_center()
@@ -499,14 +501,14 @@ class ExcelReportGenerator:
         for row, height in row_heights.items():
             self.worksheet.row_dimensions[row].height = height
 
-    def _apply_sheet_protection(self):
-        """시트 보호를 설정합니다."""
-        self.worksheet.protection.sheet = True
-        for row in range(1, 47):
-            for col in range(1, 17):
-                self.worksheet.cell(row=row, column=col).protection = Protection(locked=False)
-        self.worksheet.row_dimensions[43].height = 18
-        self.worksheet.row_dimensions[44].height = 30
+    # def _apply_sheet_protection(self):
+    #     """시트 보호를 설정합니다."""
+    #     self.worksheet.protection.sheet = True
+    #     for row in range(1, 47):
+    #         for col in range(1, 17):
+    #             self.worksheet.cell(row=row, column=col).protection = Protection(locked=False)
+    #     self.worksheet.row_dimensions[43].height = 18
+    #     self.worksheet.row_dimensions[44].height = 30
 
     def _add_table_borders(self, start_row=11, end_row=42):
         """테이블 테두리를 openpyxl 권장 방식에 따라 명확하고 단계적으로 추가합니다."""
