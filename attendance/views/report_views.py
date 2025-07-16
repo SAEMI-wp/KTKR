@@ -141,23 +141,31 @@ class EmailSendView(View):
             # 발신자 이메일 설정 (폼에서 입력받은 값 우선, 없으면 사원 이메일, 없으면 기본값)
             from_email = email_host_user if email_host_user else (request.user.email if request.user.email else settings.EMAIL_HOST_USER)
             
-            email = EmailMessage(
-                subject=subject,
-                body=body,
-                from_email=from_email,
-                to=[email_to],
-            )
-
+            print('send_mail_dynamic 호출 전', flush=True)
+            # 첨부파일 데이터 준비
             if file_type == 'pdf':
                 filename = f"{year}_{month}_稼働報告書_{employee_name}.pdf"
-                email.attach(filename, file_buffer.getvalue(), mime_type)
+                attachment_data = file_buffer.getvalue()
             else:
                 filename = f"{year}_{month}_稼働報告書_{employee_name}.xlsx"
                 file_buffer.seek(0)
-                email.attach(filename, file_buffer.read(), mime_type)
-            
-            # 이메일 전송
-            email.send(fail_silently=False)
+                attachment_data = file_buffer.read()
+
+            # send_mail_dynamic 함수 호출 (utils에서 import 필요)
+            from attendance.utils import send_mail_dynamic
+            try:
+                send_mail_dynamic(
+                    user=from_email,
+                    password=email_host_password,
+                    to_email=email_to,
+                    subject=subject,
+                    body=body,
+                    attachment=attachment_data,
+                    attachment_filename=filename,
+                    mime_type=mime_type
+                )
+            except Exception as e:
+                raise
             # 임시파일 정리
             if file_type == 'excel':
                 import os
