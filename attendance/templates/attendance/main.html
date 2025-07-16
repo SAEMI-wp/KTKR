@@ -262,7 +262,15 @@
                                                         <div class="cell-header">
                                                             <span class="date-number">{{ day.date.day }}</span>
                                                         </div>
-                                                        <div class="record-time">{% if day.record and day.record.start_time and day.record.end_time %}{{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}{% endif %}</div>
+                                                        <div class="record-time">
+                                                            {% if day.record %}
+                                                                {% if day.record.work_type == '有給' %}
+                                                                    <span class="record-time">有給</span>
+                                                                {% elif day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
+                                                                    {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </div>
                                                         <div class="cell-footer">
                                                             <!-- <span class="approval-icon"
                                                                   data-required="{{ day.record.is_required|default:0 }}"
@@ -313,7 +321,11 @@
                                                 </td>
                                                 <td>
                                                     {% if day.record %}
-                                                        {{ day.record.work_type|default:"-" }}
+                                                        {% if day.record.work_type == '出勤' %}
+                                                            &nbsp;
+                                                        {% else %}
+                                                            {{ day.record.work_type|default:"" }}
+                                                        {% endif %}
                                                     {% elif day.is_api_holiday %}
                                                         祝日
                                                     {% elif day.is_sunday %}
@@ -321,12 +333,12 @@
                                                     {% elif day.is_saturday %}
                                                         休日
                                                     {% else %}
-                                                        -
+                                                        &nbsp;
                                                     {% endif %}
                                                 </td>
-                                                <td>{% if day.record %}{{ day.record.start_time|time:"H:i"|default:"-" }}{% else %}-{% endif %}</td>
-                                                <td>{% if day.record %}{{ day.record.end_time|time:"H:i"|default:"-" }}{% else %}-{% endif %}</td>
-                                                <td>{% if day.record %}{{ day.record.alternative_work_date|date:"n/j"|default:"-" }}{% else %}-{% endif %}</td>
+                                                <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.start_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.end_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.alternative_work_date|date:"n/j"|default:"" }}{% else %}&nbsp;{% endif %}</td>
                                                 <td class="notes-cell">
                                                     {% if day.record %}
                                                         <div class="notes-content">
@@ -334,7 +346,7 @@
                                                             <button class="delete-daily-btn" data-date="{{ day.date|date:'Y-m-d' }}" title="削除">×</button>
                                                         </div>
                                                     {% else %}
-                                                        -
+                                                        &nbsp;
                                                     {% endif %}
                                                 </td>
                                                 {# 日々承認 셀 #}
@@ -473,7 +485,7 @@
             </div>
         </div>
 
-        <!-- PDF Preview Modal -->
+        <!-- PDFプレビューモーダル -->
         <div id="pdf-preview-modal" class="modal-overlay">
             <div class="modal-content pdf-modal-content">
                 <div class="modal-header">
