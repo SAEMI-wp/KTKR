@@ -1540,4 +1540,84 @@ document.addEventListener('DOMContentLoaded', () => {
         // 페이지 로드 시에도 상태 반영
         syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
     }
+
+    // ===================== アプリパスワード収得方法ヘルプ =====================
+    const appPasswordHelpIcon = document.getElementById('app-password-help-icon');
+    const appPasswordTooltip = document.getElementById('app-password-tooltip');
+    if (appPasswordHelpIcon && appPasswordTooltip) {
+        // ヘルプアイコンをクリックでツールチップを必ず表示（トグルしない）
+        appPasswordHelpIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // 位置調整（?アイコンの右隣・同じ高さに表示）
+            appPasswordTooltip.style.top = appPasswordHelpIcon.offsetTop + 'px';
+            appPasswordTooltip.style.left = (appPasswordHelpIcon.offsetLeft + appPasswordHelpIcon.offsetWidth + 8) + 'px';
+            appPasswordTooltip.style.display = 'block';
+        });
+        // フォーカスでも開く
+        appPasswordHelpIcon.addEventListener('focus', function(e) {
+            appPasswordTooltip.style.display = 'block';
+        });
+        // Xボタンで閉じる
+        const tooltipCloseBtn = document.getElementById('app-password-tooltip-close');
+        if (tooltipCloseBtn) {
+            tooltipCloseBtn.addEventListener('click', function(e) {
+                appPasswordTooltip.style.display = 'none';
+            });
+        }
+        // 外部クリックでツールチップを閉じる
+        document.addEventListener('mousedown', function(e) {
+            if (appPasswordTooltip.style.display === 'block') {
+                if (!appPasswordTooltip.contains(e.target) && !appPasswordHelpIcon.contains(e.target)) {
+                    appPasswordTooltip.style.display = 'none';
+                }
+            }
+        });
+        // Escキーで閉じる
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                appPasswordTooltip.style.display = 'none';
+            }
+        });
+        // ツールチップ内リンクは新しいタブで開く（aタグ에 이미 target=_blank 있음)
+    }
+
+    // ===================== 受信者メール セレクト+直接入力ロジック =====================
+    const emailToSelect = document.getElementById('email-to-select');
+    if (emailToSelect && emailInput) {
+        let candidatesLoaded = false;
+        emailToSelect.addEventListener('focus', function() {
+            if (candidatesLoaded) return;
+            fetch('/attendance/api/email_candidates/', { credentials: 'same-origin' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.candidates) {
+                        // 既存の候補をクリア（直接入力以外）
+                        for (let i = emailToSelect.options.length - 1; i >= 0; i--) {
+                            if (emailToSelect.options[i].value !== '__manual__' && emailToSelect.options[i].value !== '') {
+                                emailToSelect.remove(i);
+                            }
+                        }
+                        data.candidates.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.email;
+                            opt.textContent = `${c.display_name} (${c.email})`;
+                            emailToSelect.appendChild(opt);
+                        });
+                        candidatesLoaded = true;
+                    }
+                });
+        });
+        emailToSelect.addEventListener('change', function() {
+            if (emailToSelect.value === '__manual__') {
+                emailInput.value = '';
+                emailInput.readOnly = false;
+                emailInput.style.display = 'block';
+                emailInput.focus();
+            } else {
+                emailInput.value = emailToSelect.value;
+                emailInput.readOnly = true;
+                emailInput.style.display = 'none';
+            }
+        });
+    }
 }); 
