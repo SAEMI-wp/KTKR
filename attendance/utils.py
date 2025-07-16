@@ -2,6 +2,7 @@ from typing import List, Optional
 from datetime import date, time
 from .models import Employee, AttendanceMonthly, AttendanceDaily
 from .structures import DailyData, MonthlyData
+import os
 
 def convert_daily_to_structure(daily_model: AttendanceDaily, 
                               break_minutes: int = 60,
@@ -132,3 +133,41 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         save_daily_from_structure(daily_data, monthly_model)
     
     return monthly_model 
+
+def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, attachment_filename=None, mime_type=None):
+    user = user.strip()
+    password = password.strip()
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email import encoders
+
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+    msg['From'] = user
+    msg['To'] = to_email
+    msg.attach(MIMEText(body, 'plain'))
+
+    # 첨부파일 처리
+    if attachment and attachment_filename:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(attachment)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{attachment_filename}"')
+        if mime_type:
+            part.add_header('Content-Type', mime_type)
+        msg.attach(part)
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            print('login user:', repr(user))
+            server.login(user, password)
+            server.sendmail(user, [to_email], msg.as_string())
+            print('메일 전송 성공', flush=True)
+    except Exception as e:
+        print('메일 전송 실패:', e, flush=True)
+        raise 
