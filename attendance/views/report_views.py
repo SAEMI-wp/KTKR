@@ -29,8 +29,8 @@ class ExcelDownloadView(View):
             generator = ExcelReportGenerator(request.user, int(year), int(month))
             workbook = generator.generate_report()
             
-            # employee_name을 '이름_사원번호' 형식으로 설정
-            employee_name = f"{request.user.display_name}({request.user.employee_no})"
+            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
+            employee_name = f"{request.user.display_name}_{request.user.employee_no}"
             filename = f"{year}_{month}_稼動報告書_{employee_name}.xlsx"
             
             # レスポンスを作成
@@ -69,7 +69,7 @@ class PDFPreviewView(View):
             generator = PDFReportGenerator(request.user, int(year), int(month))
             pdf_buffer = generator.generate_pdf()
             
-            # employee_name을 '이름_사원번호' 형식으로 설정
+            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
             employee_name = f"{request.user.display_name}({request.user.employee_no})"
             filename = f"{year}_{month}_稼動報告書_{employee_name}.pdf"
             
@@ -101,7 +101,7 @@ class PDFPreviewView(View):
 class EmailSendView(View):
     def post(self, request, *args, **kwargs):
         import json
-        employee_name = f"{request.user.display_name}({request.user.employee_no})"
+        employee_name = f"{request.user.display_name}_{request.user.employee_no}"
         try:
             data = json.loads(request.body)
             email_to = data.get('email')
@@ -136,18 +136,21 @@ class EmailSendView(View):
                 return JsonResponse({'status': 'error', 'message': 'ファイル種別が不正です。'})
             # 메일 전송
             subject = f"[{employee_name}]{year}年{month}月 稼働報告書"
-            body = f"{year}年{month}月の稼働報告書を添付します。"
+            # メール本文を指定フォーマットで作成
+            body = f"""===========================\n提出者：{request.user.display_name}({request.user.employee_no})\n期間：{year}年{int(month):d}月\n添付：稼働報告書\n\nいつもお世話になっております。{int(month):d}月稼働報告書を提出します。\n==========================="""
             
             # 발신자 이메일 설정 (폼에서 입력받은 값 우선, 없으면 사원 이메일, 없으면 기본값)
             from_email = email_host_user if email_host_user else (request.user.email if request.user.email else settings.EMAIL_HOST_USER)
             
             print('send_mail_dynamic 호출 전', flush=True)
+            month_str = f"{int(month):02d}"
             # 첨부파일 데이터 준비
             if file_type == 'pdf':
-                filename = f"{year}_{month}_稼働報告書_{employee_name}.pdf"
+                # 月を必ず2桁で表示（ゼロ埋め）
+                filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.pdf"
                 attachment_data = file_buffer.getvalue()
             else:
-                filename = f"{year}_{month}_稼働報告書_{employee_name}.xlsx"
+                filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.xlsx"
                 file_buffer.seek(0)
                 attachment_data = file_buffer.read()
 

@@ -1,9 +1,12 @@
 # 유틸리티 기능 관련 뷰들
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET
 from django.http import JsonResponse, HttpResponseBadRequest
+from django.db import models
 
 from ..models import AttendanceMonthly
+from ..models import Employee
 
 
 # 전월 복사 기능
@@ -57,4 +60,24 @@ def copy_prev_month(request):
     )
     new_obj.save()
 
-    return JsonResponse({'result': 'ok'}) 
+    return JsonResponse({'result': 'ok'})
+
+# 推奨メール受信者リストAPI
+@require_GET
+@login_required
+def email_candidates(request):
+    user = request.user
+    # place_workが同じ、または特定の社員番号
+    candidates = Employee.objects.filter(
+        models.Q(place_work=user.place_work) |
+        models.Q(employee_no__in=["100001", "500195"])
+    ).exclude(email="").distinct()
+    data = [
+        {
+            "employee_no": c.employee_no,
+            "display_name": c.display_name,
+            "email": c.email
+        }
+        for c in candidates
+    ]
+    return JsonResponse({"candidates": data}) 
