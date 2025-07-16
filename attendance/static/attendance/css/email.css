@@ -70,6 +70,113 @@
     border: none;
 }
 
+/* アプリパスワード収得方法のヘルプアイコン */
+.app-password-help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    color: #1976d2;
+    font-size: 1.1em;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: color 0.15s;
+}
+.app-password-help-icon:hover,
+.app-password-help-icon:focus {
+    color: #f57c00;
+}
+
+/* アプリパスワード収得方法のツールチップ */
+.app-password-tooltip {
+    position: absolute;
+    left: 120px; /* ラベルの右側に表示 */
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #1976d2;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(25,118,210,0.10);
+    padding: 14px 18px 12px 18px;
+    min-width: 220px;
+    max-width: 270px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: normal;
+    box-sizing: border-box;
+    animation: fadeIn 0.18s;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.app-password-tooltip .tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.app-password-tooltip .tooltip-title {
+    font-weight: bold;
+    color: #1976d2;
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+.app-password-tooltip .tooltip-steps {
+    margin: 0 0 4px 18px;
+    padding: 0;
+    font-size: 13px;
+}
+.app-password-tooltip .tooltip-link {
+    color: #f57c00;
+    text-decoration: underline;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 2px;
+}
+.app-password-tooltip .tooltip-link:hover {
+    color: #1976d2;
+}
+
+/* ツールチップの三角形（吹き出し） */
+.app-password-tooltip::before {
+    content: "";
+    position: absolute;
+    top: 24px; /* 中央付近 */
+    left: -12px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent #1976d2 transparent transparent;
+}
+
+/* ツールチップの閉じる(X)ボタン */
+.tooltip-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 2;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+.tooltip-close-btn:hover,
+.tooltip-close-btn:focus {
+    color: #f57c00;
+    background: #f5f5f5;
+    border-radius: 50%;
+}
+/* ツールチップ内の相対配置を確保 */
+.app-password-tooltip .tooltip-content {
+    position: relative;
+}
+
+/* レスポンシブ調整 */
 @media (max-width: 600px) {
     .email-section {
         padding: 14px 6px 10px 6px;
@@ -83,6 +190,20 @@
     #email-send-btn {
         width: 100%;
         align-self: stretch;
+    }
+    .app-password-tooltip {
+        left: 0;
+        top: 38px;
+        min-width: 180px;
+        max-width: 95vw;
+        padding: 10px 10px 8px 10px;
+        font-size: 12px;
+    }
+    .app-password-tooltip::before {
+        top: 24px; /* 中央付近 */
+        left: -12px;
+        border-width: 8px;
+        border-color: transparent #1976d2 transparent transparent;
     }
 }
 
