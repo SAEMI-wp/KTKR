@@ -163,13 +163,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === 유급(有給) 여부 및 폼 상태 동기화 함수: 어디서든 사용 가능하게 최상단에 선언 ===
-    function isPaidLeave(workType) {
-        return workType === '有給';
+    // === 休日可否およびフォーム状態同期関数:どこでも使用できるように最上段に宣言 ===
+    function isDayOff(workType) {
+        // 有給、代休(休)、振替(休)を休日として判定
+        return workType === '有給' || workType === '代休(休)' || workType === '振替(休)';
     }
+
+    // 休日判定関数
+    function isHoliday(workType) {
+        return workType === '休日' || workType === '休日(法)' || workType === '祝日';
+    }
+
+    // 休日カテゴリ取得関数
+    function getHolidayCategory(workType) {
+        if (workType === '休日') return '休日';
+        if (workType === '休日(法)') return '休日(法)';
+        if (workType === '祝日') return '祝日';
+        return null;
+    }
+
+    // 勤務区分セレクトオプションをフィルタリング
+    function filterWorkTypeOptions(workType) {
+        const workTypeSelect = document.querySelector('select[name="work_type"]');
+        if (!workTypeSelect) return;
+
+        const holidayCategory = getHolidayCategory(workType);
+        if (!holidayCategory) {
+            // 平日の場合：全オプション表示
+            Array.from(workTypeSelect.options).forEach(option => {
+                option.style.display = '';
+            });
+            return;
+        }
+
+        // 休日の場合：該当休日 + 代休(動) + 振替(動)のみ表示
+        Array.from(workTypeSelect.options).forEach(option => {
+            const value = option.value;
+            const shouldShow = value === holidayCategory || 
+                              value === '代休(動)' || 
+                              value === '振替(動)' ||
+                              value === ''; // 空のオプションは常に表示
+            option.style.display = shouldShow ? '' : 'none';
+        });
+    }
+
     function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalHoursBtn) {
         if (!startTimeInput || !endTimeInput || !normalHoursBtn) return;
-        if (isPaidLeave(workType)) {
+        if (isDayOff(workType)) {
             startTimeInput.value = '00:00';
             endTimeInput.value = '00:00';
             startTimeInput.readOnly = true;
@@ -483,8 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.querySelector('select[name="work_type"]').focus();
                 return;
             }
-            // 유급일 때는 00:00도 허용
-            if (workType !== '有給' && !startTime) {
+            // 休日の場合のみ00:00を許可
+            if (!isDayOff(workType) && !startTime) {
                 alert('作業開始時刻を入力してください。');
                 form.querySelector('input[name="start_time"]').focus();
                 return;
@@ -1456,9 +1496,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 2. workType이 null/undefined/빈문자열/None 등 falsy면 "出勤" 세팅
                 if (workType && workType !== "None") {
                     $workTypeSelect.val(workType).trigger('change');
+                    // 休日の場合はセレクトオプションをフィルタリング
+                    filterWorkTypeOptions(workType);
                     console.log('[DEBUG] workType 세팅:', workType, $workTypeSelect.val());
                 } else {
                     $workTypeSelect.val("出勤").trigger('change');
+                    // 平日の場合は全オプション表示
+                    filterWorkTypeOptions('出勤');
                     console.log('[DEBUG] 出勤 세팅:', $workTypeSelect.val());
                 }
             });
@@ -1535,10 +1579,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function handleWorkTypeChange() {
             syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+            // 勤務区分変更時にもオプションフィルタリング適用
+            filterWorkTypeOptions(workTypeSelect.value);
         }
         workTypeSelect && workTypeSelect.addEventListener('change', handleWorkTypeChange);
-        // 페이지 로드 시에도 상태 반영
+        // ページロード時にも状態反映
         syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+        // ページロード時にもオプションフィルタリング適用
+        filterWorkTypeOptions(workTypeSelect.value);
     }
 
     // ===================== アプリパスワード収得方法ヘルプ =====================
