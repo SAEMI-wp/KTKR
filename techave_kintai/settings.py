@@ -166,4 +166,8 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
 
+#
+SESSION_COOKIE_AGE = 300  #
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 
+
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
