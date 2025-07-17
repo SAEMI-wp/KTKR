@@ -165,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === 休日可否およびフォーム状態同期関数:どこでも使用できるように最上段に宣言 ===
     function isDayOff(workType) {
-        // 有給、代休(休)、振替(休)を休日として判定
         return workType === '有給' || workType === '代休(休)' || workType === '振替(休)';
     }
 
@@ -182,29 +181,52 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
-    // 勤務区分セレクトオプションをフィルタリング
-    function filterWorkTypeOptions(workType) {
+    // 日付文字列(YYYY-MM-DD)から休日種別('休日','休日(法)','祝日')を取得
+    function getHolidayTypeByDate(dateStr) {
+        // DB休日情報
+        let holidaysDb = {};
+        try {
+            holidaysDb = JSON.parse(document.getElementById('holidays-db-data').textContent);
+        } catch (e) {}
+        // API休日情報
+        let apiHolidays = {};
+        try {
+            apiHolidays = window.apiHolidays || {};
+        } catch (e) {}
+        // 祝日API 우선
+        if (apiHolidays[dateStr]) return '祝日';
+        // DB休日
+        if (holidaysDb[dateStr]) return '祝日';
+        // 요일判定
+        const d = new Date(dateStr);
+        if (isNaN(d)) return null;
+        if (d.getDay() === 0) return '休日(法)'; // 일요일
+        if (d.getDay() === 6) return '休日';     // 토요일
+        return null;
+    }
+
+    // 勤務区分セレクトオプションをフィルタリング（dateStr基準）
+    function filterWorkTypeOptionsByDate(dateStr) {
         const workTypeSelect = document.querySelector('select[name="work_type"]');
         if (!workTypeSelect) return;
-
-        const holidayCategory = getHolidayCategory(workType);
-        if (!holidayCategory) {
-            // 平日の場合：全オプション表示
+        const holidayType = getHolidayTypeByDate(dateStr);
+        if (holidayType) {
+            // 休日: 해당 휴일 + 代休(動) + 振替(動)만 표시
             Array.from(workTypeSelect.options).forEach(option => {
-                option.style.display = '';
+                const value = option.value;
+                const shouldShow = value === holidayType || value === '代休(動)' || value === '振替(動)' || value === '';
+                option.style.display = shouldShow ? '' : 'none';
             });
-            return;
+        } else {
+            // 平日: 代休(動), 振替(動), 休日,休日(法),祝日는 모두 숨기고 나머지만 표시
+            Array.from(workTypeSelect.options).forEach(option => {
+                const value = option.value;
+                const isHolidayType = value === '休日' || value === '休日(法)' || value === '祝日';
+                const isDaiQ = value === '代休(動)' || value === '振替(動)';
+                const shouldShow = !isHolidayType && !isDaiQ && value !== '';
+                option.style.display = shouldShow ? '' : 'none';
+            });
         }
-
-        // 休日の場合：該当休日 + 代休(動) + 振替(動)のみ表示
-        Array.from(workTypeSelect.options).forEach(option => {
-            const value = option.value;
-            const shouldShow = value === holidayCategory || 
-                              value === '代休(動)' || 
-                              value === '振替(動)' ||
-                              value === ''; // 空のオプションは常に表示
-            option.style.display = shouldShow ? '' : 'none';
-        });
     }
 
     function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalHoursBtn) {
@@ -219,6 +241,18 @@ document.addEventListener('DOMContentLoaded', () => {
             startTimeInput.readOnly = false;
             endTimeInput.readOnly = false;
             normalHoursBtn.disabled = false;
+        }
+    }
+
+    // 代休/振替の勤務日フィールドの表示制御
+    function toggleAltWorkDateField(workType) {
+        const altGroup = document.getElementById('alt-work-date-group');
+        if (!altGroup) return;
+        const showTypes = ['代休(動)', '振替(動)', '代休(休)', '振替(休)'];
+        if (showTypes.includes(workType)) {
+            altGroup.style.display = '';
+        } else {
+            altGroup.style.display = 'none';
         }
     }
 
@@ -325,7 +359,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (workTypeField && startTimeField && endTimeField && normalHoursBtn) {
                 syncFormStateByWorkType(workTypeField.value, startTimeField, endTimeField, normalHoursBtn);
             }
-
+            // 必ず日付基準でセレクトオプションをフィルタリング
+            filterWorkTypeOptionsByDate(date);
+            // 代休/振替の勤務日フィールド表示制御
+            if (workTypeField) {
+                toggleAltWorkDateField(workTypeField.value);
+            }
         } catch (error) {
             console.error('Populate form error:', error);
             alert('フォームのデータ取得中にエラーが発生しました。');
@@ -1482,27 +1521,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // 캘린더 셀/리스트 행 클릭 시
     $(document).on('click', '.calendar-table td, .attendance-list-row', function() {
         const date = $(this).data('date');
-        const workType = $(this).data('default-work-type');
+        let workType = $(this).data('default-work-type');
         const hasRecord = $(this).data('has-record');
         console.log('[DEBUG] 클릭됨:', {date, workType, hasRecord});
         if (date) {
+            // workType이 비어있으면 날짜 기준으로 휴일종류 자동 세팅
+            if (!workType) {
+                workType = getHolidayTypeByDate(date) || '';
+            }
             populateDailyForm(date).then(() => {
                 const $workTypeSelect = $('select[name="work_type"]');
                 // 1. 데이터가 있으면 아무것도 하지 않음(기존 값 유지)
                 if (hasRecord) {
                     console.log('[DEBUG] 기존 데이터 있음, 勤務区分 유지:', $workTypeSelect.val());
+                    filterWorkTypeOptionsByDate(date); // 옵션 동기화 강제 적용
                     return;
                 }
                 // 2. workType이 null/undefined/빈문자열/None 등 falsy면 "出勤" 세팅
                 if (workType && workType !== "None") {
                     $workTypeSelect.val(workType).trigger('change');
-                    // 休日の場合はセレクトオプションをフィルタリング
-                    filterWorkTypeOptions(workType);
+                    filterWorkTypeOptionsByDate(date);
                     console.log('[DEBUG] workType 세팅:', workType, $workTypeSelect.val());
                 } else {
                     $workTypeSelect.val("出勤").trigger('change');
-                    // 平日の場合は全オプション表示
-                    filterWorkTypeOptions('出勤');
+                    filterWorkTypeOptionsByDate(date);
                     console.log('[DEBUG] 出勤 세팅:', $workTypeSelect.val());
                 }
             });
@@ -1579,14 +1621,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function handleWorkTypeChange() {
             syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
-            // 勤務区分変更時にもオプションフィルタリング適用
-            filterWorkTypeOptions(workTypeSelect.value);
+            // 勤務区分変更時にもオプションフィルタリング適用（現在フォームの日付基準）
+            let dateStr = null;
+            if (dayInputHidden) {
+                // 현재 연월 + dayInputHidden.value로 dateStr 생성
+                const y = currentYear;
+                const m = String(currentMonth).padStart(2, '0');
+                const d = String(dayInputHidden.value).padStart(2, '0');
+                dateStr = `${y}-${m}-${d}`;
+            }
+            if (dateStr) {
+                filterWorkTypeOptionsByDate(dateStr);
+            }
+            // 代休/振替の勤務日フィールド表示制御
+            toggleAltWorkDateField(workTypeSelect.value);
         }
         workTypeSelect && workTypeSelect.addEventListener('change', handleWorkTypeChange);
         // ページロード時にも状態反映
         syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
         // ページロード時にもオプションフィルタリング適用
-        filterWorkTypeOptions(workTypeSelect.value);
+        filterWorkTypeOptionsByDate(workTypeSelect.value);
+        // 代休/振替の勤務日フィールド表示制御
+        toggleAltWorkDateField(workTypeSelect.value);
     }
 
     // ===================== アプリパスワード収得方法ヘルプ =====================
