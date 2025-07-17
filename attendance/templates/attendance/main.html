@@ -117,7 +117,8 @@
                                     <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
                                     {{ daily_form.end_time }}
                                 </div>
-                                 <div class="form-group">
+                                <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
+                                <div class="form-group" id="alt-work-date-group">
                                     <label for="{{ daily_form.alternative_work_date.id_for_label }}">代休/振替の勤務日</label>
                                     {{ daily_form.alternative_work_date }}
                                 </div>
@@ -287,8 +288,8 @@
                                                         </div>
                                                         <div class="record-time">
                                                             {% if day.record %}
-                                                                {% if day.record.work_type == '有給' %}
-                                                                    <span class="record-time">有給</span>
+                                                                {% if day.record.work_type == '有給' or day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' %}
+                                                                    <span class="record-time">{{ day.record.work_type }}</span>
                                                                 {% elif day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
                                                                     {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
                                                                 {% endif %}
