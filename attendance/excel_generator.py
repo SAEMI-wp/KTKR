@@ -1,11 +1,13 @@
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side, Protection
 from openpyxl.utils import get_column_letter
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from .models import AttendanceMonthly, AttendanceDaily
 from .utils import get_or_create_monthly_structure
 from calendar import monthrange
 import calendar
+import tkinter as tk
+from tkinter import ttk
 
 # 스타일 상수 정의
 class ExcelStyles:
@@ -62,6 +64,18 @@ class ExcelReportGenerator:
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
             self.worksheet.title = "稼働報告書"
+
+            # ★ 여기 아래에 인쇄 설정 코드 추가 ★
+            ws = self.worksheet
+            ws.page_setup.paperSize = ws.PAPERSIZE_A4
+            ws.page_setup.orientation = 'portrait'
+            ws.page_margins.top = 1.91 / 2.54
+            ws.page_margins.bottom = 1.91 / 2.54
+            ws.page_margins.left = 0.64 / 2.54
+            ws.page_margins.right = 0.64 / 2.54
+            ws.page_setup.fitToWidth = 1
+            ws.page_setup.fitToHeight = 1
+            ws.page_setup.fitToPage = True
 
             # 1단계: 기본 스타일 적용
             self._apply_base_styles()
@@ -174,9 +188,10 @@ class ExcelReportGenerator:
         self.worksheet['I45'] = f"{monthly_data.total_deduction_hours:.2f}"
         self.worksheet['J45'] = f"{monthly_data.total_overtime_hours:.2f}"
         self.worksheet['K45'] = f"{monthly_data.total_late_night_overtime_hours:.2f}"
-        self.worksheet['L45'] = f"{getattr(monthly_data, 'holiday_overtime_hours', 0):.2f}"
-        self.worksheet['M45'] = f"{getattr(monthly_data, 'holiday_late_night_overtime_hours', 0):.2f}"
-        overtime_conversion = f"{getattr(monthly_data, 'overtime_conversion_hours', monthly_data.total_overtime_hours + monthly_data.total_late_night_overtime_hours):.2f}"
+        self.worksheet['L45'] = f"{monthly_data.total_holiday_work_hours:.2f}"
+        self.worksheet['M45'] = f"{monthly_data.holiday_work_hours_night:.2f}"
+        # 残業換算(h)는 structures.py の holiday_work_hours_overtime プロパティを参照
+        overtime_conversion = f"{monthly_data.holiday_work_hours_overtime:.2f}"
         self.worksheet.merge_cells('N45:O45')
         self.worksheet['N45'] = overtime_conversion
 
@@ -211,113 +226,107 @@ class ExcelReportGenerator:
         for daily in daily_list:
             daily_dict[daily.date.day] = daily
         
-        # 테이블 데이터 입력
-        current_row = 12
+        # --- 日別データ入力ロジック修正 ---
+        current_row = 12  # 初期化を追加
+        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
         for day in range(1, last_day + 1):
-            if current_row > 42:  # 42행을 넘어가면 중단
+            if current_row > 42:
                 break
-                
-            # 날짜 생성
             current_date = date(self.year, self.month, day)
-            
-            # B열: 날짜 (6/1 형태)
-            self.worksheet[f'B{current_row}'] = f"{self.month}/{day}"
-            
-            # C열: 요일
+            # 日付はM/D形式で安全に処理（前ゼロなし、.00付き）
+            self.worksheet[f'B{current_row}'] = float(f"{current_date.month}.{current_date.day:02d}")
+            self.worksheet[f'B{current_row}'].number_format = '0.00'
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
             weekday = weekday_names[current_date.weekday()]
             self.worksheet[f'C{current_row}'] = weekday
-            
-            # D열부터 O열까지: 해당 날짜의 데이터가 있으면 입력
-            if day in daily_dict:
-                daily = daily_dict[day]
-                
-                # D열: 근무구분
+            daily = daily_dict.get(day)
+            if daily:
                 work_type = daily.work_type or "-"
+                # 勤務区分は常に表示（出勤は空欄）
                 if work_type == "出勤":
                     self.worksheet[f'D{current_row}'] = ""
                 else:
                     self.worksheet[f'D{current_row}'] = work_type
-                
-                # E열: 대휴/대체 근무일
-                if daily.alternative_work_date:
-                    self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
+                # 欠勤, 有給, 特別休暇, 振替(休), 代休(休)または出勤/退勤時間が同じ場合はE~M全て空欄
+                if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
+                    for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+                        self.worksheet[f'{col}{current_row}'] = ""
+                # 通常入力
+                elif daily.start_time and daily.end_time and daily.start_time != daily.end_time:
+                    try:
+                        # 代休/振替の勤務日
+                        if daily.alternative_work_date:
+                            self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
+                        else:
+                            self.worksheet[f'E{current_row}'] = ""
+                        # 作業開始時刻
+                        self.worksheet[f'F{current_row}'] = daily.start_time.strftime("%H:%M")
+                        # 作業終了時刻
+                        self.worksheet[f'G{current_row}'] = daily.end_time.strftime("%H:%M")
+                        # 常勤
+                        if daily.regular_work_hours is not None:
+                            self.worksheet[f'H{current_row}'] = float(daily.regular_work_hours)
+                            self.worksheet[f'H{current_row}'].number_format = '0.00'
+                        else:
+                            self.worksheet[f'H{current_row}'] = ""
+                        # 控除
+                        if daily.deduction_hours is not None:
+                            self.worksheet[f'I{current_row}'] = float(daily.deduction_hours)
+                            self.worksheet[f'I{current_row}'].number_format = '0.00'
+                        else:
+                            self.worksheet[f'I{current_row}'] = ""
+                        # 残業
+                        if daily.overtime_hours is not None:
+                            self.worksheet[f'J{current_row}'] = float(daily.overtime_hours)
+                            self.worksheet[f'J{current_row}'].number_format = '0.0'
+                        else:
+                            self.worksheet[f'J{current_row}'] = ""
+                        # 深夜
+                        if daily.late_night_overtime_hours is not None:
+                            self.worksheet[f'K{current_row}'] = float(daily.late_night_overtime_hours)
+                            self.worksheet[f'K{current_row}'].number_format = '0.0'
+                        else:
+                            self.worksheet[f'K{current_row}'] = ""
+                        # 小計（控除は引かない、0やNoneでも必ず0.00で出力）
+                        regular = daily.regular_work_hours or 0.0
+                        overtime = daily.overtime_hours or 0.0
+                        late_night = daily.late_night_overtime_hours or 0.0
+                        subtotal = regular + overtime + late_night
+                        self.worksheet[f'L{current_row}'] = float(subtotal)
+                        self.worksheet[f'L{current_row}'].number_format = '0.00'
+                        # 実施作業内容・備考
+                        self.worksheet[f'M{current_row}'] = daily.notes or ""
+                    except Exception as e:
+                        print(f"行 {current_row} のデータ入力エラー: {e}")
+                        # エラー時は全て空欄
+                        for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+                            self.worksheet[f'{col}{current_row}'] = ""
                 else:
-                    self.worksheet[f'E{current_row}'] = " "
-                
-                # F열: 작업 시작 시간
-                if daily.start_time:
-                    self.worksheet[f'F{current_row}'] = daily.start_time.strftime("%H:%M")
-                else:
-                    self.worksheet[f'F{current_row}'] = " "
-                
-                # G열: 작업 종료 시간
-                if daily.end_time:
-                    self.worksheet[f'G{current_row}'] = daily.end_time.strftime("%H:%M")
-                else:
-                    self.worksheet[f'G{current_row}'] = " "
-                
-                # H열: 상근 시간
-                if daily.regular_work_hours is not None:
-                    self.worksheet[f'H{current_row}'] = f"{daily.regular_work_hours:.2f}"
-                else:
-                    self.worksheet[f'H{current_row}'] = " "
-                
-                # I열: 공제 시간
-                if daily.deduction_hours is not None:
-                    self.worksheet[f'I{current_row}'] = f"{daily.deduction_hours:.2f}"
-                else:
-                    self.worksheet[f'I{current_row}'] = " "
-                
-                # J열: 잔업 시간
-                if daily.overtime_hours is not None:
-                    self.worksheet[f'J{current_row}'] = f"{daily.overtime_hours:.1f}"
-                else:
-                    self.worksheet[f'J{current_row}'] = " "
-                
-                # K열: 심야 시간
-                if daily.late_night_overtime_hours is not None:
-                    self.worksheet[f'K{current_row}'] = f"{daily.late_night_overtime_hours:.1f}"
-                else:
-                    self.worksheet[f'K{current_row}'] = " "
-                
-                # L열: 소계 시간 (상근 + 잔업 + 심야 - 공제)
-                regular = daily.regular_work_hours or 0
-                overtime = daily.overtime_hours or 0
-                late_night = daily.late_night_overtime_hours or 0
-                deduction = daily.deduction_hours or 0
-                subtotal = regular + overtime + late_night - deduction
-                if subtotal > 0:
-                    self.worksheet[f'L{current_row}'] = f"{subtotal:.2f}"
-                else:
-                    self.worksheet[f'L{current_row}'] = " "
-                
-                # M열: 실시 작업 내용・비고
-                self.worksheet[f'M{current_row}'] = daily.notes or " "
-            
+                    # どちらにも該当しない場合は全て空欄
+                    for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+                        self.worksheet[f'{col}{current_row}'] = ""
             else:
                 # 데이터가 없는 경우 토요일/일요일 자동 휴일 설정
-                if weekday == "土":  # 토요일
+                if weekday == "土":
                     self.worksheet[f'D{current_row}'] = "休日"
-                elif weekday == "日":  # 일요일
+                elif weekday == "日":
                     self.worksheet[f'D{current_row}'] = "休日(法)"
                 else:
-                    self.worksheet[f'D{current_row}'] = " "
-                
-                # 나머지 열은 빈 값으로 설정
+                    self.worksheet[f'D{current_row}'] = ""
                 for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
-                    self.worksheet[f'{col}{current_row}'] = " "
-            
+                    self.worksheet[f'{col}{current_row}'] = ""
             current_row += 1
-
-        # 합계 표시
+        
+        # 合計行の作成
         self.worksheet['B43'] = "合 計"
         self.worksheet.merge_cells('B43:C43')
         
-        # 합계 계산 (H, I, J, K, L열)
+        # 合計計算 (H, I, J, K, L列)
         sum_columns = ['H', 'I', 'J', 'K', 'L']
         for col in sum_columns:
             self.worksheet[f'{col}43'] = f"=SUM({col}12:{col}42)"
+        
+        # 合計行SUM式が効かない場合の原因: 文字列が混じるとExcelのSUMが無視するため、空欄は "" ではなく None にする(上で既に処理済み) 
 
     def _apply_header_design(self):
         """헤더 디자인을 적용합니다."""
@@ -498,15 +507,6 @@ class ExcelReportGenerator:
         }
         for row, height in row_heights.items():
             self.worksheet.row_dimensions[row].height = height
-
-    # def _apply_sheet_protection(self):
-    #     """시트 보호를 설정합니다."""
-    #     self.worksheet.protection.sheet = True
-    #     for row in range(1, 47):
-    #         for col in range(1, 17):
-    #             self.worksheet.cell(row=row, column=col).protection = Protection(locked=False)
-    #     self.worksheet.row_dimensions[43].height = 18
-    #     self.worksheet.row_dimensions[44].height = 30
 
     def _add_table_borders(self, start_row=11, end_row=42):
         """테이블 테두리를 openpyxl 권장 방식에 따라 명확하고 단계적으로 추가합니다."""

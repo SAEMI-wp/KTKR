@@ -219,12 +219,12 @@ class PDFReportGenerator:
         # 합계 계산을 위한 변수
         sums = {'H': 0.0, 'I': 0.0, 'J': 0.0, 'K': 0.0, 'L': 0.0}
 
+        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
         # 일별 데이터 행 추가
         for day in range(1, last_day + 1):
             current_date = date(self.year, self.month, day)
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
             weekday_str = weekday_names[current_date.weekday()]
-            
             row_data = [
                 Paragraph(f"{self.month}/{day}", self.styles.STYLES['NormalCenter']),
                 Paragraph(weekday_str, self.styles.STYLES['NormalCenter'])
@@ -238,46 +238,39 @@ class PDFReportGenerator:
                 if any(keyword in work_type for keyword in holiday_keywords):
                     is_holiday_row = True
 
-                row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
-                row_data.append(Paragraph(daily.alternative_work_date.strftime("%m/%d") if daily.alternative_work_date else "", self.styles.STYLES['NormalCenter']))
-                row_data.append(Paragraph(daily.start_time.strftime("%H:%M") if daily.start_time else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(daily.end_time.strftime("%H:%M") if daily.end_time else "", self.styles.STYLES['NormalRight']))
-
-                # 출근/퇴근 데이터가 있으면 None도 0으로 출력
-                if daily.start_time or daily.end_time:
-                    reg_h = daily.regular_work_hours if daily.regular_work_hours is not None else 0
-                    ded_h = daily.deduction_hours if daily.deduction_hours is not None else 0
-                    ovt_h = daily.overtime_hours if daily.overtime_hours is not None else 0
-                    nit_h = daily.late_night_overtime_hours if daily.late_night_overtime_hours is not None else 0
+                # 出勤/退勤時間が同じ、または特定勤務区分なら 구분만 표시, 나머지는 빈칸
+                if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
+                    row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
+                    row_data.extend(["", "", "", "", "", "", "", "", "", ""])
                 else:
-                    reg_h = daily.regular_work_hours or 0
-                    ded_h = daily.deduction_hours or 0
-                    ovt_h = daily.overtime_hours or 0
-                    nit_h = daily.late_night_overtime_hours or 0
-
-                sub_h = reg_h + ovt_h + nit_h - ded_h
-
-                sums['H'] += reg_h
-                sums['I'] += ded_h
-                sums['J'] += ovt_h
-                sums['K'] += nit_h
-                sums['L'] += sub_h
-                
-                # 常勤, 控除는 0.00, 残業, 深夜는 0.0으로 출력
-                row_data.append(Paragraph(f"{reg_h:.2f}" if (reg_h or (daily.start_time or daily.end_time)) else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(f"{ded_h:.2f}" if (ded_h or (daily.start_time or daily.end_time)) else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(f"{ovt_h:.1f}" if (ovt_h or (daily.start_time or daily.end_time)) else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(f"{nit_h:.1f}" if (nit_h or (daily.start_time or daily.end_time)) else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(f"{sub_h:.2f}" if sub_h > 0 else "", self.styles.STYLES['NormalRight']))
-                row_data.append(Paragraph(daily.notes or "", self.styles.STYLES['Normal']))
+                    row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
+                    row_data.append(Paragraph(daily.alternative_work_date.strftime("%m/%d") if daily.alternative_work_date else "", self.styles.STYLES['NormalCenter']))
+                    row_data.append(Paragraph(daily.start_time.strftime("%H:%M") if daily.start_time else "", self.styles.STYLES['NormalRight']))
+                    row_data.append(Paragraph(daily.end_time.strftime("%H:%M") if daily.end_time else "", self.styles.STYLES['NormalRight']))
+                    # structures.py에서 계산된値をそのまま使う
+                    reg_h = daily.regular_work_hours if daily.regular_work_hours is not None else 0.0
+                    ded_h = daily.deduction_hours if daily.deduction_hours is not None else 0.0
+                    ovt_h = daily.overtime_hours if daily.overtime_hours is not None else 0.0
+                    nit_h = daily.late_night_overtime_hours if daily.late_night_overtime_hours is not None else 0.0
+                    sub_h = daily.total_hours if daily.total_hours is not None else 0.0
+                    # 休日, 休日(法), 祝日なら常勤・控除は空欄
+                    if work_type in ["休日", "休日(法)", "祝日"]:
+                        row_data.append(Paragraph("", self.styles.STYLES['NormalRight']))
+                        row_data.append(Paragraph("", self.styles.STYLES['NormalRight']))
+                    else:
+                        row_data.append(Paragraph(f"{reg_h:.2f}", self.styles.STYLES['NormalRight']))
+                        row_data.append(Paragraph(f"{ded_h:.2f}", self.styles.STYLES['NormalRight']))
+                    row_data.append(Paragraph(f"{ovt_h:.1f}", self.styles.STYLES['NormalRight']))
+                    row_data.append(Paragraph(f"{nit_h:.1f}", self.styles.STYLES['NormalRight']))
+                    row_data.append(Paragraph(f"{sub_h:.2f}", self.styles.STYLES['NormalRight']))
+                    row_data.append(Paragraph(daily.notes or "", self.styles.STYLES['Normal']))
             else:
                 # 데이터가 없는 날
                 work_type = ""
                 if weekday_str == "土": work_type = "休日"
                 elif weekday_str == "日": work_type = "休日(法)"
                 if work_type: is_holiday_row = True
-                
-                row_data.extend([Paragraph(work_type, self.styles.STYLES['NormalCenter']), '', '', '', '', '', '', '', '', Paragraph('', self.styles.STYLES['Normal'])])
+                row_data.extend([Paragraph(work_type, self.styles.STYLES['NormalCenter']), '', '', '', '', '', '', '', '', '', Paragraph('', self.styles.STYLES['Normal'])])
 
             data.append(row_data)
             
@@ -288,14 +281,19 @@ class PDFReportGenerator:
                 # self.daily_table_style.add('TEXTCOLOR', (1, row_index), (1, row_index), self.styles.RED_FONT)
                 # 위 방식은 동적으로 어려우므로 아래 테이블 생성 후 처리
         
-        # 합계 행 추가
+        # 合計行 추가 (각 열의 실제 값 합계)
+        total_reg = sum(d.regular_work_hours or 0.0 for d in daily_list)
+        total_ded = sum(d.deduction_hours or 0.0 for d in daily_list)
+        total_ovt = sum(d.overtime_hours or 0.0 for d in daily_list)
+        total_nit = sum(d.late_night_overtime_hours or 0.0 for d in daily_list)
+        total_sub = sum(d.total_hours or 0.0 for d in daily_list)
         total_row = [
             Paragraph("合 計", self.styles.STYLES['NormalCenter']), '', '', '', '', '',
-            Paragraph(f"{sums['H']:.2f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{sums['I']:.2f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{sums['J']:.1f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{sums['K']:.1f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{sums['L']:.2f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_reg:.2f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_ded:.2f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_ovt:.1f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_nit:.1f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_sub:.2f}", self.styles.STYLES['NormalRight']),
             ''
         ]
         data.append(total_row)
@@ -377,9 +375,10 @@ class PDFReportGenerator:
             f"{monthly_data.total_deduction_hours:.2f}",
             f"{monthly_data.total_overtime_hours:.2f}",
             f"{monthly_data.total_late_night_overtime_hours:.2f}",
-            f"{getattr(monthly_data, 'holiday_overtime_hours', 0):.2f}",
-            f"{getattr(monthly_data, 'holiday_late_night_overtime_hours', 0):.2f}",
-            f"{overtime_conversion:.2f}",
+            # 休日・祝日の残業・深夜時間は structures.py のプロパティを参照
+            f"{monthly_data.total_holiday_work_hours:.2f}",
+            f"{monthly_data.holiday_work_hours_night:.2f}",
+            f"{monthly_data.holiday_work_hours_overtime:.2f}",
         ]
         p_values = [Paragraph(v, self.styles.STYLES['NormalCenter']) for v in values]
 
