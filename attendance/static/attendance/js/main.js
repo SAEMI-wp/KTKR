@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === 休日可否およびフォーム状態同期関数:どこでも使用できるように最上段に宣言 ===
     function isDayOff(workType) {
-        return workType === '有給' || workType === '代休(休)' || workType === '振替(休)';
+        return workType === '有給' || workType === '代休(休)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇';
     }
 
     // 休日判定関数
