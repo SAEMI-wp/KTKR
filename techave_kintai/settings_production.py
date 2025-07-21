@@ -78,6 +78,14 @@ CACHES['default']['TIMEOUT'] = 300  # Redis 캐시 만료 30분
 print("SESSION_COOKIE_AGE:", SESSION_COOKIE_AGE)
 print("CACHES TIMEOUT:", CACHES['default']['TIMEOUT']) 
 
+import datetime
+print("서버 현재 시간:", datetime.datetime.now())
+from django.utils import timezone
+print("Django timezone.now():", timezone.now())
+print("TIME_ZONE:", TIME_ZONE)
+print("USE_TZ:", USE_TZ)
+print("REDIS_URL:", REDIS_URL)
+
 # 로깅 설정
 LOGGING = {
     'version': 1,
