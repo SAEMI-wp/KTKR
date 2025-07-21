@@ -84,7 +84,9 @@ from django.utils import timezone
 print("Django timezone.now():", timezone.now())
 print("TIME_ZONE:", TIME_ZONE)
 print("USE_TZ:", USE_TZ)
-print("REDIS_URL:", REDIS_URL)
+from django.utils import timezone
+now = timezone.localtime()  # Asia/Tokyo 기준의 현재 시간
+print("로컬 타임존 시간:", now) 
 
 # 로깅 설정
 LOGGING = {
