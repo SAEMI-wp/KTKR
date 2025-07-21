@@ -69,6 +69,15 @@ CACHES = {
     }
 }
 
+# 세션 타임아웃 설정 (추가)
+SESSION_COOKIE_AGE = 300  # 30분 후 자동 로그아웃
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 브라우저 닫으면 세션 만료 
+
+SESSION_SAVE_EVERY_REQUEST = False  # 세션 만료 연장 방지
+CACHES['default']['TIMEOUT'] = 300  # Redis 캐시 만료 30분
+print("SESSION_COOKIE_AGE:", SESSION_COOKIE_AGE)
+print("CACHES TIMEOUT:", CACHES['default']['TIMEOUT']) 
+
 # 로깅 설정
 LOGGING = {
     'version': 1,
