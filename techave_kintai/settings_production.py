@@ -30,7 +30,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 # 환경 변수 값 확인용 코드 (배포 후 삭제)
 _db_url_from_env = os.environ.get('DATABASE_URL')
-print(f"DEBUG: DATABASE_URL from environment: {_db_url_from_env}")
+# print(f"DEBUG: DATABASE_URL from environment: {_db_url_from_env}")
 
 # 데이터베이스 설정 (환경변수에서 가져오기)
 DATABASES = {
@@ -64,17 +64,17 @@ CACHES = {
             'SOCKET_CONNECT_TIMEOUT': 5,
             'SOCKET_TIMEOUT': 5,
         },
-        'TIMEOUT': 3600,
+        'TIMEOUT': 7200,
         'KEY_PREFIX': 'techave_kintai',
     }
 }
 
 # 세션 타임아웃 설정 (추가)
-SESSION_COOKIE_AGE = 300  # 30분 후 자동 로그아웃
+SESSION_COOKIE_AGE = 7200  # 30분 후 자동 로그아웃
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 브라우저 닫으면 세션 만료 
 
 SESSION_SAVE_EVERY_REQUEST = False  # 세션 만료 연장 방지
-CACHES['default']['TIMEOUT'] = 300  # Redis 캐시 만료 30분
+CACHES['default']['TIMEOUT'] = 7200  # Redis 캐시 만료 2시간
 print("SESSION_COOKIE_AGE:", SESSION_COOKIE_AGE)
 print("CACHES TIMEOUT:", CACHES['default']['TIMEOUT']) 
 
