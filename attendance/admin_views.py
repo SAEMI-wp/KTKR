@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from .pdf_generator import generate_payslip_pdf
 from django.contrib import messages
 import calendar
+from django.contrib.auth.models import Group, Permission
 
 def admin_permission_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
@@ -94,6 +95,19 @@ def payroll_view(request):
 def employee_detail_view(request, employee_no, year=None, month=None):
     user = request.user
     employee = get_object_or_404(Employee, employee_no=employee_no)
+    
+    # superuser 또는 사장님(社長)은 무조건 허용
+    if user.is_superuser or '社長' in user.groups.values_list('name', flat=True):
+        pass
+    else:
+        # 部長: 같은 work_place 직원만 접근 가능
+        user_groups = user.groups.values_list('name', flat=True)
+        if '部長' in user_groups:
+            if employee.place_work != user.place_work:
+                raise PermissionDenied(f'같은 勤務先({user.place_work})의 従業員 정보만 확인할 수 있습니다.')
+        # 그 외: 접근 불가
+        else:
+            raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
     today = timezone.now().date()
     if not year:
         year = today.year
@@ -227,3 +241,12 @@ def daily_calendar_view(request, year=None, month=None):
 
 # WeasyPrint 관련 import 및 payroll_pdf_view 함수 삭제
 # 이후 pdf_generator.py의 generate_payslip_pdf 함수 등을 활용할 예정 
+
+perm = Permission.objects.get(codename='can_access_admin')
+president = Group.objects.get(id=1)  # 社長
+bucho = Group.objects.get(id=3)      # 部長
+
+president.permissions.add(perm)
+bucho.permissions.add(perm)
+
+print('社長(id=1), 部長(id=3) 그룹에 관리자 페이지 접근 권한을 부여했습니다.') 
