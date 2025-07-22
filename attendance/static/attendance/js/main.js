@@ -71,6 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextYearBtn = document.getElementById('next-year-btn');
     const monthGrid = document.querySelector('.month-grid');
 
+    // ServerTime Setting
+    const utcDate = new Date("2025-07-21T23:00:00Z");
+    const jstString = utcDate.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    console.log(jstString); // JST 기준의 날짜/시간
+
     let currentYear, currentMonth;
 
     // ===================== メール送信ロジック =====================
