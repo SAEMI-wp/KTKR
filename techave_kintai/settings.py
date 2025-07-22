@@ -111,12 +111,6 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# 国際化設定
-LANGUAGE_CODE = 'ja'
-TIME_ZONE = 'Asia/Tokyo'
-USE_I18N = True
-USE_TZ = True
-
 # 静的ファイル設定
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -167,7 +161,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
 
 #
-SESSION_COOKIE_AGE = 300  #
+SESSION_COOKIE_AGE = 7200  #
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
