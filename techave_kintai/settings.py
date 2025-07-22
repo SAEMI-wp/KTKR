@@ -106,6 +106,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # カスタムユーザーモデル - attendance/models.py のEmployeeモデルを使用
 AUTH_USER_MODEL = 'attendance.Employee'
 
+# 国際化設定
+LANGUAGE_CODE = 'ja'
+TIME_ZONE = 'Asia/Tokyo'
+USE_I18N = True
+USE_TZ = True
+
 # ログイン/ログアウト設定
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
