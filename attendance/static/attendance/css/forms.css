@@ -219,3 +219,90 @@
     margin-right: 6px;
     flex-shrink: 0;
 }
+
+/* 勤務区分ヘルプアイ콘 */
+.worktype-help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    color: #1976d2;
+    font-size: 1.1em;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: color 0.15s;
+}
+.worktype-help-icon:hover,
+.worktype-help-icon:focus {
+    color: #f57c00;
+}
+
+/* 勤務区分ツールチップ */
+.worktype-tooltip {
+    position: absolute;
+    left: 120px;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #1976d2;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(25,118,210,0.10);
+    padding: 14px 18px 12px 18px;
+    min-width: 220px;
+    max-width: 270px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: normal;
+    box-sizing: border-box;
+    animation: fadeIn 0.18s;
+}
+.worktype-tooltip .tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+.worktype-tooltip .tooltip-title {
+    font-weight: bold;
+    color: #1976d2;
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+.worktype-tooltip .tooltip-body {
+    font-size: 13px;
+}
+.worktype-tooltip .tooltip-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 2;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+.worktype-tooltip .tooltip-close-btn:hover,
+.worktype-tooltip .tooltip-close-btn:focus {
+    color: #f57c00;
+    background: #f5f5f5;
+    border-radius: 50%;
+}
+.worktype-tooltip::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: -12px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent #1976d2 transparent transparent;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
