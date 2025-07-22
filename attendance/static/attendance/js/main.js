@@ -1,5 +1,3 @@
-
-
 function fetchWithCsrf(url, options = {}) {
     // CSRF 토큰을 input[name=csrfmiddlewaretoken]에서 가져옴
     const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -70,11 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevYearBtn = document.getElementById('prev-year-btn');
     const nextYearBtn = document.getElementById('next-year-btn');
     const monthGrid = document.querySelector('.month-grid');
-
-    // ServerTime Setting
-    const utcDate = new Date("2025-07-21T23:00:00Z");
-    const jstString = utcDate.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-    console.log(jstString); // JST 기준의 날짜/시간
 
     let currentYear, currentMonth;
 
@@ -297,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} date - 'YYYY-MM-DD'形式の日付
      */
     async function populateDailyForm(date) {
-        // 選択된セルのハイライトを更新
+        // 選択されたセルのハイライトを更新
         const selectedCell = document.querySelector('.calendar-table td.selected');
         if (selectedCell) {
             selectedCell.classList.remove('selected');
@@ -354,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.querySelector('[name="end_time"]').value = '';
                 form.querySelector('[name="notes"]').value = '';
             }
-            // 승인/대기/완료 상태에 따라 폼 비활성화
+            // ステータスに応じてフォームを非活性化
             handleDailyFormLock(data.record);
-            // work_type에 따라 버튼/readonly 상태 동기화
+            // work_typeに応じてボタン/readonly 状態を同期
             const workTypeField = form.querySelector('[name="work_type"]');
             const startTimeField = form.querySelector('[name="start_time"]');
             const endTimeField = form.querySelector('[name="end_time"]');
@@ -407,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentYear = initialYear;
     currentMonth = initialMonth;
 
-    // Techave 로고 클릭 시 현재 월로 돌아오는
+    // Techave ロゴ クリック 時 現在の月に戻る
     if (techaveLogo) {
         techaveLogo.addEventListener('click', () => {
             const today = new Date();
@@ -417,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 月移動ボタン의 이벤트리스너
+    // 月移動ボタンのイベントリスナー
     if (prevMonthBtn) {
         console.log('Previous month button found');
         prevMonthBtn.addEventListener('click', () => {
@@ -504,8 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: error.message,
                     stack: error.stack
                 });
-                // 서버에러라도 실제로는 등록되어있을 가능성이 있으므로, 확인메시지 표시
-                if (confirm('서버와의 통신중에 에러가 발생했지만, 데이터는 정상적으로 등록되어있을 가능성이 있습니다.\n\n페이지를 다시 읽어들리겠습니까？')) {
+                // サーバーエラーでも実際には登録されている可能性があるため、確認メッセージを表示
+                if (confirm('サーバーとの通信中にエラーが発生しましたが、データは正常に登録されている可能性があります。\n\nページを再読み込みしますか？')) {
                     window.location.reload();
                 }
             }
@@ -557,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const form = e.target;
             
-            // 필수 필드 검증
+            // 必須 フィールド 検証
             const workType = form.querySelector('select[name="work_type"]').value;
             const startTime = form.querySelector('input[name="start_time"]').value;
             const endTime = form.querySelector('input[name="end_time"]').value;
@@ -577,11 +570,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
-            // 현재의 년월정보를 추가
+            // 現在の年月情報を追加
             data.year = currentYear;
             data.month = currentMonth;
             
-            // ★ 마지막 선택한 날짜를 localStorage에 저장
+            // ★ 最後に選択した日付をlocalStorageに保存
             if (dayInputHidden && dayInputHidden.value) {
                 const lastSelectedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(dayInputHidden.value).padStart(2, '0')}`;
                 localStorage.setItem('lastSelectedDate', lastSelectedDate);
@@ -609,10 +602,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Response data:', result);
         
                 if (result.status === 'success') {
-                    // 페이지를 리로드하여 캘린더표시를 업데이트
+                    // ページをリロードしてカレンダー表示を更新
                     window.location.reload();
                 } else {
-                    let errorMessage = '에러가 발생했습니다。';
+                    let errorMessage = 'エラーが発生しました。';
                     if (result.errors) {
                         errorMessage = Object.values(result.errors).flat().join('\n');
                     } else if (result.message) {
@@ -628,8 +621,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: error.message,
                     stack: error.stack
                 });
-                // 서버에러라도 실제로는 등록되어있을 가능성이 있으므로, 확인메시지 표시
-                if (confirm('서버와의 통신중에 에러가 발생했지만, 데이터는 정상적으로 등록되어있을 가능성이 있습니다.\n\n페이지를 다시 읽어들리겠습니까？')) {
+                // サーバーエラーでも実際には登録されている可能性があるため、確認メッセージを表示
+                if (confirm('サーバーとの通信中にエラーが発生しましたが、データは正常に登録されている可能性があります。\n\nページを再読み込みしますか？')) {
                     window.location.reload();
                 }
             }
@@ -678,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 모달의 외측클릭으로 닫기
+    // モーダルの外側クリックで閉じる
     if (pickerModal) {
         pickerModal.addEventListener('click', (e) => {
             if (e.target === pickerModal) {
@@ -691,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //  DELETE FUNCTIONALITY
     // ===================================================================
 
-    // 일별정보삭제
+    // 日別情報削除
     document.addEventListener('click', async (e) => {
         if (e.target.closest('.delete-daily-btn')) {
             e.preventDefault();
@@ -744,11 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const startTimeInput = document.querySelector('[name="start_time"]');
             const endTimeInput = document.querySelector('[name="end_time"]');
             
-            // 월별 데이터의 기준 캘린더 확인
+            // 月別 データの基準 カレンダー 確認
             const baseCalendar = normalHoursBtn.dataset.baseCalendar;
             
             if (baseCalendar === 'H大甕') {
-                // H大甕 캘린더: 8:40 - 17:10
+                // H大甕 カレンダー: 8:40 - 17:10
                 if (startTimeInput) {
                     startTimeInput.value = '08:40';
                 }
@@ -757,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 console.log('Normal hours set (H大甕): 08:40 - 17:10');
             } else {
-                // 기준 캘린더: 9:00 - 18:00
+                // 基準 カレンダー: 9:00 - 18:00
                 if (startTimeInput) {
                     startTimeInput.value = '09:00';
                 }
@@ -780,18 +773,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (monthlyUpdateModal) {
         if (editMonthlyBtn) {
             editMonthlyBtn.addEventListener('click', () => {
-                // 현재의 월별정보를 폼에 설정
+                // 現在の月別情報をフォームに設定
                 const projectNameInput = document.getElementById('update-project-name');
                 const baseCalendarInput = document.getElementById('update-base-calendar');
                 const lunchBreakInput = document.getElementById('update-lunch-break');
                 const standardTimeInput = document.getElementById('update-standard-time');
                 
-                // 월별정보의 값을 가져오기 (템플릿에서)
+                // 月別情報の値を取得 (テンプレートから)
                 const lunchBreakRaw = document.querySelectorAll('.detail-item strong')[2].textContent;
-                const lunchBreakValue = lunchBreakRaw.replace(/[^0-9.]/g, ''); // 숫자만 추출
+                const lunchBreakValue = lunchBreakRaw.replace(/[^0-9.]/g, ''); // 数字のみ抽出
 
                 const standardTimeRaw = document.querySelectorAll('.detail-item strong')[3].textContent;
-                const standardTimeValue = standardTimeRaw.replace(/[^0-9.]/g, ''); // 숫자만 추출
+                const standardTimeValue = standardTimeRaw.replace(/[^0-9.]/g, ''); // 数字のみ抽出
                 
                 if (projectNameInput) projectNameInput.value = document.querySelector('.detail-item strong').textContent;
                 if (baseCalendarInput) baseCalendarInput.value = document.querySelectorAll('.detail-item strong')[1].textContent;
@@ -826,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
-            // 현재의 년월정보를 추가
+            // 現在の年月情報を追加
             data.year = currentYear;
             data.month = currentMonth;
             
@@ -855,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     monthlyUpdateModal.classList.remove('show');
                     window.location.reload();
                 } else {
-                    let errorMessage = '에러가 발생했습니다。';
+                    let errorMessage = 'エラーが発生しました。';
                     if (result.errors) {
                         errorMessage = Object.values(result.errors).flat().join('\n');
                     } else if (result.message) {
@@ -870,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: error.message,
                     stack: error.stack
                 });
-                alert('수정중에 에러가 발생했습니다: ' + error.message);
+                alert('修正中にエラーが発生しました: ' + error.message);
             }
         });
     }
@@ -896,20 +889,20 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 console.log('Excel download requested for:', currentYear, currentMonth);
                 
-                // 현재의 년월로 엑셀다운로드URL을 구성
+                // 現在の年月でExcelダウンロードURLを構成
                 const downloadUrl = `/excel/download/?year=${currentYear}&month=${currentMonth}`;
                 
-                // 새로운 창으로 다운로드를 시작
+                // 新しいウィンドウでダウンロードを開始
                 window.open(downloadUrl, '_blank');
                 
             } catch (error) {
                 console.error('Error downloading Excel file:', error);
-                alert('엑셀파일의 다운로드중에 에러가 발생했습니다: ' + error.message);
+                alert('Excelファイルのダウンロード中にエラーが発生しました: ' + error.message);
             }
         });
     }
 
-    // Print Preview Button (메인 버튼)
+    // Print Preview Button (メイン ボタン)
     const printPreviewBtn = document.getElementById('print-preview-btn');
     if (printPreviewBtn) {
         printPreviewBtn.addEventListener('click', function() {
@@ -917,11 +910,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const month = document.getElementById('current-month-display').dataset.month;
             const pdfUrl = `/pdf/preview/?year=${year}&month=${month}`;
 
-            // PDF iframe에 URL 설정
+            // PDF iframeにURLを設定
             const pdfIframe = document.getElementById('pdf-iframe');
             if (pdfIframe) pdfIframe.src = pdfUrl;
 
-            // 모달 표시
+            // モーダル表示
             const pdfModal = document.getElementById('pdf-preview-modal');
             if (pdfModal) pdfModal.classList.add('show');
         });
@@ -956,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pdfUrl = `/pdf/preview/?year=${year}&month=${month}`;
             const link = document.createElement('a');
             link.href = pdfUrl;
-            // 일본어 + 사원명 포함
+            // 日本語 + 社員名 含む
             link.download = `${year}_${month}_稼動報告書_.pdf`;
             document.body.appendChild(link);
             link.click();
@@ -973,7 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const excelUrl = `/excel/download/?year=${year}&month=${month}`;
             const link = document.createElement('a');
             link.href = excelUrl;
-            // 일본어 + 사원명 포함
+            // 日本語 + 社員名 含む
             link.download = `${year}_${month}_稼動報告書_.xlsx`;
             document.body.appendChild(link);
             link.click();
@@ -981,8 +974,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===================== 탭 전환 로직 =====================
-    // 탭 전환
+    // ===================== タブ 切り替え ロジック =====================
+    // タブ 切り替え
     const tabCalendarBtn = document.getElementById('tab-calendar');
     const tabListBtn = document.getElementById('tab-list');
     const calendarTab = document.getElementById('calendar-tab');
@@ -999,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tabListBtn.classList.remove('active');
             calendarTab.style.display = '';
             listTab.style.display = 'none';
-            // 탭 상태 저장
+            // タブ 状態 保存
             localStorage.setItem('selectedTab', 'calendar');
         });
         tabListBtn.addEventListener('click', function() {
@@ -1007,14 +1000,14 @@ document.addEventListener('DOMContentLoaded', () => {
             tabCalendarBtn.classList.remove('active');
             calendarTab.style.display = 'none';
             listTab.style.display = '';
-            // 탭 상태 저장
+            // タブ 状態 保存
             localStorage.setItem('selectedTab', 'list');
         });
     }
 
-    // ===================== 공휴일(일본 API + DB holidays_db) 통합 표시 =====================
+    // ===================== 共通休日(日本 API + DB holidays_db) 統合 表示 =====================
     /**
-     * 일본 공휴일 API에서 이번 달 데이터만 추출하여 캘린더에 표시
+     * 日本 共通休日 APIから今月のデータを抽出してカレンダーに表示
      */
     async function applyApiHolidaysToCalendar() {
         let apiHolidays = window.apiHolidays || {};
@@ -1029,11 +1022,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        console.log('API 공휴일 적용 완료:', year, month, apiHolidays);
+        console.log('API 共通休日 適用 完了:', year, month, apiHolidays);
     }
 
     /**
-     * DB holidays_db에서 共通/개별(base_calendar) 구분하여 캘린더에 표시
+     * DB holidays_dbから共通/個別(base_calendar) 分別してカレンダーに表示
      */
     function applyDbHolidaysToCalendar() {
         let holidaysDb = {};
@@ -1043,14 +1036,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 holidaysDb = JSON.parse(holidaysScript.textContent);
             }
         } catch (e) {
-           console.error('holidays_db 파싱 오류:', e);
+           console.error('holidays_db パース エラー:', e);
         }
         const tds = document.querySelectorAll('.calendar-table td[data-date]');
         tds.forEach(td => {
             const dateStr = td.getAttribute('data-date');
             const dateNumDiv = td.querySelector('.date-number');
             if (!dateNumDiv) return;
-            // 기존 DB holiday 표시 초기화
+            // 既存 DB holiday 表示 初期化
             dateNumDiv.querySelectorAll('.holiday-db-common-name, .holiday-db-base-name, .holiday-db-green-name').forEach(e => e.remove());
             if (holidaysDb[dateStr]) {
                 holidaysDb[dateStr].forEach(h => {
@@ -1062,13 +1055,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
-        console.log('DB holidays_db 적용 완료:', holidaysDb);
+        console.log('DB holidays_db 適用 完了:', holidaysDb);
     }
 
     function appendHolidayToCell(td, text, className) {
         let holidayCategory = td.querySelector('.holiday-category');
         if (!holidayCategory) {
-            // 없으면 생성해서 .cell-header에 append
+            // 無ければ生成して .cell-headerに追加
             const cellHeader = td.querySelector('.cell-header');
             if (!cellHeader) return;
             holidayCategory = document.createElement('span');
@@ -1080,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', () => {
         span.textContent = text;
         holidayCategory.appendChild(span);
 
-        // 숫자(span.date-number)에 holiday 클래스 추가 (빨간색)
+        // 数字(span.date-number)にholiday クラス追加 (赤色)
         const dateNumber = td.querySelector('.date-number');
         if (dateNumber && !dateNumber.classList.contains('holiday')) {
             dateNumber.classList.add('holiday');
@@ -1088,10 +1081,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * 모든 공휴일 표시(초기화 포함)
+     * すべての共通休日 表示(初期化含む)
      */
     async function applyAllHolidaysToCalendar() {
-        // 1. 기존 표시 초기화 (API/DB 모두)
+        // 1. 既存 表示 初期化 (API/DB 両方)
         const tds = document.querySelectorAll('.calendar-table td[data-date]');
         tds.forEach(td => {
             const dateNumDiv = td.querySelector('.date-number');
@@ -1099,12 +1092,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 dateNumDiv.querySelectorAll('.holiday-api-name, .holiday-db-common-name, .holiday-db-base-name').forEach(e => e.remove());
             }
         });
-        // 2. API → 3. DB 순서로 적용
+        // 2. API → 3. DB 順番に適用
         await applyApiHolidaysToCalendar();
         applyDbHolidaysToCalendar();
     }
 
-    // DOMContentLoaded 시점에 모두 적용
+    // DOMContentLoaded 時点で全て適用
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', applyAllHolidaysToCalendar);
     } else {
@@ -1117,32 +1110,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideMonthlyInfoBtn = document.getElementById('hide-monthly-info-btn');
 
     if (monthlyInfoSection && showMonthlyInfoBtn && hideMonthlyInfoBtn) {
-        // 初期状態: section非表示, +ボタン만 표시
+        // 初期状態: section非表示, +ボタンのみ表示
         monthlyInfoSection.style.display = 'none';
         showMonthlyInfoBtn.style.display = 'inline';
         hideMonthlyInfoBtn.style.display = 'none';
 
-        // monthly-info 섹션 열기
+        // monthly-info セクション 開く
         showMonthlyInfoBtn.addEventListener('click', function() {
             monthlyInfoSection.style.display = '';
             showMonthlyInfoBtn.style.display = 'none';
             hideMonthlyInfoBtn.style.display = 'inline';
-            // 상태 저장
+            // 状態 保存
             localStorage.setItem('monthlyInfoOpen', '1');
         });
-        // monthly-info 섹션 닫기
+        // monthly-info セクション 閉じる
         hideMonthlyInfoBtn.addEventListener('click', function() {
             monthlyInfoSection.style.display = 'none';
             showMonthlyInfoBtn.style.display = 'inline';
             hideMonthlyInfoBtn.style.display = 'none';
-            // 상태 저장
+            // 状態 保存
             localStorage.setItem('monthlyInfoOpen', '0');
         });
     }
     
-    // 생성 폼
+    // 生成 フォーム
     $(document).on('change', '#create-base-calendar', function() {
-        console.log('바뀜');
+        console.log('変更');
         if ($(this).val() === 'H大甕') {
             $('#create-lunch-break').val('45');
             $('#create-standard-time').val('7.75');
@@ -1152,9 +1145,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 수정 폼
+    // 修正 フォーム
     $(document).on('change', '#update-base-calendar', function() {
-        console.log('바뀜');
+        console.log('変更');
         if ($(this).val() === 'H大甕') {
            $('#update-lunch-break').val('45');
            $('#update-standard-time').val('7.75');
@@ -1164,25 +1157,25 @@ document.addEventListener('DOMContentLoaded', () => {
        }
     });
     
-    // 昼休み区分과 基準時間 필드를 완전히 비활성화
+    // 昼休み区分と 基準時間 フィールドを完全に非活性化
     $(document).on('DOMContentLoaded', function() {
-        // 생성 폼 필드 비활성화
+        // 生成 フォーム フィールド 非活性化
         $('#create-lunch-break').prop('disabled', true);
         $('#create-standard-time').prop('disabled', true);
         
-        // 수정 폼 필드 비활성화
+        // 修正 フォーム フィールド 非活性化
         $('#update-lunch-break').prop('disabled', true);
         $('#update-standard-time').prop('disabled', true);
     });
     
-    // 사용자가 직접 수정하려고 할 때 방지
+    // ユーザが直接修正しようとするときに防ぐ
     $(document).on('input change keydown', '#create-lunch-break, #create-standard-time, #update-lunch-break, #update-standard-time', function(e) {
         e.preventDefault();
         e.stopPropagation();
         return false;
     });
 
-    // ===================== 日付 화살표 제어 및 UX/UI 개선 =====================
+    // ===================== 日付 ピッカー 操作 および UX/UI 改善 =====================
     const dayArrowLeft = document.getElementById('day-arrow-left');
     const dayArrowRight = document.getElementById('day-arrow-right');
 
@@ -1199,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setDayInputMinMax();
 
-    // day-input 값이 비정상(범위 밖)이면 자동 보정 및 빨간 테두리 표시
+    // day-input 値が異常(範囲外)であれば自動補正および赤枠表示
     if (dayInputHidden) {
         dayInputHidden.addEventListener('input', function() {
             const val = parseInt(dayInputHidden.value, 10);
@@ -1222,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // // 화살표 hover 효과
+    // // ピッカー hover 効果
     // const style = document.createElement('style');
     // style.innerHTML = ` 
     //     .input-error { border: 2px solid #e53935 !important; }
@@ -1274,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // URL에서 day 파라미터가 있으면 day-input에 반영
+    // URLからday パラメータがあればday-inputに反映
     const urlParams2 = new URLSearchParams(window.location.search);
     const urlDay = urlParams2.get('day');
     if (urlDay && dayInputHidden) {
@@ -1285,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setDayInputMinMax();
 
-    // 네트워크/서버 에러 안내 메시지(기존 alert 외에 추가 안내)
+    // ネットワーク/サーバー エラー 案内 メッセージ(既存 alert 以外に追加案内)
     function showNetworkError(msg) {
         let errDiv = document.getElementById('network-error-msg');
         if (!errDiv) {
@@ -1307,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errDiv.style.display = 'block';
         setTimeout(() => { errDiv.style.display = 'none'; }, 4000);
     }
-    // 기존 fetchWithCsrf, populateDailyForm 등에서 catch(error)시 showNetworkError 호출하도록 필요시 추가
+    // 既存 fetchWithCsrf, populateDailyForm 等で catch(error)時 showNetworkError 呼び出し必要時追加
 
     $(document).on('click', '#copy-prev-month-btn', function() {
         if (!confirm('前月の情報を複写しますか？')) return;
@@ -1336,17 +1329,24 @@ document.addEventListener('DOMContentLoaded', () => {
     //　　　　
     // ===================================================================
     function updateDayDisplay(day) {
+        console.log('[DEBUG] updateDayDisplay 呼び出し:', {currentYear, currentMonth, day});
         if (dayDisplay) dayDisplay.textContent = day;
         if (dayInputHidden) dayInputHidden.value = day;
 
-        // 캘린더의 selected(파란색)도 같이 이동
+        // カレンダーの selected(青色)も同時に移動
         const allSelected = document.querySelectorAll('.calendar-table td.selected');
         allSelected.forEach(td => td.classList.remove('selected'));
 
-        // 현재 연/월/일에 해당하는 셀에 selected 추가
+        // 現在の年/月/日に該当するセルに selected 追加
         const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        console.log('[DEBUG] 選択 セル dateStr:', dateStr);
         const td = document.querySelector(`.calendar-table td[data-date='${dateStr}']`);
-        if (td) td.classList.add('selected');
+        if (td) {
+            td.classList.add('selected');
+            console.log('[DEBUG] 選択 セル 見つかり:', td);
+        } else {
+            console.log('[DEBUG] 選択 セル 見つかりません!');
+        }
     }
 
     // ===================================================================
@@ -1362,11 +1362,11 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.style.cursor = 'pointer';
             icon.addEventListener('click', function(e) {
                 e.stopPropagation();
-                // 날짜 정보 추출
+                // 日付 情報 抽出
                 const td = icon.closest('td[data-date]');
                 if (!td) return;
                 const dateStr = td.getAttribute('data-date');
-                // 서버에 is_required=1로 전송 (예시: fetch)
+                // サーバーに is_required=1 送信 (例: fetch)
                 fetch('/attendance/require_day/', {
                     method: 'POST',
                     headers: {
@@ -1378,7 +1378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // UI 갱신: 회색 보내기 아이콘으로 변경
+                        // UI 更新: 灰色 送信アイコンに変更
                         icon.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 9H14M14 9L10 5M14 9L10 13" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
                         icon.dataset.required = '1';
                         icon.style.cursor = 'default';
@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 日々承認 버튼 클릭 이벤트 (임시로 비활성화)
+    // 日々承認 ボタン クリック イベント (一時的に非活性化)
     /*
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('.approval-btn.request-btn');
@@ -1629,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 勤務区分変更時にもオプションフィルタリング適用（現在フォームの日付基準）
             let dateStr = null;
             if (dayInputHidden) {
-                // 현재 연월 + dayInputHidden.value로 dateStr 생성
+                // 現在の年月 + dayInputHidden.valueで dateStr 生成
                 const y = currentYear;
                 const m = String(currentMonth).padStart(2, '0');
                 const d = String(dayInputHidden.value).padStart(2, '0');
@@ -1687,7 +1687,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 appPasswordTooltip.style.display = 'none';
             }
         });
-        // ツールチップ内リンクは新しいタブで開く（aタグ에 이미 target=_blank 있음)
+        // ツールチップ内リンクは新しいタブで開く（aタグに target=_blank あり)
+    }
+
+    // ===================== 勤務区分ヘルプツールチップ =====================
+    const worktypeHelpIcon = document.getElementById('worktype-help-icon');
+    const worktypeTooltip = document.getElementById('worktype-tooltip');
+    if (worktypeHelpIcon && worktypeTooltip) {
+        worktypeHelpIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            worktypeTooltip.style.top = worktypeHelpIcon.offsetTop + 'px';
+            worktypeTooltip.style.left = (worktypeHelpIcon.offsetLeft + worktypeHelpIcon.offsetWidth + 8) + 'px';
+            worktypeTooltip.style.display = 'block';
+        });
+        worktypeHelpIcon.addEventListener('focus', function(e) {
+            worktypeTooltip.style.display = 'block';
+        });
+        const tooltipCloseBtn = document.getElementById('worktype-tooltip-close');
+        if (tooltipCloseBtn) {
+            tooltipCloseBtn.addEventListener('click', function(e) {
+                worktypeTooltip.style.display = 'none';
+            });
+        }
+        document.addEventListener('mousedown', function(e) {
+            if (worktypeTooltip.style.display === 'block') {
+                if (!worktypeTooltip.contains(e.target) && !worktypeHelpIcon.contains(e.target)) {
+                    worktypeTooltip.style.display = 'none';
+                }
+            }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                worktypeTooltip.style.display = 'none';
+            }
+        });
     }
 
     // ===================== 受信者メール セレクト+直接入力ロジック =====================
