@@ -1,17 +1,17 @@
 {% extends 'admin/base_site.html' %}
 {% block content %}
 <h1>{{ employee.last_name }}{{ employee.first_name }} ({{ employee.employee_no }}) 勤怠詳細</h1>
+<strong>勤務先:</strong> {{ employee.place_work }}<br>
+<div style="display: flex; flex-direction: column; align-items: center;">
 <div style="margin-bottom: 1em;">
-  <strong>勤務先:</strong> {{ employee.place_work }}<br>
-  <strong>月:</strong>
   <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ prev_year }}/{{ prev_month }}/">&#8592; 前月</a>
   <span style="margin:0 1em;">{{ year }}年 {{ month }}月</span>
-  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ next_year }}/{{ next_month }}/">翌月 &#8594;</a>
+  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ next_year }}/{{ next_month }}/">後月 &#8594;</a>
 </div>
-<div style="margin-bottom: 1em;">
+<!-- <div style="margin-bottom: 1em;">
   <strong>今月の残業時間:</strong> {{ overtime_total }}時間
   <strong style="margin-left:2em;">有給休暇使用日数:</strong> {{ paid_leave_used }}日
-</div>
+</div> -->
 {% if monthly %}
   <div style="margin-bottom:1em;">
     {# 승인 상태별 버튼 표시 #}
@@ -29,28 +29,31 @@
     {% endif %}
   </div>
 {% endif %}
-<table class="admin-table">
+<table class="admin-table" style="width:80%; margin:auto; border-collapse:collapse; border:2px solid #333;">
   <thead>
     <tr>
-      <th>日付</th>
-      <th>勤務区分</th>
-      <th>開始</th>
-      <th>終了</th>
-      <th>備考</th>
+      <th style="border:1px solid #888;">日付</th>
+      <th style="border:1px solid #888;">曜日</th>
+      <th style="border:1px solid #888;">勤務区分</th>
+      <th style="border:1px solid #888;">開始</th>
+      <th style="border:1px solid #888;">終了</th>
+      <th style="border:1px solid #888;">備考</th>
     </tr>
   </thead>
   <tbody>
     {% for d in daily_list %}
     <tr>
-      <td>{{ d.date }}</td>
-      <td>{{ d.work_type }}</td>
-      <td>{{ d.start_time }}</td>
-      <td>{{ d.end_time }}</td>
-      <td>{{ d.notes }}</td>
+      <td style="border:1px solid #ccc;">{{ d.date|date:'n/j' }}</td>
+      <td style="border:1px solid #ccc;">{{ d.date|date:'D' }}</td>
+      <td style="border:1px solid #ccc;">{{ d.work_type }}</td>
+      <td style="border:1px solid #ccc;">{{ d.start_time }}</td>
+      <td style="border:1px solid #ccc;">{{ d.end_time }}</td>
+      <td style="border:1px solid #ccc;">{{ d.notes }}</td>
     </tr>
     {% empty %}
-    <tr><td colspan="5">データ無し</td></tr>
+    <tr><td colspan="6" style="border:1px solid #ccc;">データ無し</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %} 

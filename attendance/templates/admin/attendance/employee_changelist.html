@@ -1,7 +1,19 @@
 {% extends "admin/change_list.html" %}
+{% load admin_list %}
 {% block object-tools %}
   {{ block.super }}
   <li>
     <a href="{{ csv_upload_url }}" class="addlink">CSVで追加</a>
   </li>
+{% endblock %}
+{% block filters %}
+  {% if cl.has_filters %}
+    <div id="changelist-filter">
+      <h2>勤務先</h2>
+      {% if cl.has_active_filters %}<h3 id="changelist-filter-clear">
+        <a href="{{ cl.clear_all_filters_qs }}">&#10006; フィルター解除</a>
+      </h3>{% endif %}
+      {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+    </div>
+  {% endif %}
 {% endblock %} 

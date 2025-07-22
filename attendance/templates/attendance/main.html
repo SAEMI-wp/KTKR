@@ -106,8 +106,23 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="{{ daily_form.work_type.id_for_label }}">勤務区分</label>
+                                    <label for="{{ daily_form.work_type.id_for_label }}">
+                                        勤務区分
+                                        <span class="worktype-help-icon" id="worktype-help-icon" tabindex="0" title="勤務区分の説明">
+                                            <i class="fa-solid fa-circle-question"></i>
+                                        </span>
+                                    </label>
                                     {{ daily_form.work_type }}
+                                    <!-- 勤務区分のツールチップ（内容は後で追加） -->
+                                    <div class="worktype-tooltip" id="worktype-tooltip" style="display:none;">
+                                        <div class="tooltip-content">
+                                            <button type="button" class="tooltip-close-btn" id="worktype-tooltip-close" title="閉じる">&times;</button>
+                                            <div class="tooltip-title">勤務区分の説明</div>
+                                            <div class="tooltip-body">
+                                                <!-- ここに説明内容を後で追加 -->
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="{{ daily_form.start_time.id_for_label }}">作業開始時刻</label>
