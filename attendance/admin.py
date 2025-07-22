@@ -128,9 +128,9 @@ def get_employee_queryset_by_role(request, queryset):
 class EmployeeAdmin(admin.ModelAdmin):
     """社員管理用のカスタムAdmin"""
     list_display = (
-        'employee_no', 'last_name', 'first_name', 'place_work', 'email', 'is_active', 'retire_action_button', 'detail_button',
+        'employee_no', 'last_name', 'first_name', 'place_work', 'email', 'detail_button',
     )
-    list_filter = ('is_active', 'place_work', 'groups')
+    list_filter = ('place_work','is_active', 'groups')
     search_fields = ('employee_no', 'last_name', 'first_name', 'place_work', 'email')
     ordering = ('employee_no',)
     
@@ -161,15 +161,15 @@ class EmployeeAdmin(admin.ModelAdmin):
     
     def retire_selected(self, request, queryset):
         updated = queryset.update(is_active=False)
-        self.message_user(request, f"{updated}명 퇴사 처리 완료.")
-    retire_selected.short_description = "선택 사원 퇴사 처리"
+        self.message_user(request, f"{updated}名退社処理完了.")
+    retire_selected.short_description = "退社処理"
 
     def retire_action_button(self, obj):
         if obj.is_active:
             return format_html('<a class="button" href="/admin/employee/{}/retire/">퇴사처리</a>', obj.employee_no)
         else:
-            return '퇴사자'
-    retire_action_button.short_description = '퇴사처리'
+            return '退社者'
+    retire_action_button.short_description = '退社処理'
     retire_action_button.allow_tags = True
 
     def formfield_for_dbfield(self, db_field, **kwargs):

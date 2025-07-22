@@ -6,6 +6,8 @@ from .models import AttendanceMonthly, AttendanceDaily
 from .utils import get_or_create_monthly_structure
 from calendar import monthrange
 import calendar
+import tkinter as tk
+from tkinter import ttk
 
 # 스타일 상수 정의
 class ExcelStyles:

@@ -67,8 +67,12 @@ class Employee(AbstractBaseUser, PermissionsMixin):
         super().clean()
         if self.employee_no and not self.employee_no.isdigit():
             raise models.ValidationError({
-                'employee_no': '社員番号は6桁の数字で入力してください。'
+                'employee_no': '社員番号는6桁の数字で入力してください。'
             })
+    # 管理者権限がある場合のみTrueを返す（admin用）
+    @property
+    def is_staff(self):
+        return self.has_perm('attendance.can_access_admin')
 
 class AttendanceMonthly(models.Model):
     """
