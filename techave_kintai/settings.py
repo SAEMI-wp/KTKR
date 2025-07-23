@@ -26,13 +26,17 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = ['*']
 
 # Djangoアプリ設定
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+INSTALLED_APPS = [
+    'django.contrib.admin',         # 管理ページ
+    'django.contrib.auth',          # 認証システム
+    'django.contrib.contenttypes',  # コンテンツタイプ
+    'django.contrib.sessions',      # セッション管理
+    'django.contrib.messages',      # メッセージフレームワーク
+    'django.contrib.staticfiles',   # 静的ファイル管理
+    'crispy_forms',                 # フォームレンダリング (attendance/forms.pyで使用)
+    'crispy_bootstrap5',            # Bootstrap5 スタイル
+    'attendance',                   # 勤怠管理メインアプリ
+]
 
 # ミドルウェア設定
 MIDDLEWARE = [
