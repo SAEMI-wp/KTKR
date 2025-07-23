@@ -40,13 +40,13 @@ INSTALLED_APPS = [
 
 # ミドルウェア設定
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',           # セキュリティ·ヘッダー
-    'django.contrib.sessions.middleware.SessionMiddleware',    # セッション処理
-    'django.middleware.common.CommonMiddleware',               # 共通ミドルウェア
-    'django.middleware.csrf.CsrfViewMiddleware',               # CSRF保護
+    'django.middleware.security.SecurityMiddleware',        # セキュリティ·ヘッダー
+    'django.contrib.sessions.middleware.SessionMiddleware', # セッション処理
+    'django.middleware.common.CommonMiddleware',            # 共通ミドルウェア
+    'django.middleware.csrf.CsrfViewMiddleware',            # CSRF保護
     'django.contrib.auth.middleware.AuthenticationMiddleware', # 認証
-    'django.contrib.messages.middleware.MessageMiddleware',    # メッセージ
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # クリックジャッキング防止
+    'django.contrib.messages.middleware.MessageMiddleware', # メッセージ
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', # クリックジャッキング防止
 ]
 
 # プロジェクトのURLルーティングの開始点
@@ -72,14 +72,27 @@ TEMPLATES = [
 # WSGIサーバー用Django進入点
 WSGI_APPLICATION = 'techave_kintai.wsgi.application'
 
-# MySQL接続(attendance/models.py で使用)
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+# 데이터베이스 설정
+# DEBUG 모드일 때는 SQLite를 사용합니다.
+# DEBUG가 False일 때는 settings_production.py에서 실제 DB 설정을 덮어쓸 것이므로,
+# 여기서는 기본적으로 연결 시도를 하지 않는 더미 SQLite를 사용합니다.
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    # DEBUG가 False일 경우 (프로덕션 환경 또는 빌드 단계)
+    # settings_production.py에서 이 설정을 덮어쓸 것이므로,
+    # 여기서는 연결 시도를 하지 않는 인메모리 SQLite를 기본으로 설정합니다.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:', # 인메모리 SQLite 사용
+        }
+    }
 
 # パスワード検証設定
 AUTH_PASSWORD_VALIDATORS = [
@@ -140,19 +153,19 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL'),                        # Redisサーバーアドレス
+        'LOCATION': os.environ.get('REDIS_URL'),         # Redisサーバーアドレス
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'PASSWORD': os.environ.get('REDIS_PASSWORD'),               # Redisパスワード
+            'PASSWORD': os.environ.get('REDIS_PASSWORD'),        # Redisパスワード
             'CONNECTION_POOL_KWARGS': {
-                'max_connections': 50,                                  # 最大接続数
-                'retry_on_timeout': True,                               # タイムアウト時に再試行
+                'max_connections': 50,                         # 最大接続数
+                'retry_on_timeout': True,                      # タイムアウト時に再試行
             },
-            'SOCKET_CONNECT_TIMEOUT': 5,                                # 連結タイムアウト
-            'SOCKET_TIMEOUT': 5,                                        # ソケットタイムアウト
+            'SOCKET_CONNECT_TIMEOUT': 5,                         # 連結タイムアウト
+            'SOCKET_TIMEOUT': 5,                                 # ソケットタイムアウト
         },
-        'TIMEOUT': 7200, 
-        'KEY_PREFIX': 'techave_kintai',                                 # キャッシュキー接頭辞
+        'TIMEOUT': 7200,
+        'KEY_PREFIX': 'techave_kintai',                          # キャッシュキー接頭辞
     }
 }
 
@@ -162,6 +175,6 @@ SESSION_CACHE_ALIAS = 'default'
 
 #
 SESSION_COOKIE_AGE = 7200  #
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  #
 
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
