@@ -20,7 +20,7 @@ class CustomAdminSite(admin.AdminSite):
     index_title = '管理者ダッシュボード'
 
     def has_permission(self, request):
-        # is_active이고, 'attendance.can_access_admin' 권한이 있을 때만 접근 허용
+        # 
         return request.user.is_active and request.user.has_perm('attendance.can_access_admin')
 
     def get_urls(self):
@@ -47,12 +47,12 @@ class CustomAdminSite(admin.AdminSite):
             {'url': '/admin/attendance-overview/', 'label': '勤怠管理'},
         ]
         return super().index(request, extra_context=extra_context)
-
+		
     def csv_upload_view(self, request):
         if request.method == 'POST':
             form = EmployeeCSVUploadForm(request.POST, request.FILES)
             if form.is_valid():
-                csv_file = form.cleaned_data['csv_file']                
+                csv_file = form.cleaned_data['csv_file']
                 decoded_file = TextIOWrapper(csv_file, encoding='utf-8')
                 reader = csv.reader(decoded_file, delimiter=',')
                 duplicated = []
@@ -68,10 +68,9 @@ class CustomAdminSite(admin.AdminSite):
                     if len(employee_no) != 6:
                         duplicated.append(f"{employee_no} (社員番号が6文字ではありません)")
                         continue
-                
                     # 이름 분리
                     if ' ' in name:
-                        last_name, first_name = name.split(' ', 1)                        
+                        last_name, first_name = name.split(' ', 1)
                     else:
                         last_name, first_name = name, ''
                     if Employee.objects.filter(employee_no=employee_no).exists():
@@ -95,7 +94,7 @@ class CustomAdminSite(admin.AdminSite):
                     messages.warning(request, msg.replace('\n', '<br>'))
                 else:
                     messages.success(request, msg)
-                    return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
+                return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
         else:
             form = EmployeeCSVUploadForm()
         context = dict(
@@ -104,6 +103,7 @@ class CustomAdminSite(admin.AdminSite):
         )
         return render(request, "admin/attendance/employee_csv_upload.html", context)
 
+
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
@@ -111,15 +111,18 @@ class CustomAdminSite(admin.AdminSite):
         return super().changelist_view(request, extra_context=extra_context)
 
 custom_admin_site = CustomAdminSite(name='custom_admin')
-
-# 권한별 사원 필터링 유틸 (새로운 직급 체계 적용)
+# 권한별 사원 필터링 유틸
 def get_employee_queryset_by_role(request, queryset):
     user = request.user
-    return queryset
-    return queryset.filter(place_work=user.place_work)
+    # superuser, 사장, 인사팀, 관리부장: 전체
+    if user.is_superuser or user.groups.filter(name__in=['社長', '인사팀', '관리부장']).exists():
+        return queryset
+    # 부장: 본인 팀(근무지)만
+    elif user.groups.filter(name='部長').exists():
+        return queryset.filter(place_work=user.place_work)
     # 그 외: 본인만
     else:
-    return queryset.filter(employee_no=user.employee_no)
+        return queryset.filter(employee_no=user.employee_no)
 
 @admin.register(Employee, site=custom_admin_site)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -130,7 +133,7 @@ class EmployeeAdmin(admin.ModelAdmin):
     list_filter = ('place_work','is_active', 'groups')
     search_fields = ('employee_no', 'last_name', 'first_name', 'place_work', 'email')
     ordering = ('employee_no',)
-    
+
     # フィールドセットのカスタマイズ
     fieldsets = (
         ('社員情報', {'fields': ('employee_no', 'password')}),
@@ -139,14 +142,14 @@ class EmployeeAdmin(admin.ModelAdmin):
         ('権限', {'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions')}),
         ('重要日付', {'fields': ('last_login',)}),
     )
-    
+
     add_fieldsets = (
         ('社員情報', {
             'classes': ('wide',),
             'fields': ('employee_no', 'place_work', 'email', 'password1', 'password2'),
         }),
     )
-    
+
     actions = ['retire_selected']
 
     change_list_template = "admin/attendance/employee_changelist.html"
@@ -155,7 +158,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         """社員番号でソート"""
         qs = super().get_queryset(request).order_by('employee_no')
         return get_employee_queryset_by_role(request, qs)
-    
+
     def retire_selected(self, request, queryset):
         updated = queryset.update(is_active=False)
         self.message_user(request, f"{updated}名退社処理完了.")
@@ -174,19 +177,18 @@ class EmployeeAdmin(admin.ModelAdmin):
         formfield = super().formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'employee_no':
             formfield.help_text = '6桁の社員番号を入力してください (例: 123456)'
-            return formfield
+        return formfield
 
     def detail_button(self, obj):
         today = timezone.now().date()
         return format_html('<a class="button" href="/admin/employee/{}/detail/{}/{}/">勤怠詳細</a>', obj.employee_no, today.year, str(today.month).zfill(2))
-    
     detail_button.short_description = '勤怠詳細'
 
     def get_readonly_fields(self, request, obj=None):
         # superuser는 모든 필드 수정 가능, 그 외는 employee_no만 readonly
         if request.user.is_superuser:
             return []
-            return ['employee_no']
+        return ['employee_no']
 
     def get_fieldsets(self, request, obj=None):
         # superuser는 모든 필드 표시, 그 외는 제한
@@ -202,8 +204,8 @@ class EmployeeAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-            extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
-            return super().changelist_view(request, extra_context=extra_context)
+        extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
+        return super().changelist_view(request, extra_context=extra_context)
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
@@ -212,7 +214,7 @@ class AttendanceMonthlyAdmin(admin.ModelAdmin):
     list_filter = ('year', 'month', 'base_calendar', 'employee__place_work')
     search_fields = ('employee__employee_no', 'project_name')
     ordering = ('-year', '-month', 'employee__employee_no')
-    
+
     def employee(self, obj):
         return f"{obj.employee.employee_no:06d} - {obj.employee.last_name}{obj.employee.first_name}"
     employee.short_description = '社員'
@@ -224,7 +226,7 @@ class AttendanceDailyAdmin(admin.ModelAdmin):
     list_filter = ('work_type', 'is_confirmed', 'date', 'monthly_attendance__employee__place_work')
     search_fields = ('monthly_attendance__employee__employee_no',)
     ordering = ('-date', 'monthly_attendance__employee__employee_no')
-    
+
     def employee(self, obj):
         return f"{obj.monthly_attendance.employee.employee_no:06d} - {obj.monthly_attendance.employee.last_name}{obj.monthly_attendance.employee.first_name}"
     employee.short_description = '社員'
