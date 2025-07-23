@@ -1,2 +1,11 @@
 {# 일본어로 커스텀된 admin base 템플릿. 필요시 추가 커스터마이즈 가능 #}
-{% extends "admin/base.html" %} 
+{% extends "admin/base.html" %}
+{% block usertools %}
+  <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.7em;">
+    <a href="{% url 'attendance:main' %}" style="font-size:0.95em; text-decoration:none; color:inherit;">
+      {{ request.user.display_name }} ({{ request.user.employee_no }})
+    </a>
+    <a href="{% url 'attendance:password_change' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">パスワード変更</a>
+    <a href="{% url 'attendance:logout' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">ログアウト</a>
+  </div>
+{% endblock %} 

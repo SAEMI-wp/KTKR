@@ -1,8 +1,41 @@
 {% extends 'admin/base_site.html' %}
 {% block content %}
 <h1>CSVで従業員一括追加</h1>
-<p>CSVファイルをアップロードしてください。<br>
-フォーマット: <code>社員番号, 氏名(姓と名は半角スペース区切り), 勤務先, メール</code></p>
+<p>CSVファイルをアップロードしてください。</p>
+
+<div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+  <h3>CSVフォーマット:</h3>
+  <code>社員番号, 氏名(姓と名は半角スペース区切り), 勤務先, メール, 職級コード</code>
+  
+  <h3 style="margin-top: 20px;">職級コード一覧:</h3>
+  <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
+    <tr style="background: #e9e9e9;">
+      <th style="border: 1px solid #ddd; padding: 8px;">コード</th>
+      <th style="border: 1px solid #ddd; padding: 8px;">職級名</th>
+    </tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">1</td><td style="border: 1px solid #ddd; padding: 8px;">社長</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">2</td><td style="border: 1px solid #ddd; padding: 8px;">役員</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">100</td><td style="border: 1px solid #ddd; padding: 8px;">部長</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">101</td><td style="border: 1px solid #ddd; padding: 8px;">担当部長</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">102</td><td style="border: 1px solid #ddd; padding: 8px;">主幹技師</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">104</td><td style="border: 1px solid #ddd; padding: 8px;">技師</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">105</td><td style="border: 1px solid #ddd; padding: 8px;">企画員</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">106</td><td style="border: 1px solid #ddd; padding: 8px;">社員</td></tr>
+  </table>
+  
+  <h3 style="margin-top: 20px;">例:</h3>
+  <code>123456, 田中 太郎, 東京本社, tanaka@example.com, 104</code>
+  
+  <h3 style="margin-top: 20px;">文字エンコード対応:</h3>
+  <ul>
+    <li><strong>UTF-8</strong> (推奨)</li>
+    <li><strong>Shift-JIS</strong> (Excelの標準保存形式)</li>
+    <li><strong>CP932</strong> (Windows標準)</li>
+    <li>EUC-JP、ISO-2022-JP</li>
+  </ul>
+  <p><small>※ システムが自動的に適切なエンコードを検出します</small></p>
+</div>
+
 <form method="post" enctype="multipart/form-data" style="margin:2em 0;">
   {% csrf_token %}
   {{ form.as_p }}

@@ -1,12 +1,7 @@
 {% extends "admin/base.html" %}
-{% block title %}{{ site_title|default:"勤怠・給与管理システム" }}{% endblock %}
+{% block title %}{{ site_title|default:"勤怠管理システム" }}{% endblock %}
 {% block branding %}
-<h1 id="site-name">{{ site_header|default:"勤怠・給与管理システム管理者" }}</h1>
-{% if request.user.is_authenticated %}
-  <div style="position:absolute; top:1.5em; right:2em;">
-    <a href="{% url 'attendance:password_change' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">パスワード変更</a>
-  </div>
-{% endif %}
+<h1 id="site-name">{{ site_header|default:"勤怠管理システム管理者" }}</h1>
 {% endblock %}
 {% block nav-global %}
 {% endblock %}
