@@ -115,11 +115,11 @@ custom_admin_site = CustomAdminSite(name='custom_admin')
 # 권한별 사원 필터링 유틸 (새로운 직급 체계 적용)
 def get_employee_queryset_by_role(request, queryset):
     user = request.user
-        return queryset
-        return queryset.filter(place_work=user.place_work)
+    return queryset
+    return queryset.filter(place_work=user.place_work)
     # 그 외: 본인만
     else:
-        return queryset.filter(employee_no=user.employee_no)
+    return queryset.filter(employee_no=user.employee_no)
 
 @admin.register(Employee, site=custom_admin_site)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -174,7 +174,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         formfield = super().formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'employee_no':
             formfield.help_text = '6桁の社員番号を入力してください (例: 123456)'
-        return formfield
+            return formfield
 
     def detail_button(self, obj):
         today = timezone.now().date()
@@ -186,7 +186,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         # superuser는 모든 필드 수정 가능, 그 외는 employee_no만 readonly
         if request.user.is_superuser:
             return []
-        return ['employee_no']
+            return ['employee_no']
 
     def get_fieldsets(self, request, obj=None):
         # superuser는 모든 필드 표시, 그 외는 제한
@@ -202,8 +202,8 @@ class EmployeeAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-        extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
-        return super().changelist_view(request, extra_context=extra_context)
+            extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
+            return super().changelist_view(request, extra_context=extra_context)
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
