@@ -95,7 +95,7 @@ class CustomAdminSite(admin.AdminSite):
                     messages.warning(request, msg.replace('\n', '<br>'))
                 else:
                     messages.success(request, msg)
-               return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
+                    return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
         else:
             form = EmployeeCSVUploadForm()
         context = dict(
