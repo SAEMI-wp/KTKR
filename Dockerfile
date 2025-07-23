@@ -19,7 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 빌드 시점에 DJANGO_SETTINGS_MODULE 환경 변수 설정
-ENV DJANGO_SETTINGS_MODULE=techave_kintai.settings_production.py
+# 여기에서 '.py' 확장자를 제거했습니다.
+ENV DJANGO_SETTINGS_MODULE=techave_kintai.settings_production
 
 # Railway의 DATABASE_URL을 명시적으로 Dockerfile에 설정합니다.
 ENV DATABASE_URL="mysql://root:NdNknbCgKKvdzMJcwbuPVfRwjoLGaNJQ@mysql-zbi2.railway.internal:3306/railway"
@@ -28,4 +29,4 @@ ENV DATABASE_URL="mysql://root:NdNknbCgKKvdzMJcwbuPVfRwjoLGaNJQ@mysql-zbi2.railw
 RUN python manage.py collectstatic --noinput
 
 # 웹 서버 진입점 설정 (Procfile이 있다면 이 부분은 필요 없을 수 있습니다.)
-# CMD ["gunicorn", "techave_kintai.wsgi:application", "--bind", "0.0.0.0:$PORT"] 
+# CMD ["gunicorn", "techave_kintai.wsgi:application", "--bind", "0.0.0.0:$PORT"]
