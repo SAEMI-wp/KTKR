@@ -18,6 +18,7 @@ from pathlib import Path
 import os
 import pymysql
 pymysql.install_as_MySQLdb()
+import dj_database_url # <-- 이 줄을 추가합니다.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
