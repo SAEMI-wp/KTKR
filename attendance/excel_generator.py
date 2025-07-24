@@ -6,6 +6,8 @@ from .models import AttendanceMonthly, AttendanceDaily
 from .utils import get_or_create_monthly_structure
 from calendar import monthrange
 import calendar
+import tkinter as tk
+from tkinter import ttk
 
 # 스타일 상수 정의
 class ExcelStyles:
@@ -231,9 +233,8 @@ class ExcelReportGenerator:
             if current_row > 42:
                 break
             current_date = date(self.year, self.month, day)
-            # 日付はM/D形式で安全に処理（前ゼロなし、.00付き）
-            self.worksheet[f'B{current_row}'] = float(f"{current_date.month}.{current_date.day:02d}")
-            self.worksheet[f'B{current_row}'].number_format = '0.00'
+            # 日付はM/D形式で文字列として出力（例: 7/1）
+            self.worksheet[f'B{current_row}'] = f"{current_date.month}/{current_date.day}"
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
             weekday = weekday_names[current_date.weekday()]
             self.worksheet[f'C{current_row}'] = weekday

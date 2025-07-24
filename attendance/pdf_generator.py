@@ -12,10 +12,10 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 from .models import AttendanceMonthly, AttendanceDaily
 from .utils import get_or_create_monthly_structure
-
 # --- 폰트 등록 (사용자 지정 폰트 사용) ---
 # .ttc (TrueType Collection) 파일은 여러 폰트가 포함되어 있을 수 있습니다.
 try:
@@ -42,6 +42,9 @@ try:
     FONT_NAME_BOLD = 'MS-Mincho'
     
     print("MS GothicとMS Minchoフォントを登録しました。(インデックス1使用)")
+
+    #
+    COL_WIDTHS = [14*mm, 10*mm, 16*mm, 17*mm, 16*mm, 16*mm, 14*mm, 14*mm, 14*mm, 14*mm, 14*mm, 35*mm]  # 合計180mm
 
 except Exception as e:
     print(f"フォント読み込みエラー: {e}")
@@ -73,7 +76,7 @@ class PDFStyles:
         'Header': ParagraphStyle(name='Header', fontName=FONT_NAME_BOLD, fontSize=12, alignment=TA_CENTER),
         'HeaderSmall': ParagraphStyle(name='HeaderSmall', fontName=FONT_NAME, fontSize=9, alignment=TA_CENTER),
         'Company': ParagraphStyle(name='Company', fontName=FONT_NAME_BOLD, fontSize=11),
-        'FooterHeader': ParagraphStyle(name='FooterHeader', fontName=FONT_NAME, fontSize=8, alignment=TA_CENTER),
+        'FooterHeader': ParagraphStyle(name='FooterHeader', fontName=FONT_NAME, fontSize=9, alignment=TA_CENTER), 
     }
 
 
@@ -84,6 +87,10 @@ class PDFReportGenerator:
         self.month = month
         self.styles = PDFStyles()
         self.story = []
+        # 중앙 정렬 스타일을 한 번만 생성
+        styles = getSampleStyleSheet()
+        self.center_style = styles['Normal'].clone('centered')
+        self.center_style.alignment = TA_CENTER
 
     def generate_pdf(self):
         """가동보고서 PDF 파일을 생성합니다."""
@@ -122,58 +129,39 @@ class PDFReportGenerator:
         stamp_table = Table([
             [Paragraph("承認", S['HeaderSmall']), Paragraph("確認", S['HeaderSmall']), Paragraph("申請", S['HeaderSmall'])],
             ["", "", ""],
+            ["", "", ""],
             ["", "", ""]
-        ], colWidths=[18*mm, 18*mm, 18*mm])
+        ], colWidths=[18*mm, 18*mm, 18*mm, 18*mm])
 
         stamp_table.setStyle(TableStyle([
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),  # 바깥 테두리
-            # 세로선(열 구분선)만 직접 지정
-            ('LINEAFTER', (0, 0), (0, 2), 0.5, colors.black),  # 1번째 열 오른쪽
-            ('LINEAFTER', (1, 0), (1, 2), 0.5, colors.black),  # 2번째 열 오른쪽
-            # 1행(헤더) 아래에만 가로선
-            ('LINEBELOW', (0, 0), (2, 0), 0.5, colors.black),
-            # 나머지 행(2행, 3행)에는 가로선 없음
+            # 全行に縦線（열 구분선）を追加
+            ('LINEAFTER', (0, 0), (0, 3), 0.5, colors.black),  # 1번째 열 오른쪽 (0~3행)
+            ('LINEAFTER', (1, 0), (1, 3), 0.5, colors.black),  # 2번째 열 오른쪽 (0~3행)
+            ('LINEBELOW', (0, 0), (2, 0), 0.5, colors.black),  # 1행(헤더) 아래에만 가로선
+            # 정렬・패딩
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
         ]))
 
-        # 5열 헤더 테이블 데이터
+        # ヘッダーテーブル データ
         header_data = [
-            # 1행: 제목(왼쪽), 버전(오른쪽)
-            [
-                Paragraph('稼 働 報 告 書', ParagraphStyle('TitleLeft', parent=S['Title'], alignment=TA_LEFT)),
-                '', '', '',  # 중간은 비움
-                Paragraph("TA2025v1. 00", ParagraphStyle('SmallRight', parent=S['SmallRight'], alignment=TA_RIGHT))
-            ],
-            # 2행: 회사명(왼쪽), 연월(중앙), 도장(오른쪽)
-            [
-                Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)),
-                '',  # 중간 비움
-                Paragraph(f"{self.year}年 {self.month}月", S['Header']),
-                '',  # 중간 비움
-                stamp_table
-            ],
-            # 3행: 캘린더, PJ명, 작업자명 (점선)
-            [
-                Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']),
-                Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']),
-                Paragraph(f"作業者：{self.employee.display_name or self.employee.employee_no}", S['Normal']),
-                '', ''
-            ],
-            # 4행: 휴게시간, 기준시간 (이하 생략)
-            [
-                Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']),
-                Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']),
-                '', '', ''
-            ]
+            # 1行：バージョン(右)
+            ['', '', '', '', Paragraph("TA2025v1. 00", ParagraphStyle('SmallRight', parent=S['SmallRight'], alignment=TA_RIGHT))],
+            # 2行：タイトル(左)、スタンプ(右、2~5行 結合)
+            [Paragraph('稼 働 報 告 書', ParagraphStyle('TitleLeft', parent=S['Title'], alignment=TA_LEFT)), '', '', '', stamp_table],
+            # 3行：会社名(左)、年月(中央)
+            [Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)), '', Paragraph(f"{self.year}年 {self.month}月", S['Header']), '', ''],
+            # 4行：カレンダー、作業者名 等
+            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"作業者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', ''],
+            # 5行：昼休み区分、基準時間、PJ名 等
+            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', '']
         ]
 
-        # 5열 Table 생성
         header_table = Table(header_data, colWidths=[45*mm, 45*mm, 40*mm, 10*mm, 40*mm])
 
-        # 스타일 설정
         header_table.setStyle(TableStyle([
             # 제목 행 병합
             ('SPAN', (0, 0), (3, 0)),  # 제목은 왼쪽 4칸 병합
@@ -190,6 +178,8 @@ class PDFReportGenerator:
 #           ('LINEBELOW', (0, 2), (2, 2), 0.5, colors.black, None, [2, 2]),
             # 휴게시간, 기준시간 행
             ('SPAN', (3, 3), (4, 3)),  # 오른쪽 병합
+            # 도장 표를 2~5행에 병합
+            ('SPAN', (4, 1), (4, 4)),  # 도장(stamp_table)을 2~5행(1~4 인덱스) 5번째 열에 병합
             # 전체 패딩/정렬
             ('LEFTPADDING', (0, 0), (-1, -1), 2),
             ('RIGHTPADDING', (0, 0), (-1, -1), 2),
@@ -203,12 +193,12 @@ class PDFReportGenerator:
 
 
     def _create_daily_table(self, daily_list):
-        """일별 데이터 테이블을 생성합니다."""
+        """日次データテーブルを作成"""
         
-        # 테이블 헤더
+        # テーブル ヘッダー
         headers = ["月/日", "曜\n日", "勤務区分", "代休/振替\nの勤務日", "作業開始\n時 刻", "作業終了\n時 刻", "常 勤\n(Hr)", "控 除\n(Hr)", "残 業\n(Hr)", "深 夜\n(Hr)", "小 計\n(Hr)", "実施作業内容・備考"]
         
-        # Paragraph로 변환 (줄바꿈 처리)
+        # Paragraphに変換 (改行処理)
         header_paragraphs = [Paragraph(h.replace('\n', '<br/>'), self.styles.STYLES['NormalCenter']) for h in headers]
         
         data = [header_paragraphs]
@@ -216,11 +206,11 @@ class PDFReportGenerator:
         _, last_day = monthrange(self.year, self.month)
         daily_dict = {daily.date.day: daily for daily in daily_list}
         
-        # 합계 계산을 위한 변수
+        # 合計計算用変数
         sums = {'H': 0.0, 'I': 0.0, 'J': 0.0, 'K': 0.0, 'L': 0.0}
 
         special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
-        # 일별 데이터 행 추가
+        # 日次データ行を追加
         for day in range(1, last_day + 1):
             current_date = date(self.year, self.month, day)
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
@@ -237,23 +227,22 @@ class PDFReportGenerator:
                 holiday_keywords = ["休日", "休日(法)", "振替(休)", "振替(法)", "祝日"]
                 if any(keyword in work_type for keyword in holiday_keywords):
                     is_holiday_row = True
-
                 # 出勤/退勤時間が同じ、または特定勤務区分なら 구분만 표시, 나머지는 빈칸
                 if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
-                    row_data.extend(["", "", "", "", "", "", "", "", "", ""])
+                    # 나머지 11개를 정확히 추가
+                    while len(row_data) < 12:
+                        row_data.append('')
                 else:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
                     row_data.append(Paragraph(daily.alternative_work_date.strftime("%m/%d") if daily.alternative_work_date else "", self.styles.STYLES['NormalCenter']))
                     row_data.append(Paragraph(daily.start_time.strftime("%H:%M") if daily.start_time else "", self.styles.STYLES['NormalRight']))
                     row_data.append(Paragraph(daily.end_time.strftime("%H:%M") if daily.end_time else "", self.styles.STYLES['NormalRight']))
-                    # structures.py에서 계산된値をそのまま使う
                     reg_h = daily.regular_work_hours if daily.regular_work_hours is not None else 0.0
                     ded_h = daily.deduction_hours if daily.deduction_hours is not None else 0.0
                     ovt_h = daily.overtime_hours if daily.overtime_hours is not None else 0.0
                     nit_h = daily.late_night_overtime_hours if daily.late_night_overtime_hours is not None else 0.0
                     sub_h = daily.total_hours if daily.total_hours is not None else 0.0
-                    # 休日, 休日(法), 祝日なら常勤・控除は空欄
                     if work_type in ["休日", "休日(法)", "祝日"]:
                         row_data.append(Paragraph("", self.styles.STYLES['NormalRight']))
                         row_data.append(Paragraph("", self.styles.STYLES['NormalRight']))
@@ -264,13 +253,17 @@ class PDFReportGenerator:
                     row_data.append(Paragraph(f"{nit_h:.1f}", self.styles.STYLES['NormalRight']))
                     row_data.append(Paragraph(f"{sub_h:.2f}", self.styles.STYLES['NormalRight']))
                     row_data.append(Paragraph(daily.notes or "", self.styles.STYLES['Normal']))
+                    # 혹시라도 부족하면 빈 칸 추가
+                    while len(row_data) < 12:
+                        row_data.append('')
             else:
-                # 데이터가 없는 날
                 work_type = ""
                 if weekday_str == "土": work_type = "休日"
                 elif weekday_str == "日": work_type = "休日(法)"
                 if work_type: is_holiday_row = True
-                row_data.extend([Paragraph(work_type, self.styles.STYLES['NormalCenter']), '', '', '', '', '', '', '', '', '', Paragraph('', self.styles.STYLES['Normal'])])
+                row_data.extend([Paragraph(work_type, self.styles.STYLES['NormalCenter'])])
+                while len(row_data) < 12:
+                    row_data.append('')
 
             data.append(row_data)
             
@@ -294,22 +287,19 @@ class PDFReportGenerator:
             Paragraph(f"{total_ovt:.1f}", self.styles.STYLES['NormalRight']),
             Paragraph(f"{total_nit:.1f}", self.styles.STYLES['NormalRight']),
             Paragraph(f"{total_sub:.2f}", self.styles.STYLES['NormalRight']),
-            ''
+            Paragraph('', self.styles.STYLES['Normal'])
         ]
         data.append(total_row)
         
-        # 컬럼 너비 설정 (엑셀과 유사하게)
-        col_widths = [14*mm, 10*mm, 18*mm, 18*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 35*mm]
-        
-        daily_table = Table(data, colWidths=col_widths)
+        daily_table = Table(data, colWidths=COL_WIDTHS, hAlign='CENTER')
         
         # 테이블 스타일
         style_cmds = [
             # 기본 정렬 및 패딩
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'), # 기본 중앙 정렬
-            ('LEFTPADDING', (0, 0), (-1, -1), 2),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),  # 좌측 패딩 최소화
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2), # 우측 패딩 약간 추가
             ('TOPPADDING', (0, 0), (-1, -1), 2),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
 
@@ -321,18 +311,18 @@ class PDFReportGenerator:
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             
             # 특정 열 정렬 (기본 정렬 덮어쓰기)
-            ('ALIGN', (4, 1), (10, -2), 'RIGHT'), # 숫자 열들 오른쪽 정렬
-            ('ALIGN', (11, 1), (11, -2), 'LEFT'), # 비고 열 왼쪽 정렬
-            ('ALIGN', (6, -1), (10, -1), 'RIGHT'), # 합계 행 숫자들 오른쪽 정렬
+            ('ALIGN', (4, 1), (10, -2), 'RIGHT'), # 숫자 열들 오른쪽 정렬 (4~10)
+            ('ALIGN', (11, 1), (11, -2), 'LEFT'), # 비고 열 왼쪽 정렬 (11)
+            ('ALIGN', (6, -1), (10, -1), 'RIGHT'), # 합계 행 숫자들 오른쪽 정렬 (6~10)
 
             # 병합
-            ('SPAN', (11, 0), (11, 0)), # 헤더 비고
+            ('SPAN', (11, 0), (11, 0)), # 헤더 비고 (11)
             ('SPAN', (0, -1), (5, -1)), # 합계 라벨
         ]
 
         # 데이터 행 병합 및 휴일 스타일링
         for i in range(1, len(data) - 1):  # 헤더와 합계행 제외
-            style_cmds.append(('SPAN', (11, i), (11, i)))  # 비고란 SPAN
+            style_cmds.append(('SPAN', (11, i), (11, i)))  # 비고란 SPAN (11)
 
             # 날짜와 요일 셀을 Paragraph로 변환 (폰트 적용을 위해)
             data[i][0] = Paragraph(str(data[i][0]), self.styles.STYLES['NormalCenter'])
@@ -351,11 +341,16 @@ class PDFReportGenerator:
 
 
         # 소계, 합계 배경색
-        style_cmds.append(('BACKGROUND', (10, 1), (10, -2), self.styles.SUBTOTAL_FILL)) # 소계 열
+        style_cmds.append(('BACKGROUND', (10, 1), (10, -2), self.styles.SUBTOTAL_FILL)) # 小計 열만 초록색
         style_cmds.append(('BACKGROUND', (6, -1), (10, -1), self.styles.SUBTOTAL_FILL)) # 합계 행
 
         daily_table.setStyle(TableStyle(style_cmds))
+        # 표를 중앙에 배치하기 위해 Paragraph(align='center')로 감싼다
+        # 파일 상단에만 import
+        self.story.append(Paragraph('<br/>', self.center_style))  # 위 여백
+        self.story.append(Paragraph('<para alignment="center"></para>', self.center_style))
         self.story.append(daily_table)
+        self.story.append(Paragraph('<br/>', self.center_style))  # 아래 여백
 
     def _create_summary_tables(self, monthly_data):
         """하단 통계 테이블을 생성합니다."""
@@ -382,17 +377,19 @@ class PDFReportGenerator:
         ]
         p_values = [Paragraph(v, self.styles.STYLES['NormalCenter']) for v in values]
 
-        data = [
-            [Paragraph("報告値", self.styles.STYLES['NormalCenter']), '', *p_labels],
-            ['', '', *p_values]
+        data_summary = [
+            [Paragraph("報告値", self.styles.STYLES['NormalCenter']), '', *p_labels],  # 총 12개 열
+            ['', '', *p_values]  # 총 12개 열
         ]
+        SUMMARY_COL_WIDTHS = [10*mm, 14*mm, 14*mm, 14*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 18*mm]  # 合計180mm, 12列
+        summary_table = Table(data_summary, colWidths=SUMMARY_COL_WIDTHS, hAlign='CENTER')
 
-        # 엑셀의 D열부터 시작하므로 앞의 B, C열에 해당하는 너비 추가
-        col_widths = [15*mm, 9*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 16*mm, 22*mm]
-
-        summary_table = Table(data, colWidths=col_widths)
         style = TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
             ('SPAN', (0, 0), (1, 1)), # 보고치
             ('SPAN', (12, 0), (12, 0)), # 잔업환산 헤더 (실제로는 p_labels에 포함됨)
             ('SPAN', (12, 1), (12, 1)), # 잔업환산 값 (실제로는 p_values에 포함됨)
@@ -407,114 +404,8 @@ class PDFReportGenerator:
         ])
         
         summary_table.setStyle(style)
+        # 요약표도 동일하게 중앙에 배치
+        self.story.append(Paragraph('<br/>', self.center_style))
+        self.story.append(Paragraph('<para alignment="center"></para>', self.center_style))
         self.story.append(summary_table)
-
-# ------------- 급여명세서 (모듈화 필요) -------------------- #
-def generate_payslip_pdf(employee, payslip, year, month):
-    """
-    給与明細書PDFを生成し、BytesIO로 반환합니다.
-    """
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
-    styles = PDFStyles()
-    story = []
-    # 제목
-    story.append(Paragraph('給与明細書', styles.STYLES['Title']))
-    story.append(Spacer(1, 8*mm))
-    # 직원 정보 테이블
-    info_data = [
-        ['社員番号', employee.employee_no],
-        ['氏名', f'{employee.last_name}{employee.first_name}'],
-        ['勤務先', employee.place_work],
-        ['年月', f'{year}年 {month}月'],
-    ]
-    info_table = Table(info_data, colWidths=[30*mm, 100*mm])
-    info_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
-        ('FONTSIZE', (0, 0), (-1, -1), 11),
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    story.append(info_table)
-    story.append(Spacer(1, 8*mm))
-    # 급여 정보 테이블
-    payslip_data = [
-        ['支給額', f'{payslip.payment} 円'],
-        ['控除額', f'{payslip.deduction} 円'],
-        ['差引支給額', f'{payslip.net_payment} 円'],
-        ['備考', payslip.notes or ''],
-    ]
-    payslip_table = Table(payslip_data, colWidths=[40*mm, 90*mm])
-    payslip_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
-        ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f0f0f0')),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-    ]))
-    story.append(payslip_table)
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
-
-def generate_attendance_pdf(employee, monthly, daily_list, year, month):
-    """
-    勤怠詳細PDFを生成し、BytesIO로 반환합니다.
-    """
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
-    styles = PDFStyles()
-    story = []
-    # 제목
-    story.append(Paragraph('勤怠詳細', styles.STYLES['Title']))
-    story.append(Spacer(1, 8*mm))
-    # 직원 정보 테이블
-    info_data = [
-        ['社員番号', employee.employee_no],
-        ['氏名', f'{employee.last_name}{employee.first_name}'],
-        ['勤務先', employee.place_work],
-        ['年月', f'{year}年 {month}月'],
-        ['PJ名', monthly.project_name if monthly else ''],
-    ]
-    info_table = Table(info_data, colWidths=[30*mm, 100*mm])
-    info_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
-        ('FONTSIZE', (0, 0), (-1, -1), 11),
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    story.append(info_table)
-    story.append(Spacer(1, 8*mm))
-    # 근태 상세 테이블
-    table_data = [
-        ['日付', '勤務区分', '開始', '終了', '備考']
-    ]
-    for d in daily_list:
-        table_data.append([
-            str(d.date),
-            d.work_type or '',
-            d.start_time.strftime('%H:%M') if d.start_time else '',
-            d.end_time.strftime('%H:%M') if d.end_time else '',
-            d.notes or ''
-        ])
-    att_table = Table(table_data, colWidths=[25*mm, 30*mm, 20*mm, 20*mm, 55*mm])
-    att_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), FONT_NAME),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    story.append(att_table)
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
+        self.story.append(Paragraph('<br/>', self.center_style))
