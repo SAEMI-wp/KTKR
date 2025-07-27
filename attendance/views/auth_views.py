@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from ..models import Employee
 from ..forms import SignupForm
@@ -62,7 +64,11 @@ def logout_view(request):
 
 class PasswordChangeForm(forms.Form):
     old_password = forms.CharField(label='現在のパスワード', widget=forms.PasswordInput)
-    new_password1 = forms.CharField(label='新しいパスワード', widget=forms.PasswordInput)
+    new_password1 = forms.CharField(
+        label='新しいパスワード', 
+        widget=forms.PasswordInput,
+        help_text='パスワードは8文字以上で、英字・数字・記号を含む必要があります。'
+    )
     new_password2 = forms.CharField(label='新しいパスワード（確認）', widget=forms.PasswordInput)
 
     def __init__(self, user, *args, **kwargs):
@@ -75,12 +81,32 @@ class PasswordChangeForm(forms.Form):
             raise forms.ValidationError('現在のパスワードが正しくありません。')
         return old_password
 
+    def clean_new_password1(self):
+        new_password = self.cleaned_data.get('new_password1')
+        
+        # Django 기본 비밀번호 검증기 사용
+        try:
+            validate_password(new_password, self.user)
+        except ValidationError as e:
+            # Django 검증 오류를 forms.ValidationError로 변환
+            raise forms.ValidationError(e.messages[0] if e.messages else 'パスワードが要件を満たしていません。')
+        
+        return new_password
+
     def clean(self):
         cleaned_data = super().clean()
+        old_password = cleaned_data.get('old_password')
         pw1 = cleaned_data.get('new_password1')
         pw2 = cleaned_data.get('new_password2')
+        
+        # 새 비밀번호 확인
         if pw1 and pw2 and pw1 != pw2:
             raise forms.ValidationError('新しいパスワードが一致しません。')
+        
+        # 기존 비밀번호와 동일한지 확인
+        if old_password and pw1 and old_password == pw1:
+            raise forms.ValidationError('新しいパスワードは現在のパスワードと異なる必要があります。')
+        
         return cleaned_data
 
 
