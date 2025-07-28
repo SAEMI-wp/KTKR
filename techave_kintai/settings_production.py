@@ -5,6 +5,10 @@ import dj_database_url
 import pymysql
 pymysql.install_as_MySQLdb()
 
+# 빌드 시점임을 나타내는 환경 변수 확인
+# Railway 배포 시에는 이 환경 변수가 설정되지 않으므로, 실제 DB 연결을 시도합니다.
+IS_BUILD_PHASE = os.environ.get('IS_BUILD_PHASE', 'False').lower() == 'true'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -32,14 +36,24 @@ CSRF_TRUSTED_ORIGINS = [
 _db_url_from_env = os.environ.get('DATABASE_URL')
 # print(f"DEBUG: DATABASE_URL from environment: {_db_url_from_env}")
 
-# 데이터베이스 설정 (환경변수에서 가져오기)
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+# 데이터베이스 설정 (환경 변수에서 가져오기)
+if IS_BUILD_PHASE:
+    # 빌드 중일 때는 인메모리 SQLite 데이터베이스를 사용하여 실제 DB 연결 시도 방지
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # 인메모리 SQLite 사용
+        }
+    }
+else:
+    # 실제 런타임 환경에서는 환경 변수에 설정된 DATABASE_URL을 사용
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
 
 # 정적 파일 설정
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
