@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'crispy_forms',                 # フォームレンダリング (attendance/forms.pyで使用)
     'crispy_bootstrap5',            # Bootstrap5 スタイル
     'attendance',                   # 勤怠管理メインアプリ
+    'attendance.apps.AttendanceConfig',
 ]
 
 # ミドルウェア設定
