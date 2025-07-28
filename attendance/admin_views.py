@@ -241,12 +241,3 @@ def daily_calendar_view(request, year=None, month=None):
 
 # WeasyPrint 관련 import 및 payroll_pdf_view 함수 삭제
 # 이후 pdf_generator.py의 generate_payslip_pdf 함수 등을 활용할 예정 
-
-perm = Permission.objects.get(codename='can_access_admin')
-president = Group.objects.get(id=1)  # 社長
-bucho = Group.objects.get(id=3)      # 部長
-
-president.permissions.add(perm)
-bucho.permissions.add(perm)
-
-print('社長(id=1), 部長(id=3) 그룹에 관리자 페이지 접근 권한을 부여했습니다.') 
