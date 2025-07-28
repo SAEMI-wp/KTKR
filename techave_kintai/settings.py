@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',   # 静的ファイル管理
     'crispy_forms',                 # フォームレンダリング (attendance/forms.pyで使用)
     'crispy_bootstrap5',            # Bootstrap5 スタイル
-    'attendance',                   # 勤怠管理メインアプリ
+#    'attendance',                   # 勤怠管理メインアプリ
     'attendance.apps.AttendanceConfig',
 ]
 
