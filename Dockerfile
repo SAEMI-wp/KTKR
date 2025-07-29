@@ -21,8 +21,7 @@ COPY . .
 ENV DJANGO_SETTINGS_MODULE=techave_kintai.settings_production
 
 # 빌드 페이즈임을 알리는 환경 변수 설정 (DB 연결 회피용)
-# 이 변수가 'True'이면 settings_production.py에서 인메모리 SQLite를 사용합니다.
-ENV IS_BUILD_PHASE=True
+# ENV IS_BUILD_PHASE는 True 변수가 'True'이면 settings_production.py에서 인메모리 SQLite를 사용합니다.
 
 # Railway의 DATABASE_URL을 명시적으로 Dockerfile에 설정합니다.
 # IS_BUILD_PHASE가 True일 때는 이 값이 직접 사용되지 않지만,
