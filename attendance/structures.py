@@ -6,24 +6,24 @@ from datetime import date, time, datetime, timedelta
 class DailyData:
     date: date
     work_type: Optional[str]
-    start_time: Optional[time]
-    end_time: Optional[time]
-    alternative_work_date: Optional[date] = None
-    notes: Optional[str] = None
-    is_required: bool = False
-    is_confirmed: bool = False
+    start_time: Optional[time]                          # 開始時間
+    end_time: Optional[time]                            # 終了時間
+    alternative_work_date: Optional[date] = None        # 代休/振替
+    notes: Optional[str] = None                         # 備考
+    is_required: bool = False                           # 必須
+    is_confirmed: bool = False                          # 確認
     
-    break_minutes: int = 0  
-    standard_work_hours: float = 0.0
+    break_minutes: int = 0                              # 昼休み時間(45, 60)
+    standard_work_hours: float = 0.0                    # 標準勤務時間(7.5, 8)
     
-    regular_work_hours: Optional[float] = None
-    deduction_hours: Optional[float] = None
-    overtime_hours: Optional[float] = None
-    late_night_overtime_hours: Optional[float] = None
-    total_hours: Optional[float] = None
-    
+    regular_work_hours: Optional[float] = None          # 常勤
+    deduction_hours: Optional[float] = None             # 控除
+    overtime_hours: Optional[float] = None              # 残業
+    late_night_overtime_hours: Optional[float] = None   # 深夜
+    total_hours: Optional[float] = None                 # 合計
+
     def calculate_work_hours(self):
-        """모든 근무시간 계산 메서드"""
+        """勤務時間計算"""
         self._calculate_regular_work_hours()    #常勤
         self._calculate_deduction_hours()       #控除
         self._calculate_overtime_hours()        #残業
@@ -39,8 +39,8 @@ class DailyData:
         return 0.0
 
     def _get_time_value(self, time_obj, break_minutes):
-        """시간을 대입하여 값을 반환하는 함수"""
-        # 시간을 소수점 형태로 변환 (예: 9:30 -> 9.50)
+        """常勤時間計算の関数"""
+        # 時間を小数点形式に変換 (例: 9:30 -> 9.50)
         hour = time_obj.hour
         minute = time_obj.minute
         time_decimal = hour + minute / 60.0
@@ -50,12 +50,12 @@ class DailyData:
         elif break_minutes == 45:
             return self._get_time_value_45min(time_decimal)
         else:
-            # 기본값 (필요시 다른 break_minutes 값 추가)
+            # デフォルト値 (必要に応じて他のbreak_minutes値を追加)
             return 0.0
 
     def _get_time_value_common(self, time_decimal):
-        """공통 시간-값 매핑 (0:00 ~ 11:50까지)"""
-        # 0:00 ~ 7:34 = 0
+        """共通時間-値マッピング (0:00 ~ 11:50まで)"""
+        # 0:00 ~ 7:34 = 0.0
         if time_decimal < 7.567:  # 7:34 = 7.567
             return 0.0
         
@@ -63,25 +63,25 @@ class DailyData:
         elif 7.583 <= time_decimal < 8.317:  # 7:35 ~ 8:19
             return 8.75
         
-        # 8:20 ~ 11:50 = 15분간격으로 0.25씩 감소
+        # 8:20 ~ 11:50 = 15分分間隔で0.25ずつ減少
         elif 8.333 <= time_decimal < 11.833:  # 8:20 ~ 11:50
-            # 8:20부터 시작해서 15분마다 0.25씩 감소
+            # 8:20から始まり、15分ごとに0.25ずつ減少
             # 8:20=8.5, 8:35=8.25, 8:50=8.0, ..., 11:35=5.5
             minutes_from_820 = (time_decimal - 8.333) * 60
             quarter_hours = int(minutes_from_820 / 15)
             return round(8.5 - quarter_hours * 0.25, 2)
         
-        # 11:50부터 = 5.0
+        # 11:50から = 5.0
         elif 11.833 <= time_decimal < 12.0:
             return 5.0
         
-        # 그 외 시간: 0.0
+        # その他の時間: 0.0
         else:
             return 0.0
 
     def _get_time_value_60min(self, time_decimal):
-        """break_minutes가 60일 때의 시간-값 매핑"""
-        # 공통 부분 처리 (0:00 ~ 11:50)
+        """break_minutesが60の場合の時間-値マッピング"""
+        # 共通部分の処理 (0:00 ~ 11:50)
         if time_decimal < 12.0:
             return self._get_time_value_common(time_decimal)
         
@@ -89,23 +89,23 @@ class DailyData:
         elif 12.0 <= time_decimal < 13.067:  # 12:00 ~ 13:04
             return 5.0
         
-        # 13:05부터 15분간격으로 0.25씩 감소
+        # 13:05から 15分間隔で0.25ずつ減少
         elif 13.083 <= time_decimal < 17.833:  # 13:05 ~ 17:50
             minutes_from_1305 = (time_decimal - 13.083) * 60
             quarter_hours = int(minutes_from_1305 / 15)
             return round(5.0 - quarter_hours * 0.25, 2)
         
-        # 17:50 이후 = 0.0
+        # 17:50 以降 = 0.0
         elif time_decimal >= 17.833:
             return 0.0
         
-        # 그 외 시간: 0.0
+        # その他の時間: 0.0
         else:
             return 0.0
 
     def _get_time_value_45min(self, time_decimal):
-        """break_minutes가 45일 때의 시간-값 매핑"""
-        # 공통 부분 처리 (0:00 ~ 11:50)
+        """break_minutesが45の場合の時間-値マッピング"""
+        # 共通部分の処理 (0:00 ~ 11:50)
         if time_decimal < 12.0:
             return self._get_time_value_common(time_decimal)
         
@@ -113,60 +113,60 @@ class DailyData:
         elif 12.0 <= time_decimal < 12.817:  # 12:00 ~ 12:49
             return 5.0
         
-        # 12:50부터 15분간격으로 0.25씩 감소
+        # 12:50から 15分間隔で0.25ずつ減少
         elif 12.833 <= time_decimal < 17.333:  # 12:50 ~ 17:20
             minutes_from_1250 = (time_decimal - 12.833) * 60
             quarter_hours = int(minutes_from_1250 / 15)
             return round(5.0 - quarter_hours * 0.25, 2)
         
-        # 17:20 이후 = 0.25
+        # 17:20 以降 = 0.25
         elif time_decimal >= 17.333:
             return 0.25
         
-        # 그 외 시간: 0.0
+        # その他の時間: 0.0
         else:
             return 0.0
 
     def _calculate_regular_work_hours(self):
-        """정규시간 계산. 출근시간과 종료시간이 모두 존재하면서 특정 work_type이 아니면 계산"""
-        # 출근시간과 종료시간이 모두 존재하는지 확인
+        """常勤. 出勤時間と退勤時間が両方存在し、work_typeが特定のものでない場合に計算"""
+        # 1．出勤時間と退勤時間が両方存在するか確認
         if not self.start_time or not self.end_time or self.start_time == self.end_time:
             self.regular_work_hours = None
             return
         
-        # work_type이 계산 제외 대상인지 확인
+        # 2．work_typeが計算対象外のものか確認
         exclude_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)', '代休(休)']
         if self.work_type in exclude_types:
             self.regular_work_hours = None
             return
 
-        # 계산식: 시간대입함수(출근시간) - 시간대입함수(퇴근시간)
+        # 3．計算式: 時間代入関数(出勤時間) - 時間代入関数(退勤時間)
         start_value = self._get_time_value(self.start_time, self.break_minutes)
         end_value = self._get_time_value(self.end_time, self.break_minutes)
         
-        calculated_hours = end_value - start_value
+        calculated_hours = start_value - end_value
         
-        # 결과와 standard_work_hours 중 더 작은 값이 최종값
+        # 4．結果結果とstandard_work_hours のうち、小さい方が最終値
         self.regular_work_hours = round(min(calculated_hours, self.standard_work_hours), 2)
 
 
 
     def _calculate_deduction_hours(self):
-        """공제 시간 계산"""
-        # regular_work_hours가 null이면 null 반환
+        """控除時間計算"""
+        # 1．regular_work_hoursがnullの場合、nullを返す
         if self.regular_work_hours is None:
             self.deduction_hours = None
             return
         
-        # regular_work_hours가 null이 아니라면 계산
+        # 2．regular_work_hoursがnullでない場合、計算
         if self.work_type == "有給(半)":
-            # 有給(半)인 경우: standard_work_hours - regular_work_hours - 4
+            # 有給(半)の場合: standard_work_hours - regular_work_hours - 4
             deduction = self.standard_work_hours - self.regular_work_hours - 4
         else:
-            # 그 외의 경우: standard_work_hours - regular_work_hours
+            # その他の場合: standard_work_hours - regular_work_hours
             deduction = self.standard_work_hours - self.regular_work_hours
         
-        # 0보다 작으면 0 반환, 그렇지 않으면 계산된 값 반환
+        # 3．0.0보다 小さい場合、0を返す、そうでない場合、計算された値を返す
         self.deduction_hours = round(max(0.0, deduction), 2)
 
     def _calculate_overtime_hours(self):
