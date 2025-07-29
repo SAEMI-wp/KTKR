@@ -60,4 +60,4 @@ RUN echo "DEBUG: Content of /app/attendance/admin_views.py:" && cat /app/attenda
 RUN set -x && python -m django collectstatic --noinput 2>&1 | tee /dev/stderr
 
 # 웹 서버 진입점 설정 (Procfile이 있다면 이 부분은 필요 없을 수 있습니다.)
-CMD ["gunicorn", "techave_kintai.wsgi:application", "--bind", "0.0.0.0:$PORT"]
+CMD ["/bin/sh", "-c", "python manage.py migrate --noinput && gunicorn techave_kintai.wsgi:application --bind 0.0.0.0:$PORT"]
