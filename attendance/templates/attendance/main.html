@@ -244,11 +244,11 @@
                     <section class="monthly-info" id="monthly-info-section">
                         <div class="section-header">
                             <h3 class="section-title">月情報</h3>
-                            {% if monthly_data%}
+                            {% if monthly_data %}
                             <div class="section-actions" id="monthly-info-actions">
                                 <button id="edit-monthly-btn" class="btn-edit">修正</button>
                             </div>
-                            {% endif%}
+                            {% endif %}
                         </div>
                         <div id="monthly-info-content">
                         {% if monthly_data %}
@@ -303,21 +303,16 @@
                                                     </div>
                                                     <div class="record-time">
                                                         {% if day.record %}
-                                                            {% if day.record.work_type == '有給' or \
-                                                                  day.record.work_type == '代休(休)' or \
-                                                                  day.record.work_type == '振替(休)' or \
-                                                                  day.record.work_type == '欠勤' or \
-                                                                  day.record.work_type == '特別休暇' or \
-                                                                  day.record.work_type == '代休(勤)' or \
-                                                                  day.record.work_type == '振替(勤)' %}
+                                                            {% if day.record.work_type == '有給' or day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' or day.record.work_type == '欠勤' or day.record.work_type == '特別休暇' or day.record.work_type == '代休(勤)' or day.record.work_type == '振替(勤)' %}
                                                                 <div class="work-type-text">{{ day.record.work_type }}</div>
 
                                                                 <div class="substitute-date">
-                                                                    {% if (day.record.work_type == '代休(休)' or \
-                                                                           day.record.work_type == '振替(休)' or \
-                                                                           day.record.work_type == '代休(勤)' or \
-                                                                           day.record.work_type == '振替(勤)') and day.record.substitute_date %}
-                                                                        ({{ day.record.substitute_date|date:"Y.m.d" }})
+                                                                    {% if day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' or day.record.work_type == '代休(勤)' or day.record.work_type == '振替(勤)' %}
+                                                                        {% if day.record.substitute_date %}
+                                                                            ({{ day.record.substitute_date|date:"Y.m.d" }})
+                                                                        {% else %}
+                                                                            &nbsp;
+                                                                        {% endif %}
                                                                     {% else %}
                                                                         &nbsp;
                                                                     {% endif %}
