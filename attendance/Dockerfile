@@ -37,7 +37,6 @@ RUN echo "DEBUG: Listing files in /app/techave_kintai:" && ls -l /app/techave_ki
 RUN echo "DEBUG: Checking manage.py permissions:" && ls -l /app/manage.py
 
 # 4. Django 설정 로딩 및 DATABASES 설정 확인
-# 이 단계를 통해 collectstatic 이전에 settings가 어떻게 로드되는지 확인합니다.
 RUN echo "DEBUG: Attempting to load Django settings and print DATABASES config..." && \
     python -c "import os; import django; \
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'techave_kintai.settings_production'); \
@@ -50,10 +49,12 @@ RUN echo "DEBUG: Attempting to load Django settings and print DATABASES config..
     else: \
         print('DEBUG: Default DB ENGINE or its ENGINE key is missing!');" 2>&1 | tee /dev/stderr
 
+# 5. admin_views.py 파일 내용 출력 (매우 중요!)
+# 이 명령을 통해 Railway 빌드 환경에서 실제로 사용되는 admin_views.py 파일의 내용을 확인합니다.
+RUN echo "DEBUG: Content of /app/attendance/admin_views.py:" && cat /app/attendance/admin_views.py 2>&1 | tee /dev/stderr
+
 # --- 정적 파일 수집 ---
-# 오류를 더 자세히 보기 위해 set -x를 추가하여 명령 실행 추적
-# python -m django collectstatic을 사용하여 Django 모듈로 직접 실행
 RUN set -x && python -m django collectstatic --noinput 2>&1 | tee /dev/stderr
 
 # 웹 서버 진입점 설정 (Procfile이 있다면 이 부분은 필요 없을 수 있습니다.)
-# CMD ["gunicorn", "techave_kintai.wsgi:application", "--bind", "0.0.0.0:$PORT"]
+CMD ["gunicorn", "techave_kintai.wsgi:application", "--bind", "0.0.0.0:$PORT"]
