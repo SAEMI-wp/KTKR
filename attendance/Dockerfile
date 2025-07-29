@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 프로젝트의 나머지 코드 복사
 COPY . .
 
+# 임시 주석: 빌드 캐시를 무효화하기 위한 줄. 빌드 성공 후에는 삭제해도 됩니다.
+RUN echo "Cache bust for tkinter fix"
+
 # Python 출력 버퍼링 끄기 (로그가 즉시 출력되도록)
 ENV PYTHONUNBUFFERED=1
 
