@@ -303,13 +303,13 @@
                                                     </div>
                                                     <div class="record-time">
                                                         {% if day.record %}
-                                                            {% if day.record.work_type= ='有給' or \
-                                                                  day.record.work_type= ='代休(休)' or \
-                                                                  day.record.work_type= ='振替(休)' or \
-                                                                  day.record.work_type= ='欠勤' or \
-                                                                  day.record.work_type= ='特別休暇' or \
-                                                                  day.record.work_type= ='代休(勤)' or \
-                                                                  day.record.work_type= ='振替(勤)' %}
+                                                            {% if day.record.work_type == '有給' or \
+                                                                  day.record.work_type == '代休(休)' or \
+                                                                  day.record.work_type == '振替(休)' or \
+                                                                  day.record.work_type == '欠勤' or \
+                                                                  day.record.work_type == '特別休暇' or \
+                                                                  day.record.work_type == '代休(勤)' or \
+                                                                  day.record.work_type == '振替(勤)' %}
                                                                 <div class="work-type-text">{{ day.record.work_type }}</div>
 
                                                                 <div class="substitute-date">
