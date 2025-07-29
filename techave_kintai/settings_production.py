@@ -38,22 +38,36 @@ _db_url_from_env = os.environ.get('DATABASE_URL')
 
 # 데이터베이스 설정 (환경 변수에서 가져오기)
 if IS_BUILD_PHASE:
-    # 빌드 중일 때는 인메모리 SQLite 데이터베이스를 사용하여 실제 DB 연결 시도 방지
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',  # 인메모리 SQLite 사용
+            'NAME': ':memory:',  # 인메모리 SQLite 사용 (빌드 시에만)
         }
     }
 else:
-    # 실제 런타임 환경에서는 환경 변수에 설정된 DATABASE_URL을 사용
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    # 런타임 환경 (IS_BUILD_PHASE가 False일 때)
+    # Railway가 주입하는 DATABASE_URL 환경 변수를 명시적으로 가져옵니다.
+    DATABASE_URL_FROM_RAILWAY = os.environ.get('DATABASE_URL')
+
+    # 디버깅: DATABASE_URL 값이 제대로 읽히는지 확인 (로그에서 이 print 문을 찾아보세요!)
+    print(f"DEBUG: Running in Runtime. IS_BUILD_PHASE={IS_BUILD_PHASE}")
+    print(f"DEBUG: Retrieved DATABASE_URL from environment: {DATABASE_URL_FROM_RAILWAY}")
+
+    if DATABASE_URL_FROM_RAILWAY:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL_FROM_RAILWAY,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+        # 디버깅: 설정된 데이터베이스 엔진 확인 (로그에서 이 print 문을 찾아보세요!)
+        print(f"DEBUG: Database configured with engine: {DATABASES['default']['ENGINE']}")
+    else:
+        # 프로덕션 환경에서 DATABASE_URL이 없을 경우 오류 발생
+        # 이 부분이 실행되면 Railway Variables 설정을 다시 확인해야 합니다.
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured("DATABASE_URL environment variable not set for production. Cannot connect to database.")
 
 # 정적 파일 설정
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
