@@ -137,8 +137,8 @@ class DailyData:
             return 0.0
 
     def _get_overtime_value(self, time_obj):
-        """잔업값을 반환하는 함수 (엑셀 시간 방식)"""
-        # 시간을 엑셀 시간 형태로 변환 (예: 19:00 -> 0.791667, 19:30 -> 0.8125)
+        """残業値を返す関数"""
+        # 時間をExcel時間形式に変換 (例: 19:00 -> 0.791667, 19:30 -> 0.8125)
         time_decimal = self._time_to_excel_decimal(time_obj)
         
         # 18:00 ~ 18:30 = 0 (0.75 ~ 0.770833)
@@ -201,13 +201,13 @@ class DailyData:
         elif 0.375 <= time_decimal < 0.398611:
             return 6.5
         
-        # 그 외 시간: 0
+        # その他の時間: 0
         else:
             return 0.0
 
     def _get_late_night_value(self, time_obj):
-        """심야값을 반환하는 함수 (엑셀 시간 방식)"""
-        # 시간을 엑셀 시간 형태로 변환 (예: 23:30 -> 0.979167, 0:00 -> 0.0)
+        """深夜値を返す関数"""
+        # 時間をExcel時間形式に変換 (例: 23:30 -> 0.979167, 0:00 -> 0.0)
         time_decimal = self._time_to_excel_decimal(time_obj)
         
         # 23:00 ~ 23:30 = 0.5 (0.958333 ~ 0.979167)
@@ -317,18 +317,18 @@ class DailyData:
         self.deduction_hours = round(max(0.0, deduction), 2)
 
     def _calculate_overtime_hours(self):
-        """잔업시간 계산"""
-        # ① start_time 또는 end_time이 NULL → NULL
+        """残業時間計算"""
+        # ① start_time または end_timeがNULL、またはstart_timeとend_timeが同じ場合、NULLを返す
         if not self.start_time or not self.end_time or self.start_time == self.end_time:
             self.overtime_hours = None
             return
 
-        # 계산된 퇴근시간 만들기
+        # 2．計算された退勤時間を作成
         calculated_end_time = self.end_time
         if self.end_time < self.start_time and self.end_time < time(1, 0):
             # end_time < start_time 이면서 end_time < 1 (다음날 퇴근했는데 다음날 처리가 안됨)
             # 퇴근시간에 +24시간을 해줌 (1일 추가)
-            calculated_end_time = time((self.end_time.hour + 24) % 24, self.end_time.minute)
+            calculated_end_time = time((self.end_time.hour + 1) % 24, self.end_time.minute)
 
         # 출근시간을 엑셀 시간으로 변환
         start_decimal = self._time_to_excel_decimal(self.start_time)
