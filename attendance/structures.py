@@ -22,6 +22,17 @@ class DailyData:
     late_night_overtime_hours: Optional[float] = None   # 深夜
     total_hours: Optional[float] = None                 # 合計
 
+    def _time_to_excel_decimal(self, time_obj: time) -> float:
+        """時間をエクセル時間形式に変換 (24時間を1とする)"""
+        # 例: 19:00 -> 0.791667, 19:30 -> 0.8125
+        total_minutes = time_obj.hour * 60 + time_obj.minute
+        return total_minutes / (24 * 60)
+
+    def _time_to_hr_decimal(self, time_obj: time) -> float:
+        """時間をHr形式に変換 (1時間を1とする)"""
+        # 例: 19:00 -> 19.0, 19:30 -> 19.5
+        return time_obj.hour + time_obj.minute / 60.0
+
     def calculate_work_hours(self):
         """勤務時間計算"""
         self._calculate_regular_work_hours()    #常勤
@@ -39,11 +50,9 @@ class DailyData:
         return 0.0
 
     def _get_time_value(self, time_obj, break_minutes):
-        """常勤時間計算の関数"""
-        # 時間を小数点形式に変換 (例: 9:30 -> 9.50)
-        hour = time_obj.hour
-        minute = time_obj.minute
-        time_decimal = hour + minute / 60.0
+        """常勤時間計算の関数 (Hr基準)"""
+        # 時間をHr形式に変換 (例: 9:30 -> 9.50)
+        time_decimal = self._time_to_hr_decimal(time_obj)
         
         if break_minutes == 60:
             return self._get_time_value_60min(time_decimal)
@@ -128,70 +137,68 @@ class DailyData:
             return 0.0
 
     def _get_overtime_value(self, time_obj):
-        """잔업값을 반환하는 함수 (24시간을 1로 하는 방식)"""
-        # 시간을 소수점 형태로 변환 (예: 9:30 -> 9.5, 18:00 -> 18.0)
-        hour = time_obj.hour
-        minute = time_obj.minute
-        time_decimal = hour + minute / 60.0
+        """잔업값을 반환하는 함수 (엑셀 시간 방식)"""
+        # 시간을 엑셀 시간 형태로 변환 (예: 19:00 -> 0.791667, 19:30 -> 0.8125)
+        time_decimal = self._time_to_excel_decimal(time_obj)
         
-        # 18:00 ~ 18:30 = 0
-        if 18.0 <= time_decimal < 18.5:
+        # 18:00 ~ 18:30 = 0 (0.75 ~ 0.770833)
+        if 0.75 <= time_decimal < 0.770833:
             return 0.0
         
-        # 18:30 ~ 19:00 = 0.5
-        elif 18.5 <= time_decimal < 19.0:
+        # 18:30 ~ 19:00 = 0.5 (0.770833 ~ 0.791667)
+        elif 0.770833 <= time_decimal < 0.791667:
             return 0.5
         
-        # 19:00 ~ 19:30 = 1
-        elif 19.0 <= time_decimal < 19.5:
+        # 19:00 ~ 19:30 = 1 (0.791667 ~ 0.8125)
+        elif 0.791667 <= time_decimal < 0.8125:
             return 1.0
         
-        # 19:30 ~ 20:00 = 1.5 (19:30~20:00 휴식)
-        elif 19.5 <= time_decimal < 20.0:
+        # 19:30 ~ 20:00 = 1.5 (0.8125 ~ 0.833333)
+        elif 0.8125 <= time_decimal < 0.833333:
             return 1.5
         
-        # 20:00 ~ 20:30 = 1.5
-        elif 20.0 <= time_decimal < 20.5:
+        # 20:00 ~ 20:30 = 1.5 (0.833333 ~ 0.854167)
+        elif 0.833333 <= time_decimal < 0.854167:
             return 1.5
         
-        # 20:30 ~ 21:00 = 2
-        elif 20.5 <= time_decimal < 21.0:
+        # 20:30 ~ 21:00 = 2 (0.854167 ~ 0.875)
+        elif 0.854167 <= time_decimal < 0.875:
             return 2.0
         
-        # 21:00 ~ 21:30 = 2.5
-        elif 21.0 <= time_decimal < 21.5:
+        # 21:00 ~ 21:30 = 2.5 (0.875 ~ 0.895833)
+        elif 0.875 <= time_decimal < 0.895833:
             return 2.5
         
-        # 21:30 ~ 22:00 = 3
-        elif 21.5 <= time_decimal < 22.0:
+        # 21:30 ~ 22:00 = 3 (0.895833 ~ 0.916667)
+        elif 0.895833 <= time_decimal < 0.916667:
             return 3.0
         
-        # 22:00 ~ 6:30 = 3.5 (22:00~22:30 휴식)
-        elif 22.0 <= time_decimal < 24.0 or 0.0 <= time_decimal < 6.5:
+        # 22:00 ~ 6:30 = 3.5 (0.916667 ~ 1.0 또는 0.0 ~ 0.270833)
+        elif 0.916667 <= time_decimal < 1.0 or 0.0 <= time_decimal < 0.270833:
             return 3.5
         
-        # 6:30 ~ 7:00 = 4
-        elif 6.5 <= time_decimal < 7.0:
+        # 6:30 ~ 7:00 = 4 (0.270833 ~ 0.291667)
+        elif 0.270833 <= time_decimal < 0.291667:
             return 4.0
         
-        # 7:00 ~ 7:30 = 4.5
-        elif 7.0 <= time_decimal < 7.5:
+        # 7:00 ~ 7:30 = 4.5 (0.291667 ~ 0.3125)
+        elif 0.291667 <= time_decimal < 0.3125:
             return 4.5
         
-        # 7:30 ~ 8:00 = 5
-        elif 7.5 <= time_decimal < 8.0:
+        # 7:30 ~ 8:00 = 5 (0.3125 ~ 0.333333)
+        elif 0.3125 <= time_decimal < 0.333333:
             return 5.0
         
-        # 8:00 ~ 8:30 = 5.5
-        elif 8.0 <= time_decimal < 8.5:
+        # 8:00 ~ 8:30 = 5.5 (0.333333 ~ 0.354167)
+        elif 0.333333 <= time_decimal < 0.354167:
             return 5.5
         
-        # 8:30 ~ 9:00 = 6
-        elif 8.5 <= time_decimal < 9.0:
+        # 8:30 ~ 9:00 = 6 (0.354167 ~ 0.375)
+        elif 0.354167 <= time_decimal < 0.375:
             return 6.0
         
-        # 9:00 ~ 9:35 = 6.5
-        elif 9.0 <= time_decimal < 9.583:
+        # 9:00 ~ 9:35 = 6.5 (0.375 ~ 0.398611)
+        elif 0.375 <= time_decimal < 0.398611:
             return 6.5
         
         # 그 외 시간: 0
@@ -199,70 +206,68 @@ class DailyData:
             return 0.0
 
     def _get_late_night_value(self, time_obj):
-        """심야값을 반환하는 함수 (24시간을 1로 하는 방식)"""
-        # 시간을 소수점 형태로 변환 (예: 23:30 -> 23.5, 0:00 -> 0.0)
-        hour = time_obj.hour
-        minute = time_obj.minute
-        time_decimal = hour + minute / 60.0
+        """심야값을 반환하는 함수 (엑셀 시간 방식)"""
+        # 시간을 엑셀 시간 형태로 변환 (예: 23:30 -> 0.979167, 0:00 -> 0.0)
+        time_decimal = self._time_to_excel_decimal(time_obj)
         
-        # 23:00 ~ 23:30 = 0.5
-        if 23.0 <= time_decimal < 23.5:
+        # 23:00 ~ 23:30 = 0.5 (0.958333 ~ 0.979167)
+        if 0.958333 <= time_decimal < 0.979167:
             return 0.5
         
-        # 23:30 ~ 0:00 = 1
-        elif 23.5 <= time_decimal < 24.0:
+        # 23:30 ~ 0:00 = 1 (0.979167 ~ 1.0)
+        elif 0.979167 <= time_decimal < 1.0:
             return 1.0
         
-        # 0:00 ~ 0:30 = 1.5
-        elif 0.0 <= time_decimal < 0.5:
+        # 0:00 ~ 0:30 = 1.5 (0.0 ~ 0.020833)
+        elif 0.0 <= time_decimal < 0.020833:
             return 1.5
         
-        # 0:30 ~ 1:00 = 2
-        elif 0.5 <= time_decimal < 1.0:
+        # 0:30 ~ 1:00 = 2 (0.020833 ~ 0.041667)
+        elif 0.020833 <= time_decimal < 0.041667:
             return 2.0
         
-        # 1:00 ~ 1:30 = 2.5
-        elif 1.0 <= time_decimal < 1.5:
+        # 1:00 ~ 1:30 = 2.5 (0.041667 ~ 0.0625)
+        elif 0.041667 <= time_decimal < 0.0625:
             return 2.5
         
-        # 1:30 ~ 2:00 = 3
-        elif 1.5 <= time_decimal < 2.0:
+        # 1:30 ~ 2:00 = 3 (0.0625 ~ 0.083333)
+        elif 0.0625 <= time_decimal < 0.083333:
             return 3.0
         
-        # 2:00 ~ 2:30 = 3.5
-        elif 2.0 <= time_decimal < 2.5:
+        # 2:00 ~ 2:30 = 3.5 (0.083333 ~ 0.104167)
+        elif 0.083333 <= time_decimal < 0.104167:
             return 3.5
         
-        # 2:30 ~ 3:00 = 4
-        elif 2.5 <= time_decimal < 3.0:
+        # 2:30 ~ 3:00 = 4 (0.104167 ~ 0.125)
+        elif 0.104167 <= time_decimal < 0.125:
             return 4.0
         
-        # 3:00 ~ 4:00 = 4.5
-        elif 3.0 <= time_decimal < 4.0:
+        # 3:00 ~ 4:00 = 4.5 (0.125 ~ 0.166667)
+        elif 0.125 <= time_decimal < 0.166667:
             return 4.5
         
-        # 4:00 ~ 4:30 = 5
-        elif 4.0 <= time_decimal < 4.5:
+        # 4:00 ~ 4:30 = 5 (0.166667 ~ 0.1875)
+        elif 0.166667 <= time_decimal < 0.1875:
             return 5.0
         
-        # 4:30 ~ 5:00 = 5.5
-        elif 4.5 <= time_decimal < 5.0:
+        # 4:30 ~ 5:00 = 5.5 (0.1875 ~ 0.208333)
+        elif 0.1875 <= time_decimal < 0.208333:
             return 5.5
         
-        # 5:00 ~ 5:30 = 6
-        elif 5.0 <= time_decimal < 5.5:
+        # 5:00 ~ 5:30 = 6 (0.208333 ~ 0.229167)
+        elif 0.208333 <= time_decimal < 0.229167:
             return 6.0
         
-        # 5:30 ~ 6:00 = 6.5
-        elif 5.5 <= time_decimal < 6.0:
+        # 5:30 ~ 6:00 = 6.5 (0.229167 ~ 0.25)
+        elif 0.229167 <= time_decimal < 0.25:
             return 6.5
         
-        # 6:00 ~ 18:00 = 7
-        elif 6.0 <= time_decimal < 18.0:
+        # 6:00 ~ 18:00 = 7 (0.25 ~ 0.75)
+        elif 0.25 <= time_decimal < 0.75:
             return 7.0
         
-        # 18:00 ~ 23:00 = 0
-        elif 18.0 <= time_decimal < 23.0:
+        # 18:00 ~ 23:00 = 0 (0.75 ~ 0.958333)
+        elif 0.75 <= time_decimal < 0.958333:
             return 0.0
         
         # 그 외 시간: 0
@@ -325,20 +330,20 @@ class DailyData:
             # 퇴근시간에 +24시간을 해줌 (1일 추가)
             calculated_end_time = time((self.end_time.hour + 24) % 24, self.end_time.minute)
 
-        # 출근시간을 소수점으로 변환
-        start_decimal = self.start_time.hour + self.start_time.minute / 60.0
-        end_decimal = calculated_end_time.hour + calculated_end_time.minute / 60.0
+        # 출근시간을 엑셀 시간으로 변환
+        start_decimal = self._time_to_excel_decimal(self.start_time)
+        end_decimal = self._time_to_excel_decimal(calculated_end_time)
 
         overtime_value = 0.0
 
-        # 첫번째 조건: 0.75 < start_time < 1.25
+        # 첫번째 조건: 0.75 < start_time < 1.25 (18:00 ~ 30:00)
         if 0.75 < start_decimal < 1.25:
             # 계산된 퇴근시간을 넣어서 얻은 값 - 출근시간을 넣어서 얻은 값
             end_value = self._get_overtime_value(calculated_end_time)
             start_value = self._get_overtime_value(self.start_time)
             overtime_value = end_value - start_value
         else:
-            # 0.7 < 계산된 퇴근시간 < 1.376 인지 확인
+            # 0.7 < 계산된 퇴근시간 < 1.376 (16:48 ~ 33:02) 인지 확인
             if 0.7 < end_decimal < 1.376:
                 # 계산된 퇴근시간을 넣어서 얻은 값만 가져옴
                 overtime_value = self._get_overtime_value(calculated_end_time)
@@ -354,12 +359,12 @@ class DailyData:
         # calculated_hours를 다시 계산해야 함 (exclude_types인 경우 None이므로)
         exclude_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)', '代休(休)']
         if self.work_type in exclude_types:
-            # exclude_types인 경우 calculated_hours를 직접 계산
+            # exclude_types인 경우 calculated_hours를 직접 계산 (Hr基準)
             start_value = self._get_time_value(self.start_time, self.break_minutes)
             end_value = self._get_time_value(calculated_end_time, self.break_minutes)
             calculated_hours = start_value - end_value
         else:
-            # exclude_types가 아닌 경우 기존 계산된 값 사용
+            # exclude_types가 아닌 경우 기존 계산된 값 사용 (Hr基準)
             start_value = self._get_time_value(self.start_time, self.break_minutes)
             end_value = self._get_time_value(calculated_end_time, self.break_minutes)
             calculated_hours = start_value - end_value
@@ -388,20 +393,20 @@ class DailyData:
             # 퇴근시간에 +24시간을 해줌 (1일 추가)
             calculated_end_time = time((self.end_time.hour + 24) % 24, self.end_time.minute)
 
-        # 출근시간을 소수점으로 변환
-        start_decimal = self.start_time.hour + self.start_time.minute / 60.0
-        end_decimal = calculated_end_time.hour + calculated_end_time.minute / 60.0
+        # 출근시간을 엑셀 시간으로 변환
+        start_decimal = self._time_to_excel_decimal(self.start_time)
+        end_decimal = self._time_to_excel_decimal(calculated_end_time)
 
         late_night_value = 0.0
 
-        # 첫번째 조건: 0.75 < start_time < 1.25
+        # 첫번째 조건: 0.75 < start_time < 1.25 (18:00 ~ 30:00)
         if 0.75 < start_decimal < 1.25:
             # 계산된 퇴근시간을 넣어서 얻은 값 - 출근시간을 넣어서 얻은 값
             end_value = self._get_late_night_value(calculated_end_time)
             start_value = self._get_late_night_value(self.start_time)
             late_night_value = end_value - start_value
         else:
-            # 0.7 < 계산된 퇴근시간 < 1.376 인지 확인
+            # 0.7 < 계산된 퇴근시간 < 1.376 (16:48 ~ 33:02) 인지 확인
             if 0.7 < end_decimal < 1.376:
                 # 계산된 퇴근시간을 넣어서 얻은 값만 가져옴
                 late_night_value = self._get_late_night_value(calculated_end_time)
