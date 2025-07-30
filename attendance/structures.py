@@ -50,9 +50,9 @@ class DailyData:
         return 0.0
 
     def _get_time_value(self, time_obj, break_minutes):
-        """常勤時間計算の関数 (Hr基準)"""
-        # 時間をHr形式に変換 (例: 9:30 -> 9.50)
-        time_decimal = self._time_to_hr_decimal(time_obj)
+        """常勤時間計算の関数 (Excel時間基準)"""
+        # 時間をExcel時間形式に変換 (例: 9:30 -> 0.395833)
+        time_decimal = self._time_to_excel_decimal(time_obj)
         
         if break_minutes == 60:
             return self._get_time_value_60min(time_decimal)
@@ -65,23 +65,23 @@ class DailyData:
     def _get_time_value_common(self, time_decimal):
         """共通時間-値マッピング (0:00 ~ 11:50まで)"""
         # 0:00 ~ 7:34 = 0.0
-        if time_decimal < 7.567:  # 7:34 = 7.567
+        if time_decimal < 0.315278:  # 7:34 = 0.315278
             return 0.0
         
         # 7:35 ~ 8:19 = 8.75
-        elif 7.583 <= time_decimal < 8.317:  # 7:35 ~ 8:19
+        elif 0.315972 <= time_decimal < 0.346458:  # 7:35 ~ 8:19
             return 8.75
         
         # 8:20 ~ 11:50 = 15分間隔で0.25ずつ減少
-        elif 8.333 <= time_decimal < 11.833:  # 8:20 ~ 11:50
+        elif 0.347222 <= time_decimal < 0.493056:  # 8:20 ~ 11:50
             # 8:20から始まり、15分ごとに0.25ずつ減少
             # 8:20=8.5, 8:35=8.25, 8:50=8.0, ..., 11:35=5.5
-            minutes_from_820 = (time_decimal - 8.333) * 60
+            minutes_from_820 = (time_decimal - 0.347222) * 24 * 60
             quarter_hours = int(minutes_from_820 / 15)
             return round(8.5 - quarter_hours * 0.25, 2)
         
         # 11:50から = 5.0
-        elif 11.833 <= time_decimal < 12.0:
+        elif 0.493056 <= time_decimal < 0.5:
             return 5.0
         
         # その他の時間: 0.0
@@ -91,21 +91,21 @@ class DailyData:
     def _get_time_value_60min(self, time_decimal):
         """break_minutesが60の場合の時間-値マッピング"""
         # 共通部分の処理 (0:00 ~ 11:50)
-        if time_decimal < 12.0:
+        if time_decimal < 0.5:
             return self._get_time_value_common(time_decimal)
         
         # 12:00 ~ 13:04 = 5.0
-        elif 12.0 <= time_decimal < 13.067:  # 12:00 ~ 13:04
+        elif 0.5 <= time_decimal < 0.544444:  # 12:00 ~ 13:04
             return 5.0
         
         # 13:05から 15分間隔で0.25ずつ減少
-        elif 13.083 <= time_decimal < 17.833:  # 13:05 ~ 17:50
-            minutes_from_1305 = (time_decimal - 13.083) * 60
+        elif 0.545139 <= time_decimal < 0.743056:  # 13:05 ~ 17:50
+            minutes_from_1305 = (time_decimal - 0.545139) * 24 * 60
             quarter_hours = int(minutes_from_1305 / 15)
             return round(5.0 - quarter_hours * 0.25, 2)
         
         # 17:50 以降 = 0.0
-        elif time_decimal >= 17.833:
+        elif time_decimal >= 0.743056:
             return 0.0
         
         # その他の時間: 0.0
@@ -115,21 +115,21 @@ class DailyData:
     def _get_time_value_45min(self, time_decimal):
         """break_minutesが45の場合の時間-値マッピング"""
         # 共通部分の処理 (0:00 ~ 11:50)
-        if time_decimal < 12.0:
+        if time_decimal < 0.5:
             return self._get_time_value_common(time_decimal)
         
         # 12:00 ~ 12:49 = 5.0
-        elif 12.0 <= time_decimal < 12.817:  # 12:00 ~ 12:49
+        elif 0.5 <= time_decimal < 0.534042:  # 12:00 ~ 12:49
             return 5.0
         
         # 12:50から 15分間隔で0.25ずつ減少
-        elif 12.833 <= time_decimal < 17.333:  # 12:50 ~ 17:20
-            minutes_from_1250 = (time_decimal - 12.833) * 60
+        elif 0.534722 <= time_decimal < 0.722222:  # 12:50 ~ 17:20
+            minutes_from_1250 = (time_decimal - 0.534722) * 24 * 60
             quarter_hours = int(minutes_from_1250 / 15)
             return round(5.0 - quarter_hours * 0.25, 2)
         
         # 17:20 以降 = 0.25
-        elif time_decimal >= 17.333:
+        elif time_decimal >= 0.722222:
             return 0.25
         
         # その他の時間: 0.0
