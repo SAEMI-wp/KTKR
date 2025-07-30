@@ -26,7 +26,9 @@ class DailyData:
         """時間をエクセル時間形式に変換 (24時間を1とする)"""
         # 例: 19:00 -> 0.791667, 19:30 -> 0.8125
         total_minutes = time_obj.hour * 60 + time_obj.minute
-        return total_minutes / (24 * 60)
+        result = total_minutes / (24 * 60)
+        # 소수점 7번째 자리에서 무조건 올림
+        return round(result + 0.0000001, 6)
 
     def _time_to_hr_decimal(self, time_obj: time) -> float:
         """時間をHr形式に変換 (1時間を1とする)"""
@@ -64,25 +66,69 @@ class DailyData:
 
     def _get_time_value_common(self, time_decimal):
         """共通時間-値マッピング (0:00 ~ 11:50まで)"""
-        # 0:00 ~ 7:34 = 0.0
-        if time_decimal < 0.315278:  # 7:34 = 0.315278
+        # 0:00 ~ 7:35 = 0.0
+        if time_decimal < 0.315972:  # 7:35 = 0.315972
             return 0.0
         
-        # 7:35 ~ 8:19 = 8.75
-        elif 0.315972 <= time_decimal < 0.346458:  # 7:35 ~ 8:19
+        # 7:35 ~ 8:20 = 8.75
+        elif 0.315972 <= time_decimal < 0.347222:  # 7:35 ~ 8:20
             return 8.75
         
-        # 8:20 ~ 11:50 = 15分間隔で0.25ずつ減少
-        elif 0.347222 <= time_decimal < 0.493056:  # 8:20 ~ 11:50
-            # 8:20から始まり、15分ごとに0.25ずつ減少
-            # 8:20=8.5, 8:35=8.25, 8:50=8.0, ..., 11:35=5.5
-            minutes_from_820 = (time_decimal - 0.347222) * 24 * 60
-            quarter_hours = int(minutes_from_820 / 15)
-            return round(8.5 - quarter_hours * 0.25, 2)
+        # 8:20 ~ 8:35 = 8.5
+        elif 0.347222 <= time_decimal < 0.357639:  # 8:20 ~ 8:35
+            return 8.5
         
-        # 11:50から = 5.0
-        elif 0.493056 <= time_decimal < 0.5:
-            return 5.0
+        # 8:35 ~ 8:50 = 8.25
+        elif 0.357639 <= time_decimal < 0.368056:  # 8:35 ~ 8:50
+            return 8.25
+        
+        # 8:50 ~ 9:05 = 8.0
+        elif 0.368056 <= time_decimal < 0.378472:  # 8:50 ~ 9:05
+            return 8.0
+        
+        # 9:05 ~ 9:20 = 7.75
+        elif 0.378472 <= time_decimal < 0.388889:  # 9:05 ~ 9:20
+            return 7.75
+        
+        # 9:20 ~ 9:35 = 7.5
+        elif 0.388889 <= time_decimal < 0.399306:  # 9:20 ~ 9:35
+            return 7.5
+        
+        # 9:35 ~ 9:50 = 7.25
+        elif 0.399306 <= time_decimal < 0.409722:  # 9:35 ~ 9:50
+            return 7.25
+        
+        # 9:50 ~ 10:05 = 7.0
+        elif 0.409722 <= time_decimal < 0.420139:  # 9:50 ~ 10:05
+            return 7.0
+        
+        # 10:05 ~ 10:20 = 6.75
+        elif 0.420139 <= time_decimal < 0.430556:  # 10:05 ~ 10:20
+            return 6.75
+        
+        # 10:20 ~ 10:35 = 6.5
+        elif 0.430556 <= time_decimal < 0.440972:  # 10:20 ~ 10:35
+            return 6.5
+        
+        # 10:35 ~ 10:50 = 6.25
+        elif 0.440972 <= time_decimal < 0.451389:  # 10:35 ~ 10:50
+            return 6.25
+        
+        # 10:50 ~ 11:05 = 6.0
+        elif 0.451389 <= time_decimal < 0.461806:  # 10:50 ~ 11:05
+            return 6.0
+        
+        # 11:05 ~ 11:20 = 5.75
+        elif 0.461806 <= time_decimal < 0.472222:  # 11:05 ~ 11:20
+            return 5.75
+        
+        # 11:20 ~ 11:35 = 5.5
+        elif 0.472222 <= time_decimal < 0.482639:  # 11:20 ~ 11:35
+            return 5.5
+        
+        # 11:35 ~ 11:50 = 5.25
+        elif 0.482639 <= time_decimal < 0.493056:  # 11:35 ~ 11:50
+            return 5.25
         
         # その他の時間: 0.0
         else:
@@ -94,18 +140,85 @@ class DailyData:
         if time_decimal < 0.5:
             return self._get_time_value_common(time_decimal)
         
-        # 12:00 ~ 13:04 = 5.0
-        elif 0.5 <= time_decimal < 0.544444:  # 12:00 ~ 13:04
+        # 11:50 ~ 13:05 = 5.0
+        elif 0.493056 <= time_decimal < 0.545139:  # 11:50 ~ 13:05
             return 5.0
         
-        # 13:05から 15分間隔で0.25ずつ減少
-        elif 0.545139 <= time_decimal < 0.743056:  # 13:05 ~ 17:50
-            minutes_from_1305 = (time_decimal - 0.545139) * 24 * 60
-            quarter_hours = int(minutes_from_1305 / 15)
-            # 17:10 (0.715278)에 대해 특별 처리: 0.75 반환
-            if abs(time_decimal - 0.715278) < 0.001:  # 17:10 근처
-                return 0.75
-            return round(5.0 - quarter_hours * 0.25, 2)
+        # 13:05 ~ 13:20 = 4.75
+        elif 0.545139 <= time_decimal < 0.555556:  # 13:05 ~ 13:20
+            return 4.75
+        
+        # 13:20 ~ 13:35 = 4.5
+        elif 0.555556 <= time_decimal < 0.565972:  # 13:20 ~ 13:35
+            return 4.5
+        
+        # 13:35 ~ 13:50 = 4.25
+        elif 0.565972 <= time_decimal < 0.576389:  # 13:35 ~ 13:50
+            return 4.25
+        
+        # 13:50 ~ 14:05 = 4.0
+        elif 0.576389 <= time_decimal < 0.586806:  # 13:50 ~ 14:05
+            return 4.0
+        
+        # 14:05 ~ 14:20 = 3.75
+        elif 0.586806 <= time_decimal < 0.597222:  # 14:05 ~ 14:20
+            return 3.75
+        
+        # 14:20 ~ 14:35 = 3.5
+        elif 0.597222 <= time_decimal < 0.607639:  # 14:20 ~ 14:35
+            return 3.5
+        
+        # 14:35 ~ 14:50 = 3.25
+        elif 0.607639 <= time_decimal < 0.618056:  # 14:35 ~ 14:50
+            return 3.25
+        
+        # 14:50 ~ 15:05 = 3.0
+        elif 0.618056 <= time_decimal < 0.628472:  # 14:50 ~ 15:05
+            return 3.0
+        
+        # 15:05 ~ 15:20 = 2.75
+        elif 0.628472 <= time_decimal < 0.638889:  # 15:05 ~ 15:20
+            return 2.75
+        
+        # 15:20 ~ 15:35 = 2.5
+        elif 0.638889 <= time_decimal < 0.649306:  # 15:20 ~ 15:35
+            return 2.5
+        
+        # 15:35 ~ 15:50 = 2.25
+        elif 0.649306 <= time_decimal < 0.659722:  # 15:35 ~ 15:50
+            return 2.25
+        
+        # 15:50 ~ 16:05 = 2.0
+        elif 0.659722 <= time_decimal < 0.670139:  # 15:50 ~ 16:05
+            return 2.0
+        
+        # 16:05 ~ 16:20 = 1.75
+        elif 0.670139 <= time_decimal < 0.680556:  # 16:05 ~ 16:20
+            return 1.75
+        
+        # 16:20 ~ 16:35 = 1.5
+        elif 0.680556 <= time_decimal < 0.690972:  # 16:20 ~ 16:35
+            return 1.5
+        
+        # 16:35 ~ 16:50 = 1.25
+        elif 0.690972 <= time_decimal < 0.701389:  # 16:35 ~ 16:50
+            return 1.25
+        
+        # 16:50 ~ 17:05 = 1.0
+        elif 0.701389 <= time_decimal < 0.711806:  # 16:50 ~ 17:05
+            return 1.0
+        
+        # 17:05 ~ 17:20 = 0.75
+        elif 0.711806 <= time_decimal < 0.722222:  # 17:05 ~ 17:20
+            return 0.75
+        
+        # 17:20 ~ 17:35 = 0.5
+        elif 0.722222 <= time_decimal < 0.732639:  # 17:20 ~ 17:35
+            return 0.5
+        
+        # 17:35 ~ 17:50 = 0.25
+        elif 0.732639 <= time_decimal < 0.743056:  # 17:35 ~ 17:50
+            return 0.25
         
         # 17:50 以降 = 0.0
         elif time_decimal >= 0.743056:
@@ -121,15 +234,81 @@ class DailyData:
         if time_decimal < 0.5:
             return self._get_time_value_common(time_decimal)
         
-        # 12:00 ~ 12:49 = 5.0
-        elif 0.5 <= time_decimal < 0.534042:  # 12:00 ~ 12:49
+        # 11:50 ~ 12:50 = 5.0
+        elif 0.493056 <= time_decimal < 0.534722:  # 11:50 ~ 12:50
             return 5.0
         
-        # 12:50から 15分間隔で0.25ずつ減少
-        elif 0.534722 <= time_decimal < 0.722222:  # 12:50 ~ 17:20
-            minutes_from_1250 = (time_decimal - 0.534722) * 24 * 60
-            quarter_hours = int(minutes_from_1250 / 15)
-            return round(5.0 - quarter_hours * 0.25, 2)
+        # 12:50 ~ 13:05 = 4.75
+        elif 0.534722 <= time_decimal < 0.545139:  # 12:50 ~ 13:05
+            return 4.75
+        
+        # 13:05 ~ 13:20 = 4.5
+        elif 0.545139 <= time_decimal < 0.555556:  # 13:05 ~ 13:20
+            return 4.5
+        
+        # 13:20 ~ 13:35 = 4.25
+        elif 0.555556 <= time_decimal < 0.565972:  # 13:20 ~ 13:35
+            return 4.25
+        
+        # 13:35 ~ 13:50 = 4.0
+        elif 0.565972 <= time_decimal < 0.576389:  # 13:35 ~ 13:50
+            return 4.0
+        
+        # 13:50 ~ 14:05 = 3.75
+        elif 0.576389 <= time_decimal < 0.586806:  # 13:50 ~ 14:05
+            return 3.75
+        
+        # 14:05 ~ 14:20 = 3.5
+        elif 0.586806 <= time_decimal < 0.597222:  # 14:05 ~ 14:20
+            return 3.5
+        
+        # 14:20 ~ 14:35 = 3.25
+        elif 0.597222 <= time_decimal < 0.607639:  # 14:20 ~ 14:35
+            return 3.25
+        
+        # 14:35 ~ 14:50 = 3.0
+        elif 0.607639 <= time_decimal < 0.618056:  # 14:35 ~ 14:50
+            return 3.0
+        
+        # 14:50 ~ 15:05 = 2.75
+        elif 0.618056 <= time_decimal < 0.628472:  # 14:50 ~ 15:05
+            return 2.75
+        
+        # 15:05 ~ 15:20 = 2.5
+        elif 0.628472 <= time_decimal < 0.638889:  # 15:05 ~ 15:20
+            return 2.5
+        
+        # 15:20 ~ 15:35 = 2.25
+        elif 0.638889 <= time_decimal < 0.649306:  # 15:20 ~ 15:35
+            return 2.25
+        
+        # 15:35 ~ 15:50 = 2.0
+        elif 0.649306 <= time_decimal < 0.659722:  # 15:35 ~ 15:50
+            return 2.0
+        
+        # 15:50 ~ 16:05 = 1.75
+        elif 0.659722 <= time_decimal < 0.670139:  # 15:50 ~ 16:05
+            return 1.75
+        
+        # 16:05 ~ 16:20 = 1.5
+        elif 0.670139 <= time_decimal < 0.680556:  # 16:05 ~ 16:20
+            return 1.5
+        
+        # 16:20 ~ 16:35 = 1.25
+        elif 0.680556 <= time_decimal < 0.690972:  # 16:20 ~ 16:35
+            return 1.25
+        
+        # 16:35 ~ 16:50 = 1.0
+        elif 0.690972 <= time_decimal < 0.701389:  # 16:35 ~ 16:50
+            return 1.0
+        
+        # 16:50 ~ 17:05 = 0.75
+        elif 0.701389 <= time_decimal < 0.711806:  # 16:50 ~ 17:05
+            return 0.75
+        
+        # 17:05 ~ 17:20 = 0.5
+        elif 0.711806 <= time_decimal < 0.722222:  # 17:05 ~ 17:20
+            return 0.5
         
         # 17:20 以降 = 0.25
         elif time_decimal >= 0.722222:
@@ -298,8 +477,6 @@ class DailyData:
         
         # 4．結果結果とstandard_work_hours のうち、小さい方が最終値
         self.regular_work_hours = round(min(calculated_hours, self.standard_work_hours), 2)
-
-
 
     def _calculate_deduction_hours(self):
         """控除時間計算"""
