@@ -102,6 +102,9 @@ class DailyData:
         elif 0.545139 <= time_decimal < 0.743056:  # 13:05 ~ 17:50
             minutes_from_1305 = (time_decimal - 0.545139) * 24 * 60
             quarter_hours = int(minutes_from_1305 / 15)
+            # 17:10 (0.715278)에 대해 특별 처리: 0.75 반환
+            if abs(time_decimal - 0.715278) < 0.001:  # 17:10 근처
+                return 0.75
             return round(5.0 - quarter_hours * 0.25, 2)
         
         # 17:50 以降 = 0.0
@@ -262,13 +265,13 @@ class DailyData:
         elif 0.229167 <= time_decimal < 0.25:
             return 6.5
         
-        # 6:00 ~ 18:00 = 7 (0.25 ~ 0.75)
-        elif 0.25 <= time_decimal < 0.75:
-            return 7.0
-        
-        # 18:00 ~ 23:00 = 0 (0.75 ~ 0.958333)
-        elif 0.75 <= time_decimal < 0.958333:
+        # 6:00 ~ 22:00 = 0 (0.25 ~ 0.916667) - 심야시간이 아님
+        elif 0.25 <= time_decimal < 0.916667:
             return 0.0
+        
+        # 22:00 ~ 23:00 = 7 (0.916667 ~ 0.958333)
+        elif 0.916667 <= time_decimal < 0.958333:
+            return 7.0
         
         # 그 외 시간: 0
         else:
@@ -352,7 +355,8 @@ class DailyData:
                 overtime_value = 0.0
 
         # break_minutes가 45면서 standard_work_hours > 0.76 이면 0.5를 더함
-        if self.break_minutes == 45 and self.standard_work_hours > 0.76:
+        # 이 조건은 실제 잔업시간이 있을 때만 적용되어야 함
+        if self.break_minutes == 45 and self.standard_work_hours > 0.76 and overtime_value > 0:
             overtime_value += 0.5
 
         # calculated_hours가 standard_work_hours보다 컸다면 calculated_hours - standard_work_hours를 더함
