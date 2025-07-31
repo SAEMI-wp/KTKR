@@ -246,7 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAltWorkDateField(workType) {
         const altGroup = document.getElementById('alt-work-date-group');
         const altInput = altGroup?.querySelector('input[type="date"]');
-    
+        const requiredMark = document.getElementById('alt-work-date-required');
+        
         if (!altGroup) return;
         
         const showTypes = ['代休(動)', '振替(動)', '代休(休)', '振替(休)'];
