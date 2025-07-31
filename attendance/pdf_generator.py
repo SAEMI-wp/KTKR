@@ -131,7 +131,7 @@ class PDFReportGenerator:
             ["", "", ""],
             ["", "", ""],
             ["", "", ""]
-        ], colWidths=[18*mm, 18*mm, 18*mm, 18*mm])
+        ], colWidths=[15*mm, 15*mm, 15*mm])
 
         stamp_table.setStyle(TableStyle([
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),  # 바깥 테두리
@@ -157,10 +157,10 @@ class PDFReportGenerator:
             # 4行：カレンダー、PJ名 等
             [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', ''],
             # 5行：昼休み区分、基準時間、作成者名 等
-            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), '', Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '']
+            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分", S['Normal']), '', Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '']
         ]
 
-        header_table = Table(header_data, colWidths=[30*mm, 40*mm, 35*mm, 35*mm, 40*mm])
+        header_table = Table(header_data, colWidths=[35*mm, 45*mm, 40*mm, 30*mm, 30*mm])
 
         header_table.setStyle(TableStyle([
             # 제목 행 병합
