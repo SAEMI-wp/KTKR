@@ -121,7 +121,7 @@ class ExcelReportGenerator:
         
         # 보고서 시기
         self.worksheet['J2'] = f"{self.year}年 {self.month}月"
-        self.worksheet.merge_cells('J2:K2')
+        self.worksheet.merge_cells('J2:L2')
         
         # 도장 섹션
         self.worksheet['M2'] = "承認"
@@ -153,7 +153,7 @@ class ExcelReportGenerator:
         self.worksheet['E6'] = monthly_data.base_calendar
         
         self.worksheet['H6'] = "PJ名 : "
-        self.worksheet.merge_cells('I6:K6')
+        self.worksheet.merge_cells('I6:L6')
         self.worksheet['I6'] = monthly_data.project_name
         
         # 휴게 시간과 기준 시간 (7행)
@@ -178,10 +178,10 @@ class ExcelReportGenerator:
             cell.value = label
         
         # 데이터 (45행)
-        self.worksheet['D45'] = f"{monthly_data.work_days:.1f}"
-        self.worksheet['E45'] = f"{monthly_data.paid_leave_days:.1f}"
-        self.worksheet['F45'] = f"{getattr(monthly_data, 'special_paid_leave_days', 0):.1f}"
-        self.worksheet['G45'] = f"{getattr(monthly_data, 'unpaid_leave_days', 0):.1f}"
+        self.worksheet['D45'] = f"{monthly_data.work_days:.2f}"
+        self.worksheet['E45'] = f"{monthly_data.paid_leave_days:.2f}"
+        self.worksheet['F45'] = f"{getattr(monthly_data, 'special_paid_leave_days', 0):.2f}"
+        self.worksheet['G45'] = f"{getattr(monthly_data, 'unpaid_leave_days', 0):.2f}"
         self.worksheet['H45'] = f"{monthly_data.total_regular_work_hours:.2f}"
         self.worksheet['I45'] = f"{monthly_data.total_deduction_hours:.2f}"
         self.worksheet['J45'] = f"{monthly_data.total_overtime_hours:.2f}"
@@ -369,6 +369,12 @@ class ExcelReportGenerator:
         self.worksheet['J7'].border = Border(bottom=self.styles.DOTTED)
         self.worksheet['K7'].border = Border(bottom=self.styles.DOTTED)
         
+        # 6행, 7행 폰트 크기 10으로 설정
+        for col in ['C', 'E', 'F', 'G', 'H', 'I']:
+            self.worksheet[f'{col}6'].font = Font(size=10)
+        for col in ['C', 'E', 'F', 'G']:
+            self.worksheet[f'{col}7'].font = Font(size=10)
+        
         # 월별 정보 스타일
         self.worksheet['H6'].border = Border(bottom=self.styles.DOTTED)
         self.worksheet['I6'].border = Border(bottom=self.styles.DOTTED)
@@ -482,6 +488,7 @@ class ExcelReportGenerator:
         self.worksheet.column_dimensions['F'].width += 3
         self.worksheet.column_dimensions['D'].width += 1.8
         self.worksheet.column_dimensions['G'].width += 1.8
+        self.worksheet.column_dimensions['H'].width += 1.0  # H열 너비 조금 증가
 
     def _apply_row_heights(self):
         """행 높이 일괄 조정 + 특정 행만 별도 조정"""
@@ -500,6 +507,7 @@ class ExcelReportGenerator:
             9: 10,
             10: 10,
             43: 15,
+            44: 25,  # 44행 높이 증가
             46: 10
         }
         for row, height in row_heights.items():
