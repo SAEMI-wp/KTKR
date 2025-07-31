@@ -156,11 +156,11 @@ class PDFReportGenerator:
             [Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)), '', Paragraph(f"{self.year}年 {self.month}月", S['Header']), '', ''],
             # 4行：カレンダー、基準時間、PJ名 等
             [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), ''],
-            # 5行：昼休み区分、作業者名 等
-            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"作業者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', '', '']
+            # 5行：昼休み区分、作成者名 等
+            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', '', '']
         ]
 
-        header_table = Table(header_data, colWidths=[35*mm, 25*mm, 35*mm, 35*mm, 50*mm])
+        header_table = Table(header_data, colWidths=[35*mm, 35*mm, 35*mm, 35*mm, 40*mm])
 
         header_table.setStyle(TableStyle([
             # 제목 행 병합
@@ -172,10 +172,7 @@ class PDFReportGenerator:
             ('SPAN', (2, 1), (3, 1)),  # 연월은 중간 2칸 병합
             # 도장 표는 오른쪽 끝에
             ('VALIGN', (4, 1), (4, 1), 'TOP'),
-            # 4행: 기준시간과 PJ명 병합
-            ('SPAN', (2, 3), (3, 3)),  # 기준시간과 PJ명 병합
-            # 5행: 작업자명 병합
-            ('SPAN', (1, 4), (2, 4)),  # 작업자명 2칸 병합
+            # 병합 없음 - 각 항목 독립적으로 표시
             # 도장 표를 2~5행에 병합
             ('SPAN', (4, 1), (4, 4)),  # 도장(stamp_table)을 2~5행(1~4 인덱스) 5번째 열에 병합
             # 전체 패딩/정렬
