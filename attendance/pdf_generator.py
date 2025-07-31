@@ -154,13 +154,13 @@ class PDFReportGenerator:
             [Paragraph('稼 働 報 告 書', ParagraphStyle('TitleLeft', parent=S['Title'], alignment=TA_LEFT)), '', '', '', stamp_table],
             # 3行：会社名(左)、年月(中央)
             [Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)), '', Paragraph(f"{self.year}年 {self.month}月", S['Header']), '', ''],
-            # 4行：カレンダー、PJ名 等
-            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', ''],
-            # 5行：昼休み区分、基準時間、作成者名 等
-            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分", S['Normal']), '', Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '']
+            # 4行：カレンダー、基準時間、PJ名 等
+            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', ''],
+            # 5行：昼休み区分、作成者名 等
+            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', '', '']
         ]
 
-        header_table = Table(header_data, colWidths=[35*mm, 45*mm, 40*mm, 30*mm, 30*mm])
+        header_table = Table(header_data, colWidths=[40*mm, 40*mm, 50*mm, 20*mm, 30*mm])
 
         header_table.setStyle(TableStyle([
             # 제목 행 병합
@@ -174,8 +174,8 @@ class PDFReportGenerator:
             ('VALIGN', (4, 1), (4, 1), 'TOP'),
             # 4행: PJ명 병합 (긴 텍스트를 한 줄로 표시)
             ('SPAN', (2, 3), (3, 3)),  # PJ명 2칸 병합
-            # 5행: 기준시간과 작성자 병합
-            ('SPAN', (2, 4), (3, 4)),  # 기준시간과 작성자 2칸 병합
+            # 5행: 작성자 병합
+            ('SPAN', (1, 4), (2, 4)),  # 작성자 2칸 병합
             # 도장 표를 2~5행에 병합
             ('SPAN', (4, 1), (4, 4)),  # 도장(stamp_table)을 2~5행(1~4 인덱스) 5번째 열에 병합
             # 전체 패딩/정렬
