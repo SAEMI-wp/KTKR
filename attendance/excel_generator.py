@@ -256,10 +256,16 @@ class ExcelReportGenerator:
                             self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
                         else:
                             self.worksheet[f'E{current_row}'] = ""
-                        # 作業開始時刻
-                        self.worksheet[f'F{current_row}'] = daily.start_time.strftime("%H:%M")
-                        # 作業終了時刻
-                        self.worksheet[f'G{current_row}'] = daily.end_time.strftime("%H:%M")
+                        # 作業開始時刻 (앞의 0 제거)
+                        start_time_str = daily.start_time.strftime("%H:%M")
+                        if start_time_str.startswith("0"):
+                            start_time_str = start_time_str[1:]
+                        self.worksheet[f'F{current_row}'] = start_time_str
+                        # 作業終了時刻 (앞의 0 제거)
+                        end_time_str = daily.end_time.strftime("%H:%M")
+                        if end_time_str.startswith("0"):
+                            end_time_str = end_time_str[1:]
+                        self.worksheet[f'G{current_row}'] = end_time_str
                         # 常勤
                         if daily.regular_work_hours is not None:
                             self.worksheet[f'H{current_row}'] = float(daily.regular_work_hours)
@@ -420,10 +426,8 @@ class ExcelReportGenerator:
         
         # 합계 행 스타일
         self.worksheet['B43'].alignment = Alignment(horizontal="center")
-        self.worksheet['B43'].font = Font(bold=True)  # 합계 제목 굵게
         for col in ['H', 'I', 'J', 'K', 'L']:
             self.worksheet[f'{col}43'].alignment = Alignment(horizontal="right")
-            self.worksheet[f'{col}43'].font = Font(bold=True)  # 합계 숫자 굵게
         
         # 휴일 관련 스타일링 적용
         for row in range(12, 43):
@@ -496,7 +500,7 @@ class ExcelReportGenerator:
         self.worksheet.column_dimensions['I'].width += 0.5  # I열 너비 조금 증가
         self.worksheet.column_dimensions['J'].width += 0.5  # J열 너비 조금 증가
         self.worksheet.column_dimensions['K'].width += 0.5  # K열 너비 조금 증가
-        self.worksheet.column_dimensions['L'].width += 0.5  # L열 너비 조금 증가
+        self.worksheet.column_dimensions['L'].width += 1.0  # L열 너비 증가
 
     def _apply_row_heights(self):
         """행 높이 일괄 조정 + 특정 행만 별도 조정"""
@@ -513,9 +517,9 @@ class ExcelReportGenerator:
             4: 6,
             8: 10,
             9: 10,
-            10: 10,
-            43: 22,  # 43행 높이 증가
-            44: 28,  # 44행 높이 증가
+            10: 6,   
+            43: 22,  
+            44: 32,  
             46: 10
         }
         for row, height in row_heights.items():
