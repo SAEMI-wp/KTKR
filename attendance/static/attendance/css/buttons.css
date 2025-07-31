@@ -457,6 +457,7 @@ button:hover {
 .toggle-btn.red {
     border-color: #e53935;
     color: #e53935;
+    margin-bottom: 3%;
 }
 
 /* hover 효과(선명하게) */
