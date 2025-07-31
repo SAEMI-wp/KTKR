@@ -532,8 +532,7 @@ class DailyData:
                 overtime_value = 0.0
 
         # break_minutes가 45면서 standard_work_hours > 0.76 이면 0.5를 더함
-        # 이 조건은 실제 잔업시간이 있을 때만 적용되어야 함
-        if self.break_minutes == 45 and self.standard_work_hours > 0.76:
+        if self.break_minutes == 45 and self.standard_work_hours > 0.76 and overtime_value > 0:
             overtime_value += 0.5
 
         # calculated_hours가 standard_work_hours보다 컸다면 calculated_hours - standard_work_hours를 더함
