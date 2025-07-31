@@ -115,6 +115,23 @@
     background: #6c757d;
 }
 
+/* Survey Button (설문조사 버튼) */
+.survey-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+    font-size: 18px;
+}
+
+.survey-button:hover {
+    background: #1e7e34;
+}
+
 /* General Buttons */
 .btn-primary {
     background-color: #007bff;
