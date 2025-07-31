@@ -119,6 +119,7 @@
 .btn-primary {
     background-color: #007bff;
     color: white;
+    margin-top: 3%;
 }
 
 .btn-primary:hover {
@@ -249,6 +250,7 @@ button:hover {
         min-height: 36px;
         padding: 4px 12px;
         font-size: 14px;
+        margin-bottom: 2%
     }
     
     .month-grid button {
