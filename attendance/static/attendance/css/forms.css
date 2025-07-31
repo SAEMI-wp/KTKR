@@ -220,7 +220,7 @@
     flex-shrink: 0;
 }
 
-/* 勤務区分ヘルプアイ콘 */
+/* 勤務区分ヘルプアイコン */
 .worktype-help-icon {
     display: inline-flex;
     align-items: center;
@@ -270,7 +270,25 @@
     font-size: 14px;
 }
 .worktype-tooltip .tooltip-body {
-    font-size: 13px;
+    font-size: 11px;
+}
+
+.worktype-tooltip .worktype-item {
+    margin-bottom: 4px;
+    padding: 1px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.worktype-tooltip .worktype-item:last-child {
+    margin-bottom: 0;
+}
+
+.worktype-tooltip .worktype-item strong {
+    font-weight: 600;
+    min-width: 70px;
+    flex-shrink: 0;
 }
 .worktype-tooltip .tooltip-close-btn {
     position: absolute;
