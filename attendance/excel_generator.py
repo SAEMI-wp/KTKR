@@ -322,6 +322,8 @@ class ExcelReportGenerator:
         sum_columns = ['H', 'I', 'J', 'K', 'L']
         for col in sum_columns:
             self.worksheet[f'{col}43'] = f"=SUM({col}12:{col}42)"
+            # 숫자 형식 설정 (소수점 2자리까지 표시)
+            self.worksheet[f'{col}43'].number_format = '0.00'
         
         # 合計行SUM式が効かない場合の原因: 文字列が混じるとExcelのSUMが無視するため、空欄は "" ではなく None にする(上で既に処理済み) 
 
@@ -418,8 +420,10 @@ class ExcelReportGenerator:
         
         # 합계 행 스타일
         self.worksheet['B43'].alignment = Alignment(horizontal="center")
+        self.worksheet['B43'].font = Font(bold=True)  # 합계 제목 굵게
         for col in ['H', 'I', 'J', 'K', 'L']:
             self.worksheet[f'{col}43'].alignment = Alignment(horizontal="right")
+            self.worksheet[f'{col}43'].font = Font(bold=True)  # 합계 숫자 굵게
         
         # 휴일 관련 스타일링 적용
         for row in range(12, 43):
@@ -488,7 +492,11 @@ class ExcelReportGenerator:
         self.worksheet.column_dimensions['F'].width += 3
         self.worksheet.column_dimensions['D'].width += 1.8
         self.worksheet.column_dimensions['G'].width += 1.8
-        self.worksheet.column_dimensions['H'].width += 1.0  # H열 너비 조금 증가
+        self.worksheet.column_dimensions['H'].width += 1.5  # H열 너비 증가
+        self.worksheet.column_dimensions['I'].width += 0.5  # I열 너비 조금 증가
+        self.worksheet.column_dimensions['J'].width += 0.5  # J열 너비 조금 증가
+        self.worksheet.column_dimensions['K'].width += 0.5  # K열 너비 조금 증가
+        self.worksheet.column_dimensions['L'].width += 0.5  # L열 너비 조금 증가
 
     def _apply_row_heights(self):
         """행 높이 일괄 조정 + 특정 행만 별도 조정"""
@@ -506,8 +514,8 @@ class ExcelReportGenerator:
             8: 10,
             9: 10,
             10: 10,
-            43: 15,
-            44: 25,  # 44행 높이 증가
+            43: 22,  # 43행 높이 증가
+            44: 28,  # 44행 높이 증가
             46: 10
         }
         for row, height in row_heights.items():
