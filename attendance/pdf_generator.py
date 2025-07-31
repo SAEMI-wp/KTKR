@@ -154,13 +154,13 @@ class PDFReportGenerator:
             [Paragraph('稼 働 報 告 書', ParagraphStyle('TitleLeft', parent=S['Title'], alignment=TA_LEFT)), '', '', '', stamp_table],
             # 3行：会社名(左)、年月(中央)
             [Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)), '', Paragraph(f"{self.year}年 {self.month}月", S['Header']), '', ''],
-            # 4行：カレンダー、作業者名 等
-            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"作業者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', ''],
-            # 5行：昼休み区分、基準時間、PJ名 等
-            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', '']
+            # 4行：カレンダー、基準時間、PJ名 等
+            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), '', Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), ''],
+            # 5行：昼休み区分、作業者名 等
+            [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"作業者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', '', '']
         ]
 
-        header_table = Table(header_data, colWidths=[45*mm, 45*mm, 40*mm, 10*mm, 40*mm])
+        header_table = Table(header_data, colWidths=[35*mm, 25*mm, 35*mm, 35*mm, 50*mm])
 
         header_table.setStyle(TableStyle([
             # 제목 행 병합
@@ -172,12 +172,10 @@ class PDFReportGenerator:
             ('SPAN', (2, 1), (3, 1)),  # 연월은 중간 2칸 병합
             # 도장 표는 오른쪽 끝에
             ('VALIGN', (4, 1), (4, 1), 'TOP'),
-            # 캘린더, PJ명, 작업자명 행
-            ('SPAN', (3, 2), (4, 2)),  # 오른쪽 병합
-            # 3행 점선(밑줄)
-#           ('LINEBELOW', (0, 2), (2, 2), 0.5, colors.black, None, [2, 2]),
-            # 휴게시간, 기준시간 행
-            ('SPAN', (3, 3), (4, 3)),  # 오른쪽 병합
+            # 4행: 기준시간과 PJ명 병합
+            ('SPAN', (2, 3), (3, 3)),  # 기준시간과 PJ명 병합
+            # 5행: 작업자명 병합
+            ('SPAN', (1, 4), (2, 4)),  # 작업자명 2칸 병합
             # 도장 표를 2~5행에 병합
             ('SPAN', (4, 1), (4, 4)),  # 도장(stamp_table)을 2~5행(1~4 인덱스) 5번째 열에 병합
             # 전체 패딩/정렬
@@ -236,8 +234,17 @@ class PDFReportGenerator:
                 else:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
                     row_data.append(Paragraph(daily.alternative_work_date.strftime("%m/%d") if daily.alternative_work_date else "", self.styles.STYLES['NormalCenter']))
-                    row_data.append(Paragraph(daily.start_time.strftime("%H:%M") if daily.start_time else "", self.styles.STYLES['NormalRight']))
-                    row_data.append(Paragraph(daily.end_time.strftime("%H:%M") if daily.end_time else "", self.styles.STYLES['NormalRight']))
+                    # 작업시작시각 (앞의 0 제거)
+                    start_time_str = daily.start_time.strftime("%H:%M") if daily.start_time else ""
+                    if start_time_str.startswith("0"):
+                        start_time_str = start_time_str[1:]
+                    row_data.append(Paragraph(start_time_str, self.styles.STYLES['NormalRight']))
+                    
+                    # 작업종료시각 (앞의 0 제거)
+                    end_time_str = daily.end_time.strftime("%H:%M") if daily.end_time else ""
+                    if end_time_str.startswith("0"):
+                        end_time_str = end_time_str[1:]
+                    row_data.append(Paragraph(end_time_str, self.styles.STYLES['NormalRight']))
                     reg_h = daily.regular_work_hours if daily.regular_work_hours is not None else 0.0
                     ded_h = daily.deduction_hours if daily.deduction_hours is not None else 0.0
                     ovt_h = daily.overtime_hours if daily.overtime_hours is not None else 0.0
@@ -284,8 +291,8 @@ class PDFReportGenerator:
             Paragraph("合 計", self.styles.STYLES['NormalCenter']), '', '', '', '', '',
             Paragraph(f"{total_reg:.2f}", self.styles.STYLES['NormalRight']),
             Paragraph(f"{total_ded:.2f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{total_ovt:.1f}", self.styles.STYLES['NormalRight']),
-            Paragraph(f"{total_nit:.1f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_ovt:.2f}", self.styles.STYLES['NormalRight']),
+            Paragraph(f"{total_nit:.2f}", self.styles.STYLES['NormalRight']),
             Paragraph(f"{total_sub:.2f}", self.styles.STYLES['NormalRight']),
             Paragraph('', self.styles.STYLES['Normal'])
         ]
