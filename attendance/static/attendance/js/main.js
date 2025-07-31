@@ -245,12 +245,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 代休/振替の勤務日フィールドの表示制御
     function toggleAltWorkDateField(workType) {
         const altGroup = document.getElementById('alt-work-date-group');
+        const altInput = altGroup?.querySelector('input[type="date"]');
+    
         if (!altGroup) return;
+        
         const showTypes = ['代休(動)', '振替(動)', '代休(休)', '振替(休)'];
         if (showTypes.includes(workType)) {
             altGroup.style.display = '';
+            altInput.required = true;
+            if (requiredMark) requiredMark.style.display = 'inline';
         } else {
             altGroup.style.display = 'none';
+            altInput.required = false;
+            if (requiredMark) requiredMark.style.display = 'none';
         }
     }
 
