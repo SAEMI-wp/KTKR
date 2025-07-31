@@ -1771,3 +1771,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 }); 
+
+// アンケートを開く関数
+function openSurvey() {
+    const surveyUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSdRmdDHYjOKITFvv3_FXRq-9FPTm-mNGTSsuNNNKX4KDvENCg/viewform?usp=dialog';
+    window.open(surveyUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    console.log('[SURVEY] アンケートを開きました');
+}
