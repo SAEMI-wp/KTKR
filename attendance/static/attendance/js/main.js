@@ -1778,3 +1778,4 @@ function openSurvey() {
     window.open(surveyUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     console.log('[SURVEY] アンケートを開きました');
 }
+window.openSurvey = openSurvey;
