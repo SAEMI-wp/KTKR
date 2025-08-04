@@ -9,7 +9,12 @@ from .auth_views import (
     PasswordChangeForm
 )
 
-from .main_views import MainView
+from .main_views import (
+    MainView,
+    CalendarPartialView,
+    FormPartialView,
+    MonthlyInfoSectionView
+)
 
 from .monthly_views import (
     MonthlyAttendanceCreateView,
@@ -44,6 +49,9 @@ __all__ = [
     
     # Main views
     'MainView',
+    'CalendarPartialView',
+    'FormPartialView',
+    'MonthlyInfoSectionView',
     
     # Monthly views
     'MonthlyAttendanceCreateView',
