@@ -1,0 +1,356 @@
+/*
+ * forms.css - 폼 관련 스타일
+ * 
+ * 포함 내용:
+ * - 근태 등록 폼
+ * - 모달 폼 컨트롤
+ * - 날짜 입력 그룹
+ * - 폼 비활성화 스타일
+ * - 비활성화 메시지
+ */
+
+.form-warning { display: none; }
+/* Daily Entry Form */
+.attendance-entry .form-group, .attendance-entry .form-group-full {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 必須マークのスタイル */
+.required-mark {
+    color: #e74c3c;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* フォーム警告メッセージのスタイル改善 */
+.disabled-message {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: none;
+}
+
+.disabled-message p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.disabled-message i {
+    margin-right: 5px;
+    color: #f39c12;
+}
+
+.attendance-entry .form-group-full {
+    grid-column: 1 / -1;
+}
+
+.attendance-entry form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.attendance-entry .daily-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+/* 모바일 폼 그리드 최적화 */
+@media (max-width: 768px) {
+    .attendance-entry .daily-form-grid {
+        width: auto;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .form-control {
+        font-size: 16px; /* iOS에서 확대 방지 */
+        padding: 12px;
+        min-height: 44px;
+    }
+    
+    .date-input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .date-full {
+        width: 100%;
+        font-size: 1.2em;
+    }
+
+    /* 등록 폼 인풋/셀렉트/버튼 통일 */
+    .form-control, .btn-primary, .btn-normal {
+     width: 100%;
+     max-width: 300px;
+     font-size: 1rem;
+     box-sizing: border-box;
+     margin-bottom: 8px;
+    }
+
+    /* 날짜/버튼 정렬 개선 */
+    .date-input-group, .form-actions {
+     display: flex;
+     align-items: center;
+     gap: 8px;
+    }
+
+    .date-input-group {
+        flex-direction: row;   /* ← 세로(column)에서 가로(row)로 변경 */
+        gap: 8px;
+    }
+    .date-full {
+        width: 100px;          /* 필요시 날짜 영역 너비 조정 */
+        font-size: 1.2em;
+    }
+    .day-arrow {
+        min-width: 60px;       /* 버튼 크기 조정 (선택) */
+        font-size: 0.95em;
+    }
+}
+
+/* Modal Form Controls */
+.modal-body .form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for padding and width */
+}
+
+.modal-body .form-actions {
+    text-align: right;
+    margin-top: 20px;
+}
+
+/* 날짜 입력 그룹 및 네비게이션 버튼 정렬 */
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-full {
+    width: 115px;
+    flex-shrink: 0;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #005A9C;
+    text-align: center;
+}
+
+#day-display {
+    margin-left: 0;
+}
+
+.day-arrow {
+    background: #fff;
+    color: #1976d2;
+    border: 1.2px solid #1976d2;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: normal;
+    height: 30px;
+    min-width: 70px;
+    padding: 0 12px;
+    margin: 0 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border 0.15s;
+    box-shadow: 0 1px 2px rgba(25, 118, 210, 0.04);
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.day-arrow:hover,
+.day-arrow:focus {
+    background: #e3f2fd;
+    color: #1565c0;
+    border-color: #1565c0;
+}
+
+/* 근태 등록 섹션 비활성화 스타일 */
+.attendance-entry.disabled {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    opacity: 0.7;
+    position: relative;
+}
+
+.attendance-entry.disabled .form-control,
+.attendance-entry.disabled select,
+.attendance-entry.disabled input,
+.attendance-entry.disabled textarea,
+.attendance-entry.disabled button {
+    cursor: not-allowed;
+}
+
+.attendance-entry.disabled .form-control:focus,
+.attendance-entry.disabled select:focus,
+.attendance-entry.disabled input:focus,
+.attendance-entry.disabled textarea:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+.attendance-entry.disabled .btn-normal:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.disabled-message {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.disabled-message p {
+    margin: 0;
+    color: #856404;
+    font-weight: 500;
+}
+
+.disabled-message i {
+    margin-right: 8px;
+    color: #f39c12;
+}
+
+.form-warning {
+    align-items: center;
+    background: #fff4f4;
+    color: #d32f2f;
+    border: 1.5px solid #f5c6cb;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    min-height: 40px;
+    gap: 8px;
+}
+.warning-icon {
+    font-size: 1.3em;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+/* 勤務区分ヘルプアイコン */
+.worktype-help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    color: #1976d2;
+    font-size: 1.1em;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: color 0.15s;
+}
+.worktype-help-icon:hover,
+.worktype-help-icon:focus {
+    color: #f57c00;
+}
+
+/* 勤務区分ツールチップ */
+.worktype-tooltip {
+    position: absolute;
+    z-index: 100;
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #1976d2;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(25,118,210,0.10);
+    padding: 14px 18px 12px 18px;
+    min-width: 220px;
+    max-width: 270px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: normal;
+    box-sizing: border-box;
+    animation: fadeIn 0.18s;
+    /* 라벨을 기준으로 위치 설정 */
+    top: 0;
+    left: 100%;
+    margin-left: 8px;
+}
+.worktype-tooltip .tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+.worktype-tooltip .tooltip-title {
+    font-weight: bold;
+    color: #1976d2;
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+.worktype-tooltip .tooltip-body {
+    font-size: 11px;
+}
+
+.worktype-tooltip .worktype-item {
+    margin-bottom: 4px;
+    padding: 1px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.worktype-tooltip .worktype-item:last-child {
+    margin-bottom: 0;
+}
+
+.worktype-tooltip .worktype-item strong {
+    font-weight: 600;
+    min-width: 70px;
+    flex-shrink: 0;
+}
+.worktype-tooltip .tooltip-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 2;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+.worktype-tooltip .tooltip-close-btn:hover,
+.worktype-tooltip .tooltip-close-btn:focus {
+    color: #f57c00;
+    background: #f5f5f5;
+    border-radius: 50%;
+}
+.worktype-tooltip::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: -12px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent #1976d2 transparent transparent;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}

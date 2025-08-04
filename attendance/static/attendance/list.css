@@ -1,0 +1,261 @@
+/*
+ * list.css - 리스트 테이블 관련 스타일
+ * 
+ * 포함 내용:
+ * - 리스트 테이블 기본 스타일
+ * - 리스트 테이블 헤더 (th)
+ * - 리스트 테이블 셀 (td)
+ * - 리스트 행 호버 효과
+ * - 빈 데이터 셀 스타일
+ */
+
+/* 리스트 테이블 스타일링 */
+.list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.list-table th {
+    background-color: #e9f2f9;
+    color: #005A9C;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 14px;
+    border-bottom: 2px solid #005A9C;
+}
+
+.list-table td {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 8px;
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+.list-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.list-table tbody tr:hover {
+    background-color: #e8f4fd;
+}
+
+.list-table .no-data-cell {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* 日付/曜日 열 너비 및 색상 */
+.date-col, .weekday-col {
+  width: 48px;
+  min-width: 40px;
+  max-width: 60px;
+  text-align: center;
+  padding: 4px 2px;
+}
+.saturday {
+  color: #1976d2 !important;
+}
+.sunday {
+  color: #e53935 !important;
+}
+/* 공휴일은 날짜와 요일 셀에만 적용 */
+.holiday {
+  color: #e53935 !important;
+}
+
+/* リストビュー祝日行スタイル - 日曜日と同じ表示 */
+.list-table tbody tr.holiday {
+  background-color: transparent !important;
+}
+
+.list-table tbody tr.holiday:hover {
+  background-color: #e8f4fd !important;
+}
+
+.list-table tbody tr.holiday .date-col,
+.list-table tbody tr.holiday .weekday-col {
+  color: #e53935 !important;
+  font-weight: normal;
+}
+
+/* 勤務区分列のテキスト色 - 全て黒色 */
+.list-table tbody tr td:nth-child(3) {
+  color: #000000 !important;
+}
+
+/* 공휴일 행에서도 다른 셀들은 검은색 유지 */
+.list-table tbody tr.holiday td:nth-child(4),
+.list-table tbody tr.holiday td:nth-child(5),
+.list-table tbody tr.holiday td:nth-child(6),
+.list-table tbody tr.holiday td:nth-child(7),
+.list-table tbody tr.holiday td:nth-child(8) {
+  color: #000000 !important;
+}
+
+/* 日々承認 열 너비 
+.approval-col {
+  width: 56px;
+  min-width: 40px;
+  text-align: center;
+  border-left: 2px solid #e0e0e0;
+  border-right: 2px solid #e0e0e0;
+  display: none; 
+}
+*/
+
+/* 리스트 테이블 열 구분선 */
+.list-table th, .list-table td {
+  border-right: 1.5px solid #e0e0e0;
+}
+.list-table th:last-child, .list-table td:last-child {
+  border-right: none;
+}
+
+/* 승인 아이콘 버튼 스타일 */
+.approval-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.approval-btn:active {
+  outline: none;
+}
+
+/* 비고 셀 스타일 */
+.notes-cell {
+  position: relative;
+  min-width: 120px;
+}
+
+.notes-content {
+  position: relative;
+  padding-right: 30px; /* 삭제 버튼 공간 확보 */
+  word-wrap: break-word;
+  min-height: 20px;
+}
+
+/* 리스트 테이블 삭제 버튼 스타일 */
+.list-table .delete-daily-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: none;
+  color: #e53935;
+  border: none;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  line-height: 1;
+}
+
+.list-table tbody tr:hover .delete-daily-btn {
+  opacity: 0.8;
+}
+
+/* 모바일 리스트 최적화 - 가로 스크롤 */
+@media (max-width: 768px) {
+    .calendar-panel{
+        max-width: 90%;
+    }
+
+    .list-container {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 6px;
+    }
+    .list-table {
+        min-width: 600px;      /* 또는 500px, 400px 등 */
+        width: max-content;    /* 내용에 맞게 테이블이 늘어남 */
+        font-size: 13px;
+    }
+    
+    .list-table th {
+        padding: 10px 6px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .list-table td {
+        padding: 8px 6px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .date-col, .weekday-col {
+        width: 40px;
+        min-width: 40px;
+        max-width: 40px;
+        padding: 4px 2px;
+        font-size: 12px;
+    }
+    
+    .notes-cell {
+        min-width: 100px;
+        max-width: 150px;
+    }
+    
+    .notes-content {
+        padding-right: 25px;
+        font-size: 12px;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    
+    .list-table .delete-daily-btn {
+        width: 14px;
+        height: 14px;
+        font-size: 12px;
+        top: 1px;
+        right: 1px;
+    }
+}
+
+/* 더 작은 화면에서의 최적화 */
+@media (max-width: 480px) {
+    .list-table {
+        min-width: 500px;
+        font-size: 12px;
+    }
+    
+    .list-table th {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
+    
+    .list-table td {
+        padding: 6px 4px;
+        font-size: 12px;
+    }
+    
+    .date-col, .weekday-col {
+        width: 35px;
+        min-width: 35px;
+        max-width: 35px;
+        font-size: 11px;
+    }
+
+    /* 리스트 행/셀과 동일한 폰트/여백 */
+    .list-table td, .list-table th {
+      font-size: 1rem;
+      padding: 8px 4px;
+    }
+}
+
