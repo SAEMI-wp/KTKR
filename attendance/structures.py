@@ -532,7 +532,8 @@ class DailyData:
                 overtime_value = 0.0
 
         # break_minutes가 45면서 standard_work_hours > 0.76 이면 0.5를 더함
-        if self.break_minutes == 45 and self.standard_work_hours > 0.76 and overtime_value > 0:
+        # 이 조건은 실제 잔업시간이 있을 때만 적용되어야 함
+        if self.break_minutes == 45 and self.standard_work_hours > 0.76:
             overtime_value += 0.5
 
         # calculated_hours가 standard_work_hours보다 컸다면 calculated_hours - standard_work_hours를 더함
@@ -743,10 +744,10 @@ class MonthlyData:
 
     @property
     def unpaid_leave_days(self) -> float:
-        """無給日: 代休(動)で、alternative_work_dateの年または月がdateと異なる場合のみカウント"""
+        """無給日: 代休(勤)で、alternative_work_dateの年または月がdateと異なる場合のみカウント"""
         count = 0
         for d in self.daily_list:
-            if d.work_type == "代休(動)":
+            if d.work_type == "代休(勤)":
                 if d.alternative_work_date:
                     if (d.date.year != d.alternative_work_date.year) or (d.date.month != d.alternative_work_date.month):
                         count += 1

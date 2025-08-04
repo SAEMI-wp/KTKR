@@ -48,24 +48,38 @@ def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyDat
         daily_list=daily_list
     )
 
-def get_or_create_monthly_structure(employee: Employee, year: str, month: str) -> Optional[MonthlyData]:
-    """월별 구조체를 가져오거나 생성"""
-    # DB에서 월별 데이터 조회
+def get_monthly_structure(employee: Employee, year: str, month: str) -> Optional[MonthlyData]:
+    """月別構造体を取得（存在しない場合はNoneを返す）"""
     monthly_model = AttendanceMonthly.objects.filter(
         employee=employee,
         year=year,
         month=month.zfill(2)
     ).first()
-    
-    if monthly_model:
-        # 기존 데이터가 있으면 구조체로 변환
-        monthly_data = convert_monthly_to_structure(monthly_model)
-        # 모든 일별 시간 계산
-        monthly_data.calculate_all_daily_hours()
-        return monthly_data
-    else:
-        # DB에 없으면 None 반환
+    if not monthly_model:
+        # 월정보가 없으면 None 반환 (자동 생성하지 않음)
         return None
+    monthly_data = convert_monthly_to_structure(monthly_model)
+    monthly_data.calculate_all_daily_hours()
+    return monthly_data
+
+def create_monthly_structure(employee: Employee, year: str, month: str) -> MonthlyData:
+    """月別構造体を新規作成"""
+    monthly_model = AttendanceMonthly.objects.create(
+        employee=employee,
+        year=year,
+        month=month.zfill(2),
+        project_name='',
+        base_calendar='基準',
+        break_minutes=60,
+        standard_work_hours=8.00
+    )
+    monthly_data = convert_monthly_to_structure(monthly_model)
+    monthly_data.calculate_all_daily_hours()
+    return monthly_data
+
+def get_or_create_monthly_structure(employee: Employee, year: str, month: str) -> Optional[MonthlyData]:
+    """月別構造体を取得または新規作成（存在しない場合は新規作成して返す）"""
+    return get_monthly_structure(employee, year, month) or create_monthly_structure(employee, year, month)
 
 def save_daily_from_structure(daily_data: DailyData, monthly_model: AttendanceMonthly) -> AttendanceDaily:
     """DailyData 구조체를 DB에 저장"""
@@ -173,3 +187,17 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
     except Exception as e:
         print('메일 전송 실패:', e, flush=True)
         raise 
+
+def get_group_name_by_code(code):
+    """
+    employee_groupテーブルからgroup_codeでgroup_name(auth_group.name)を安全に取得する
+    """
+    from django.db import connection
+    if not code:
+        return None
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT group_name FROM employee_group WHERE group_code = %s", [code])
+        row = cursor.fetchone()
+        if row:
+            return row[0]
+    return None 

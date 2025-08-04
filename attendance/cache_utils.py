@@ -10,7 +10,7 @@ from django.core.cache import cache
 from django.conf import settings
 from .models import Employee, AttendanceMonthly
 from .structures import MonthlyData
-from .utils import get_or_create_monthly_structure
+from .utils import get_or_create_monthly_structure, get_monthly_structure
 
 
 def generate_cache_key(employee_id: str, year: str, month: str) -> str:
@@ -72,8 +72,8 @@ def cache_monthly_data(employee_id: str, year: str, month: str, monthly_data: Mo
         }
         data_dict['daily_list'].append(daily_dict)
     
-    # JSON으로 직렬화하여 캐시에 저장 (TTL: 1시간)
-    cache.set(cache_key, json.dumps(data_dict), timeout=3600)
+    # JSON으로 직렬화하여 캐시에 저장 (TTL: 5분)
+    cache.set(cache_key, json.dumps(data_dict), timeout=300)
 
 
 def get_cached_monthly_data(employee_id: str, year: str, month: str) -> Optional[MonthlyData]:
@@ -169,6 +169,36 @@ def invalidate_employee_cache(employee_id: str) -> None:
     cache.delete_pattern(pattern)
 
 
+def clear_all_monthly_cache() -> None:
+    """
+    모든 월별 데이터 캐시를 초기화합니다.
+    개인정보와 회원정보는 유지됩니다.
+    """
+    try:
+        # Redis에서 월별 데이터 캐시 패턴으로 모든 캐시 삭제
+        pattern = "techave_kintai:monthly_data:*"
+        cache.delete_pattern(pattern)
+        print("[CACHE] 모든 월별 데이터 캐시가 초기화되었습니다.")
+    except Exception as e:
+        print(f"[CACHE] 캐시 초기화 중 오류 발생: {e}")
+
+
+def clear_user_monthly_cache(employee_id: str) -> None:
+    """
+    특정 사용자의 월별 데이터 캐시를 초기화합니다.
+    
+    Args:
+        employee_id: 사원번호
+    """
+    try:
+        # 해당 사용자의 월별 데이터 캐시만 삭제
+        pattern = f"techave_kintai:monthly_data:{employee_id}:*"
+        cache.delete_pattern(pattern)
+        print(f"[CACHE] 사용자 {employee_id}의 월별 데이터 캐시가 초기화되었습니다.")
+    except Exception as e:
+        print(f"[CACHE] 사용자 캐시 초기화 중 오류 발생: {e}")
+
+
 def get_monthly_data_with_cache(employee: Employee, year: str, month: str) -> Optional[MonthlyData]:
     """
     캐시를 우선 확인하고, 없으면 DB에서 가져와서 캐시에 저장합니다.
@@ -191,7 +221,7 @@ def get_monthly_data_with_cache(employee: Employee, year: str, month: str) -> Op
     
     # 2. 캐시에 없으면 DB에서 가져오기
     print(f"DB에서 데이터 로드: {employee_id} - {year}/{month}")
-    monthly_data = get_or_create_monthly_structure(employee, year, month)
+    monthly_data = get_monthly_structure(employee, year, month)
     
     # 3. DB에서 가져온 데이터를 캐시에 저장
     if monthly_data:

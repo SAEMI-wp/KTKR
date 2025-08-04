@@ -3,7 +3,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
     MainView, MonthlyAttendanceCreateView, MonthlyAttendanceUpdateView, DailyDataUpdateView, DailyDataGetView,
-    login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView #, signup_view
+    login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView, #, signup_view
+    CalendarPartialView, FormPartialView, MonthlyInfoSectionView
 )
 from .views import attendance_require_day
 from .views.utility_views import email_candidates
@@ -30,6 +31,13 @@ urlpatterns = [
     path('daily/approve/', DailyApproveView.as_view(), name='daily_approve'),
     path('attendance/require_day/', attendance_require_day, name='attendance_require_day'),
     path('api/email_candidates/', email_candidates, name='email_candidates'),  # 推奨メール受信者API
+    # TTL 기반 캐시 사용으로 인해 수동 캐시 초기화 API 제거
+    # path('api/clear_cache/', clear_cache, name='clear_cache'),  # 캐시 초기화 API
+    
+    # ===================== AJAX용 Partial 뷰들 =====================
+    path('calendar_partial/', CalendarPartialView.as_view(), name='calendar_partial'),
+    path('form_partial/', FormPartialView.as_view(), name='form_partial'),
+    path('monthly-info/section/', MonthlyInfoSectionView.as_view(), name='monthly_info_section'),
 ]
 
 # 개발 환경에서 static 파일 서빙

@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from calendar import monthrange, weekday
-from datetime import date
+from datetime import date, datetime
 
 from django.conf import settings
 from reportlab.lib import colors
@@ -106,6 +106,21 @@ class PDFReportGenerator:
             )
             if not monthly_data:
                 raise ValueError("해당 월의 정보를 찾을 수 없습니다.")
+            
+            # 공휴일 데이터 가져오기
+            from attendance.views.main_views import get_holidays_for_months
+            api_holidays = get_holidays_for_months(self.year, self.month)
+            
+            # API 공휴일을 date 객체로 변환
+            api_holiday_dates = set()
+            for date_str in api_holidays.keys():
+                try:
+                    holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    api_holiday_dates.add(holiday_date)
+                except ValueError:
+                    continue
+            
+            self.api_holiday_dates = api_holiday_dates
 
             # PDF 내용 생성
             self._create_header_and_info(monthly_data)
@@ -210,9 +225,9 @@ class PDFReportGenerator:
         special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
         # 日次データ行を追加
         for day in range(1, last_day + 1):
-            current_date = date(self.year, self.month, day)
+            calendar_date = date(self.year, self.month, day)
             weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
-            weekday_str = weekday_names[current_date.weekday()]
+            weekday_str = weekday_names[calendar_date.weekday()]
             row_data = [
                 Paragraph(f"{self.month}/{day}", self.styles.STYLES['NormalCenter']),
                 Paragraph(weekday_str, self.styles.STYLES['NormalCenter'])
@@ -222,6 +237,14 @@ class PDFReportGenerator:
             if day in daily_dict:
                 daily = daily_dict[day]
                 work_type = daily.work_type or ""
+                
+                # 공휴일 체크
+                is_api_holiday = calendar_date in getattr(self, 'api_holiday_dates', set())
+                
+                # 공휴일이고 work_type이 비어있거나 祝日이면 祝日로 설정
+                if is_api_holiday and (not work_type or work_type == "祝日"):
+                    work_type = "祝日"
+                
                 holiday_keywords = ["休日", "休日(法)", "振替(休)", "振替(法)", "祝日"]
                 if any(keyword in work_type for keyword in holiday_keywords):
                     is_holiday_row = True
@@ -233,7 +256,12 @@ class PDFReportGenerator:
                         row_data.append('')
                 else:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
-                    row_data.append(Paragraph(daily.alternative_work_date.strftime("%m/%d") if daily.alternative_work_date else "", self.styles.STYLES['NormalCenter']))
+                    # 代休/振替の勤務日: 8/1 형식으로 변경 (앞의 0 제거)
+                    if daily.alternative_work_date:
+                        alt_date_str = f"{daily.alternative_work_date.month}/{daily.alternative_work_date.day}"
+                        row_data.append(Paragraph(alt_date_str, self.styles.STYLES['NormalCenter']))
+                    else:
+                        row_data.append(Paragraph("", self.styles.STYLES['NormalCenter']))
                     # 작업시작시각 (앞의 0 제거)
                     start_time_str = daily.start_time.strftime("%H:%M") if daily.start_time else ""
                     if start_time_str.startswith("0"):
@@ -265,9 +293,19 @@ class PDFReportGenerator:
                         row_data.append('')
             else:
                 work_type = ""
-                if weekday_str == "土": work_type = "休日"
-                elif weekday_str == "日": work_type = "休日(法)"
-                if work_type: is_holiday_row = True
+                
+                # 공휴일 체크
+                is_api_holiday = calendar_date in getattr(self, 'api_holiday_dates', set())
+                
+                if is_api_holiday:
+                    work_type = "祝日"
+                    is_holiday_row = True
+                elif weekday_str == "土": 
+                    work_type = "休日"
+                    is_holiday_row = True
+                elif weekday_str == "日": 
+                    work_type = "休日(法)"
+                    is_holiday_row = True
                 row_data.extend([Paragraph(work_type, self.styles.STYLES['NormalCenter'])])
                 while len(row_data) < 12:
                     row_data.append('')
@@ -340,9 +378,9 @@ class PDFReportGenerator:
             # 요일 한자 추출
             weekday_text = str(data[i][1])
             if is_holiday:
-                # 휴일: 노란 배경 + 빨간 글자
+                # 휴일: 노란 배경만 (빨간 글자 제거)
                 style_cmds.append(('BACKGROUND', (1, i), (1, i), self.styles.HOLIDAY_FILL))
-                data[i][1] = Paragraph(weekday_text, ParagraphStyle(name='holiday', fontName=FONT_NAME, alignment=TA_CENTER, textColor=self.styles.RED_FONT))
+                data[i][1] = Paragraph(weekday_text, self.styles.STYLES['NormalCenter'])
             else:
                 data[i][1] = Paragraph(weekday_text, self.styles.STYLES['NormalCenter'])
 
