@@ -1,0 +1,137 @@
+{% load static %}
+{% load attendance_extras %}
+{# ===================== 勤怠登録フォームセクション partial ===================== #}
+<!-- 日々の勤怠登録セクション -->
+<section class="attendance-entry">
+    <div class="entry-header">
+        <h3 id="daily-entry-title">勤怠登録</h3>
+        <button id="normal-hours-btn" class="btn-normal" title="通常勤務時間を設定" 
+                {% if not monthly_data %}disabled{% endif %}
+                data-base-calendar="{% if monthly_data %}{{ monthly_data.base_calendar }}{% endif %}">
+            <i class="fa-solid fa-clock"></i> 通常
+        </button>
+    </div>
+    <!-- 入力フォーム -->
+    <form id="daily-entry-form" action="{% url 'attendance:daily_update' %}" method="POST">
+        {% csrf_token %}
+        <div class="daily-form-grid">
+            <div class="form-group">
+                <label for="day-input"></label>
+                <div class="date-input-group">
+                    <button type="button" id="day-arrow-left" class="day-arrow">&lt; 前の日</button>
+                    <div class="date-full">
+                        <span id="day-display">{{ selected_date|date:"Y/n/j" }}</span>
+                        <!-- DEBUG: selected_date = {{ selected_date }} -->
+                    </div>
+                    <input type="hidden" id="day-input-hidden" name="day" value="{{ selected_date|date:'j' }}">
+                    <button type="button" id="day-arrow-right" class="day-arrow">次の日 &gt;</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ daily_form.work_type.id_for_label }}">
+                    勤務区分
+                    <span class="worktype-help-icon" id="worktype-help-icon" tabindex="0" title="勤務区分の説明">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </span>
+                </label>
+                <select name="work_type" id="{{ daily_form.work_type.id_for_label }}" {% if not monthly_data %}disabled{% endif %}>
+                    {% for value, display in daily_form.work_type.field.choices %}
+                        <option value="{{ value }}" 
+                            {% if selected_daily_data and selected_daily_data.work_type == value %}selected
+                            {% elif not selected_daily_data and default_work_type == value %}selected
+                            {% endif %}>{{ display }}</option>
+                    {% endfor %}
+                </select>
+                <!-- 勤務区分のツールチップ（内容は後で追加） -->
+                <div class="worktype-tooltip" id="worktype-tooltip" style="display:none;">
+                    <div class="tooltip-content">
+                        <button type="button" class="tooltip-close-btn" id="worktype-tooltip-close" title="閉じる">&times;</button>
+                        <div class="tooltip-title">勤務区分の説明</div>
+                        <div class="tooltip-body">
+                            <div class="worktype-item">
+                                <strong>出勤</strong>: 休暇や欠勤ではない、通常の勤務。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>有給</strong>: 有給休暇を取得すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>有給(半)</strong>: 半日有給休暇を取得すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>代休(勤)</strong>: 休日出勤し、代わりに休みを取得する権利が発生すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>代休(休)</strong>: 休日出勤の代わりに、休みを取得すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>振替(勤)</strong>: 休日と勤務日を入れ替えて、休日に勤務すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>振替(休)</strong>: 振替休日を取得すること。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>特別休暇</strong>: 慶弔など、特別な理由による休暇。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>欠勤</strong>: 無断、または正当な理由なく休むこと。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>休日</strong>: 会社が定めた、通常の休日。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>休日(法)</strong>: 法律で定められた休日。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>祝日</strong>: 国民の祝日。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>その他</strong>: 上記に該当しない勤務・休暇。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ daily_form.start_time.id_for_label }}">作業開始時刻</label>
+                <input type="time" name="start_time" id="{{ daily_form.start_time.id_for_label }}" 
+                       value="{% if selected_daily_data and selected_daily_data.start_time %}{{ selected_daily_data.start_time|time:'H:i' }}{% endif %}"
+                       {% if not monthly_data %}disabled{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
+                <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
+                       value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
+                       {% if not monthly_data %}disabled{% endif %}>
+            </div>
+            <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
+            <div class="form-group" id="alt-work-date-group">
+                <label for="{{ daily_form.alternative_work_date.id_for_label }}">代休/振替の勤務日 <span class="required-mark" id="alt-work-date-required" style="display: none;">*</span></label>
+                <input type="date" name="alternative_work_date" id="{{ daily_form.alternative_work_date.id_for_label }}"
+                       value="{% if selected_daily_data and selected_daily_data.alternative_work_date %}{{ selected_daily_data.alternative_work_date|date:'Y-m-d' }}{% endif %}"
+                       {% if not monthly_data %}disabled{% endif %}>
+            </div>
+            <div class="form-group-full">
+                <label for="{{ daily_form.notes.id_for_label }}">実施作業内容/備考</label>
+                <textarea name="notes" id="{{ daily_form.notes.id_for_label }}" 
+                          {% if not monthly_data %}disabled{% endif %}>{% if selected_daily_data and selected_daily_data.notes %}{{ selected_daily_data.notes }}{% endif %}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn-primary" {% if not monthly_data %}disabled{% endif %}>登録・更新</button>
+            <div id="form-warning" class="form-warning">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text"></span>
+            </div>
+        </div>
+    </form>
+    <!-- 警告文ボックス -->
+    {% if not monthly_data %}
+    <div class="disabled-message" style="display: block;">
+        <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
+    </div>
+    {% else %}
+    <div class="disabled-message" style="display: none;">
+        <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
+    </div>
+    {% endif %}
+</section> 

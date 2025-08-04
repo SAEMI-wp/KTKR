@@ -1,0 +1,35 @@
+{% load static %}
+{% load attendance_extras %}
+
+<!-- 月情報セクション -->
+{% if monthly_data %}
+<section class="monthly-info" id="monthly-info-section">
+    <div class="section-header">
+        <h3 class="section-title">月情報</h3>
+        <div class="section-actions" id="monthly-info-actions">
+            <button id="edit-monthly-btn" class="btn-edit">修正</button>
+        </div>
+    </div>
+    <div id="monthly-info-content">
+        <div class="monthly-details-grid">
+            <div class="detail-item"><span>PJ名:</span> <strong>{{ monthly_data.project_name }}</strong></div>
+            <div class="detail-item"><span>基準カレンダー:</span> <strong>{{ monthly_data.base_calendar }}</strong></div>
+            <div class="detail-item"><span>昼休み区分:</span> <strong>{{ monthly_data.break_minutes }}分</strong></div>
+            <div class="detail-item"><span>基準時間:</span> <strong>{{ monthly_data.standard_work_hours }}時間</strong></div>
+            <div class="detail-item"><span>出勤日:</span> <strong>{{ monthly_data.work_days }}日</strong></div>
+            <div class="detail-item"><span>年次有給:</span> <strong>{{ monthly_data.paid_leave_days }}日</strong></div>
+            <div class="detail-item"><span>常勤:</span> <strong>{{ monthly_data.total_regular_work_hours|floatformat:2 }}h</strong></div>
+            <div class="detail-item"><span>控除:</span> <strong>{{ monthly_data.total_deduction_hours|floatformat:2 }}h</strong></div>
+            <div class="detail-item"><span>残業:</span> <strong>{{ monthly_data.total_overtime_hours|floatformat:2 }}h</strong></div>
+            <div class="detail-item"><span>深夜:</span> <strong>{{ monthly_data.total_late_night_overtime_hours|floatformat:2 }}h</strong></div>
+            <div class="detail-item"><span>休日:</span> <strong>{{ monthly_data.total_holiday_work_hours|floatformat:2 }}h</strong></div>
+            <div class="detail-item"><span>休日深夜:</span> <strong>{{ monthly_data.holiday_work_hours_night|floatformat:2 }}h</strong></div>
+        </div>
+    </div>
+</section>
+{% else %}
+<div class="no-data-prompt">
+    <p>{{ calendar_date|date:"Y年n月" }}の月勤怠情報が登録されていません。</p>
+    <button id="create-monthly-btn" class="btn-primary">月情報を登録する</button>
+</div>
+{% endif %} 
