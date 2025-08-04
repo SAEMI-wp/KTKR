@@ -13,7 +13,7 @@ import json
 from ..models import AttendanceMonthly, AttendanceDaily
 from ..forms import MonthlyAttendanceForm
 from ..utils import get_or_create_monthly_structure, update_monthly_from_structure
-from ..cache_utils import invalidate_monthly_cache, preload_adjacent_months
+from ..cache_utils import invalidate_monthly_cache
 
 
 # 月別勤怠作成ビュー（ログイン必須）
@@ -43,6 +43,14 @@ class MonthlyAttendanceCreateView(LoginRequiredMixin, CreateView):
         try:
             result = super().form_valid(form)
             print(f"Monthly attendance created successfully: {form.instance}")
+            
+            # 캐시 무효화 (새로 생성된 월의 캐시 삭제)
+            from ..cache_utils import invalidate_monthly_cache
+            invalidate_monthly_cache(
+                employee_id=self.request.user.employee_no,
+                year=str(year),
+                month=str(month)
+            )
             
             # AJAX 요청인 경우 JSON 응답
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -146,68 +154,63 @@ class MonthlyAttendanceDeleteView(View):
             return JsonResponse({'status': 'error', 'message': str(e)})
 
 
-# 月別勤怠修正ビュー（ロ그인必須）
+# 月別勤怠修正ビュー
 @method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
 class MonthlyAttendanceUpdateView(View):
     def post(self, request, *args, **kwargs):
-        print("=== MonthlyAttendanceUpdateView called ===")
         try:
-            data = json.loads(request.body)
-            year = data.get('year')
-            month = data.get('month')
+            # FormDataで送信された場合はrequest.POST.getで取得
+            year = request.POST.get('year')
+            month = request.POST.get('month')
+            project_name = request.POST.get('project_name')
+            base_calendar = request.POST.get('base_calendar')
+            break_minutes = request.POST.get('break_minutes')
+            standard_work_hours = request.POST.get('standard_work_hours')
             
-            print(f"Updating monthly attendance for year: {year}, month: {month}")
-            print(f"Update data: {data}")
-            
+            # 디버깅용 로그
+            print(f"[MONTHLY_UPDATE] 서버에서 받은 데이터:")
+            print(f"  year: {year}")
+            print(f"  month: {month}")
+            print(f"  project_name: {project_name}")
+            print(f"  base_calendar: {base_calendar}")
+            print(f"  break_minutes: {break_minutes} (type: {type(break_minutes)})")
+            print(f"  standard_work_hours: {standard_work_hours} (type: {type(standard_work_hours)})")
+            # 必要に応じて他のフィールドも取得
+
+            # 必須チェック
             if not year or not month:
                 return JsonResponse({'status': 'error', 'message': '年月情報が不足しています'})
-            
-            # 구조체 기반으로 월별 데이터 가져오기
+
+            # 既存の月別データ取得
             monthly_data = get_or_create_monthly_structure(
                 employee=request.user,
                 year=str(year),
                 month=str(month)
             )
-            
             if not monthly_data:
                 return JsonResponse({'status': 'error', 'message': '該当する月別勤怠情報が見つかりません'})
-            
-            # 구조체 데이터 업데이트
-            monthly_data.project_name = data.get('project_name', monthly_data.project_name)
-            monthly_data.base_calendar = data.get('base_calendar', monthly_data.base_calendar)
-            monthly_data.break_minutes = int(data.get('break_minutes', monthly_data.break_minutes))
-            monthly_data.standard_work_hours = float(data.get('standard_work_hours', monthly_data.standard_work_hours))
-            
-            # 일별 데이터의 설정값도 업데이트
-            for daily in monthly_data.daily_list:
-                daily.break_minutes = monthly_data.break_minutes
-                daily.standard_work_hours = monthly_data.standard_work_hours
-                # 시간 재계산
-                daily.calculate_work_hours()
-            
-            # DB에 저장
+
+            # 値を更新
+            monthly_data.project_name = project_name or monthly_data.project_name
+            monthly_data.base_calendar = base_calendar or monthly_data.base_calendar
+            if break_minutes and break_minutes.strip():
+                monthly_data.break_minutes = int(break_minutes)
+            if standard_work_hours and standard_work_hours.strip():
+                monthly_data.standard_work_hours = float(standard_work_hours)
+
+            # DB保存
             update_monthly_from_structure(monthly_data, request.user)
-            
-            # 캐시 무효화 (해당 월의 캐시 삭제)
+
+            # キャッシュ無効化（該当月のキャッシュを必ず削除）
             invalidate_monthly_cache(
                 employee_id=request.user.employee_no,
                 year=str(year),
                 month=str(month)
             )
-            
-            print(f"Monthly data updated successfully")
-            
-            return JsonResponse({
-                'status': 'success', 
-                'message': f'{year}年{month}月の勤怠情報を修正しました。'
-            })
-            
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-            return JsonResponse({'status': 'error', 'message': 'JSONデータの解析に失敗しました'})
+
+            return JsonResponse({'status': 'success', 'message': '修正しました。'})
         except Exception as e:
-            print(f"Unexpected error: {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({'status': 'error', 'message': str(e)})
@@ -233,7 +236,8 @@ class MonthlyBulkInfoView(View):
             month = int(month)
         except ValueError:
             return JsonResponse({'status': 'error', 'message': 'year, month는 정수여야 합니다.'})
-        # 3개월치 월별 데이터 preload
+        # 3개월치 월별 데이터 preload (TTL 기반 캐시 사용)
+        from ..cache_utils import preload_adjacent_months
         preloaded = preload_adjacent_months(request.user, year, month)
         result = {}
         for key, monthly_data in preloaded.items():

@@ -13,6 +13,27 @@ from ..cache_utils import invalidate_monthly_cache
 from ..structures import DailyData
 
 
+# ===================== ユーティリティ関数 =====================
+def parse_day_value(day_value):
+    """
+    day_valueが 'YYYY-MM-DD' 形式なら day部分だけ返し、
+    そうでなければ int変換して返す
+    """
+    if isinstance(day_value, int):
+        return day_value
+    if isinstance(day_value, str):
+        if '-' in day_value:
+            try:
+                return int(day_value.split('-')[2])
+            except Exception:
+                pass
+        try:
+            return int(day_value)
+        except Exception:
+            pass
+    raise ValueError('Invalid day value')
+
+
 # 日別データ更新ビュー（ログイン必須）
 @method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
@@ -23,7 +44,15 @@ class DailyDataUpdateView(View):
         print(f"Request content type: {request.content_type}")
         
         try:
-            data = json.loads(request.body)
+            # JSON 또는 FormData 모두 처리
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                # FormData 처리
+                data = {}
+                for key in request.POST:
+                    data[key] = request.POST[key]
+            
             print(f"Received data: {data}")
             
             # 日付の処理 - 日(day)のみを受け取り、現在の年月と組み合わせる
@@ -42,7 +71,8 @@ class DailyDataUpdateView(View):
             print(f"Processing date: {year}-{month}-{day}")
             
             try:
-                target_date = date(int(year), int(month), int(day))
+                day_int = parse_day_value(day)
+                target_date = date(int(year), int(month), day_int)
                 print(f"Target date: {target_date}")
             except ValueError as e:
                 print(f"Date parsing error: {e}")
@@ -70,11 +100,13 @@ class DailyDataUpdateView(View):
             if not work_type:
                 return JsonResponse({'status': 'error', 'message': '勤務区分を選択してください'})
             
-            if not start_time_str:
-                return JsonResponse({'status': 'error', 'message': '作業開始時刻を入力してください'})
-            
-            if not end_time_str:
-                return JsonResponse({'status': 'error', 'message': '作業終了時刻を入力してください'})
+            # 휴일/휴가 타입이 아닌 경우에만 시간 필수
+            if work_type not in ['休日(法)', '休日', '祝日', '有給', '代休(休)', '振替(休)', '欠勤', '特別休暇']:
+                if not start_time_str:
+                    return JsonResponse({'status': 'error', 'message': '作業開始時刻を入力してください'})
+                
+                if not end_time_str:
+                    return JsonResponse({'status': 'error', 'message': '作業終了時刻を入力してください'})
             
             print(f"Time strings: start={start_time_str}, end={end_time_str}, alt={alternative_work_date_str}")
             
@@ -119,11 +151,11 @@ class DailyDataUpdateView(View):
             
             if existing_daily:
                 # 기존 데이터 업데이트
-                existing_daily.work_type = work_type  # 필수 필드이므로 기본값 없이 설정
-                existing_daily.start_time = start_time  # 필수 필드이므로 기본값 없이 설정
-                existing_daily.end_time = end_time  # 필수 필드이므로 기본값 없이 설정
-                existing_daily.alternative_work_date = alternative_work_date or existing_daily.alternative_work_date
-                existing_daily.notes = data.get('notes', existing_daily.notes)
+                existing_daily.work_type = work_type
+                existing_daily.start_time = start_time
+                existing_daily.end_time = end_time
+                existing_daily.alternative_work_date = alternative_work_date
+                existing_daily.notes = data.get('notes', '')
                 # 시간 계산 실행
                 existing_daily.calculate_work_hours()
                 print("Daily data updated")

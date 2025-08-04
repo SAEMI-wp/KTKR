@@ -108,8 +108,8 @@ class EmailSendView(View):
             file_type = data.get('file_type')
             year = data.get('year')
             month = data.get('month')
-            email_host_user = data.get('email_host_user') or settings.EMAIL_HOST_USER
-            email_host_password = data.get('email_host_password') or settings.EMAIL_HOST_PASSWORD
+            email_host_user = data.get('email_host_user')
+            email_host_password = data.get('email_host_password')
             
             if not email_to or not file_type or not year or not month:
                 return JsonResponse({'status': 'error', 'message': '必要な情報が不足しています。'})
@@ -139,8 +139,13 @@ class EmailSendView(View):
             # メール本文を指定フォーマットで作成
             body = f"""===========================\n提出者：{request.user.display_name}({request.user.employee_no})\n期間：{year}年{int(month):d}月\n添付：稼働報告書\n\nいつもお世話になっております。{int(month):d}月稼働報告書を提出します。\n==========================="""
             
-            # 발신자 이메일 설정 (폼에서 입력받은 값 우선, 없으면 사원 이메일, 없으면 기본값)
-            from_email = email_host_user if email_host_user else (request.user.email if request.user.email else settings.EMAIL_HOST_USER)
+            # 발신자 이메일 설정 (폼에서 입력받은 값만 사용)
+            if not email_host_user:
+                return JsonResponse({'status': 'error', 'message': '発信者メールを入力してください。'})
+            if not email_host_password:
+                return JsonResponse({'status': 'error', 'message': 'アプリのパスワードを入力してください。'})
+            
+            from_email = email_host_user
             
             print('send_mail_dynamic 호출 전', flush=True)
             month_str = f"{int(month):02d}"
