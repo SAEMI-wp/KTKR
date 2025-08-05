@@ -453,7 +453,7 @@ function hideMonthlyDataWarning() {
 
 // 월별 데이터 경고 표시
 function showMonthlyDataWarning() {
-    showFormWarning('月次データが登録されていないため、日次データの登録・修正ができません。');
+    showFormWarning('月情報を先に登録してください。');
     console.log('[FORM] 월별 데이터 경고 표시');
 }
 
@@ -473,8 +473,19 @@ function updateSelectedDateDisplay(selectedDate) {
     if (dayDisplayEl) dayDisplayEl.textContent = `${year}/${month}/${day}`;
     if (dayInputEl) dayInputEl.value = day;
     
-    // 상태 업데이트
-    currentState.selectedDate = selectedDate;
+    // 상태 업데이트 (YYYY-MM-DD 형식으로 통일)
+    if (selectedDate.includes('年') && selectedDate.includes('月')) {
+        const match = selectedDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+        if (match) {
+            const [, year, month, day] = match;
+            currentState.selectedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            console.log(`[DISPLAY] selectedDate 형식 변환: ${selectedDate} -> ${currentState.selectedDate}`);
+        } else {
+            currentState.selectedDate = selectedDate;
+        }
+    } else {
+        currentState.selectedDate = selectedDate;
+    }
     
     console.log(`[DISPLAY] 選択日付更新: ${selectedDate}`);
 }
@@ -1040,34 +1051,106 @@ async function checkMonthlyDataForSelectedDate(selectedDate) {
     }
     
     try {
-        const dateParts = selectedDate.split('-');
+        // 날짜 형식 통일 (YYYY年M月D日 -> YYYY-MM-DD)
+        let normalizedDate = selectedDate;
+        if (selectedDate.includes('年') && selectedDate.includes('月')) {
+            const match = selectedDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (match) {
+                const [, year, month, day] = match;
+                normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                console.log(`[FORM] 날짜 형식 변환: ${selectedDate} -> ${normalizedDate}`);
+            }
+        }
+        
+        const dateParts = normalizedDate.split('-');
         const year = dateParts[0];
         const month = dateParts[1];
         
         console.log(`[FORM] 선택된 날짜의 월 정보 확인: ${year}-${month}`);
         
-        // MonthlyDataAPIView를 사용하여 JSON으로 월 정보 확인
-        const url = `/attendance/monthly-data/?year=${year}&month=${month}`;
-        const response = await fetchWithCsrf(url, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+        // 현재 캘린더에 표시된 월 정보를 직접 확인
+        const monthlyContainer = document.getElementById('monthly-info-container');
+        const monthlySection = monthlyContainer ? monthlyContainer.querySelector('#monthly-info-section') : null;
+        const noDataPrompt = monthlyContainer ? monthlyContainer.querySelector('.no-data-prompt') : null;
+        
+        // 캘린더가 같은 월을 보고 있는지 확인
+        const isSameMonth = (parseInt(year) === currentState.calendarYear && parseInt(month) === currentState.calendarMonth);
+        
+        console.log(`[FORM] 월 정보 확인 상세:`, {
+            selectedDate: selectedDate,
+            year: year,
+            month: month,
+            calendarYear: currentState.calendarYear,
+            calendarMonth: currentState.calendarMonth,
+            isSameMonth: isSameMonth,
+            monthlyContainer: monthlyContainer,
+            monthlyContainerExists: monthlyContainer !== null,
+            monthlySection: monthlySection,
+            monthlySectionExists: monthlySection !== null,
+            noDataPrompt: noDataPrompt,
+            noDataPromptExists: noDataPrompt !== null,
+            monthlyContainerHTML: monthlyContainer ? monthlyContainer.outerHTML.substring(0, 300) + '...' : 'null'
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            const hasMonthlyData = data.exists === true;
+        if (isSameMonth) {
+            // 같은 월이면 현재 표시된 월 정보 사용
+            let hasMonthlyData = monthlySection !== null && noDataPrompt === null;
             
-            console.log(`[FORM] 월 정보 확인 결과: ${hasMonthlyData}`, data);
+            // 월 정보 섹션이 로드되지 않았으면 강제로 로드
+            if (!hasMonthlyData && monthlyContainer) {
+                console.log(`[FORM] 월 정보 섹션이 로드되지 않음, 강제 로드 시도`);
+                try {
+                    await loadMonthlyInfoSection(parseInt(year), parseInt(month));
+                    
+                    // 다시 확인
+                    const reloadedMonthlySection = monthlyContainer.querySelector('#monthly-info-section');
+                    const reloadedNoDataPrompt = monthlyContainer.querySelector('.no-data-prompt');
+                    hasMonthlyData = reloadedMonthlySection !== null && reloadedNoDataPrompt === null;
+                    
+                    console.log(`[FORM] 강제 로드 후 월 정보 확인:`, {
+                        reloadedMonthlySectionExists: reloadedMonthlySection !== null,
+                        reloadedNoDataPromptExists: reloadedNoDataPrompt !== null,
+                        hasMonthlyData: hasMonthlyData
+                    });
+                } catch (error) {
+                    console.error(`[FORM] 월 정보 강제 로드 실패:`, error);
+                }
+            }
+            
+            console.log(`[FORM] 같은 월 - 월 정보 확인 결과: ${hasMonthlyData}`, {
+                monthlyContainerExists: monthlyContainer !== null,
+                monthlySectionExists: monthlySection !== null,
+                noDataPromptExists: noDataPrompt !== null,
+                condition1: monthlySection !== null,
+                condition2: noDataPrompt === null
+            });
             return hasMonthlyData;
-        } else if (response.status === 404) {
-            // 월 정보가 없는 경우
-            console.log(`[FORM] 월 정보 없음: ${year}-${month}`);
-            return false;
         } else {
-            console.warn(`[FORM] 월 정보 확인 실패: HTTP ${response.status}`);
-            return false;
+            // 다른 월이면 API로 확인
+            const url = `/attendance/monthly-data/?year=${year}&month=${month}`;
+            const response = await fetchWithCsrf(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            console.log(`[FORM] 다른 월 - API 응답 상태: ${response.status}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`[FORM] API 응답 데이터:`, data);
+                
+                const hasMonthlyData = data.exists === true || (data.project_name && data.base_calendar);
+                console.log(`[FORM] 다른 월 - 월 정보 확인 결과: ${hasMonthlyData}`);
+                return hasMonthlyData;
+            } else if (response.status === 404) {
+                console.log(`[FORM] 다른 월 - 월 정보 없음: ${year}-${month}`);
+                return false;
+            } else {
+                console.warn(`[FORM] 다른 월 - 월 정보 확인 실패: HTTP ${response.status}`);
+                return false;
+            }
         }
         
     } catch (error) {
