@@ -972,20 +972,23 @@ function handleMonthNavigation(direction) {
 }
 
 // フォーム提出처리
-function handleFormSubmit(event) {
+async function handleFormSubmit(event) {
     event.preventDefault();
     console.log('[FORM] フォーム提出');
     
     const form = event.target;
     const formData = new FormData(form);
     
-    // 1. 월정보 체크 (간단하고 확실한 방법)
-    const monthlySection = document.getElementById('monthly-info-section');
-    const hasMonthlyData = monthlySection !== null && monthlySection.style.display !== 'none';
+    // 1. 선택된 날짜의 월 정보 확인
+    console.log('[FORM] 선택된 날짜:', currentState.selectedDate);
+    
+    const hasMonthlyData = await checkMonthlyDataForSelectedDate(currentState.selectedDate);
+    
+    console.log('[FORM] 월정보 체크 결과:', hasMonthlyData);
     
     if (!hasMonthlyData) {
         showMonthlyDataWarning();
-        console.log('[FORM] 월정보 없음, 등록 차단');
+        console.log('[FORM] 선택된 날짜의 월정보 없음, 등록 차단');
         return;
     }
     
@@ -1027,6 +1030,50 @@ function handleFormSubmit(event) {
     
     // 실제 제출 로직
     submitDailyData(formData);
+}
+
+// 선택된 날짜의 월 정보 확인
+async function checkMonthlyDataForSelectedDate(selectedDate) {
+    if (!selectedDate) {
+        console.warn('[FORM] 선택된 날짜가 없습니다');
+        return false;
+    }
+    
+    try {
+        const dateParts = selectedDate.split('-');
+        const year = dateParts[0];
+        const month = dateParts[1];
+        
+        console.log(`[FORM] 선택된 날짜의 월 정보 확인: ${year}-${month}`);
+        
+        // MonthlyDataAPIView를 사용하여 JSON으로 월 정보 확인
+        const url = `/attendance/monthly-data/?year=${year}&month=${month}`;
+        const response = await fetchWithCsrf(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const hasMonthlyData = data.exists === true;
+            
+            console.log(`[FORM] 월 정보 확인 결과: ${hasMonthlyData}`, data);
+            return hasMonthlyData;
+        } else if (response.status === 404) {
+            // 월 정보가 없는 경우
+            console.log(`[FORM] 월 정보 없음: ${year}-${month}`);
+            return false;
+        } else {
+            console.warn(`[FORM] 월 정보 확인 실패: HTTP ${response.status}`);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('[FORM] 월 정보 확인 중 오류:', error);
+        return false;
+    }
 }
 
 // 일일 데이터 제출
