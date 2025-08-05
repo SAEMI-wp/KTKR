@@ -13,7 +13,8 @@ from .main_views import (
     MainView,
     CalendarPartialView,
     FormPartialView,
-    MonthlyInfoSectionView
+    MonthlyInfoSectionView,
+    MonthlyDataAPIView
 )
 
 from .monthly_views import (
@@ -52,6 +53,7 @@ __all__ = [
     'CalendarPartialView',
     'FormPartialView',
     'MonthlyInfoSectionView',
+    'MonthlyDataAPIView',
     
     # Monthly views
     'MonthlyAttendanceCreateView',
