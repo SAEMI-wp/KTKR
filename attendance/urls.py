@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 from .views import (
     MainView, MonthlyAttendanceCreateView, MonthlyAttendanceUpdateView, DailyDataUpdateView, DailyDataGetView,
     login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView,
-    CalendarPartialView, FormPartialView, MonthlyInfoSectionView
+    CalendarPartialView, FormPartialView, MonthlyInfoSectionView, MonthlyDataAPIView
 )
 from .views import attendance_require_day
 from .views.utility_views import email_candidates
@@ -30,6 +30,7 @@ urlpatterns = [
     path('copy_prev_month/', copy_prev_month, name='copy_prev_month'),
     path('attendance/require_day/', attendance_require_day, name='attendance_require_day'),
     path('api/email_candidates/', email_candidates, name='email_candidates'),  # 推奨メール受信者API
+    path('monthly-data/', MonthlyDataAPIView.as_view(), name='monthly_data_api'),  # 월별 데이터 API
     # TTL 기반 캐시 사용으로 인해 수동 캐시 초기화 API 제거
     # path('api/clear_cache/', clear_cache, name='clear_cache'),  # 캐시 초기화 API
     
