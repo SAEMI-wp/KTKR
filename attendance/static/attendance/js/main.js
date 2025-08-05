@@ -511,34 +511,7 @@ function updateCalendarHighlight() {
     }
 }
 
-// ===================== 로딩 오버레이 제어 함수 =====================
 
-// 로딩 오버레이 표시
-function showCalendarLoading() {
-    const loadingOverlay = document.getElementById('calendar-loading-overlay');
-    if (loadingOverlay) {
-        loadingOverlay.classList.add('show');
-        console.log('[LOADING] 캘린더 로딩 시작');
-    }
-}
-
-// 로딩 텍스트 업데이트
-function updateLoadingText(text) {
-    const loadingText = document.querySelector('.calendar-loading-text');
-    if (loadingText) {
-        loadingText.textContent = text;
-        console.log('[LOADING] 텍스트 업데이트:', text);
-    }
-}
-
-// 로딩 오버레이 숨기기
-function hideCalendarLoading() {
-    const loadingOverlay = document.getElementById('calendar-loading-overlay');
-    if (loadingOverlay) {
-        loadingOverlay.classList.remove('show');
-        console.log('[LOADING] 캘린더 로딩 완료');
-    }
-}
 
 // ===================== AJAX 섹션 업데이트 함수 =====================
 
@@ -698,9 +671,6 @@ async function updateFormSection(selectedDate) {
 async function updateCalendarSection(year, month, showListParam = null, toggleState = null) {
     console.log(`[CALENDAR] カレンダー更新: ${year}-${month}`);
     
-    // 로딩 오버레이 표시
-    showCalendarLoading();
-    
     try {
         // 파라미터가 없으면 localStorage에서 가져오기
         if (showListParam === null) {
@@ -726,24 +696,13 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
         
         const calendarSection = document.getElementById('calendar-section');
         if (calendarSection) {
-            // 로딩 오버레이를 다시 추가
-            const loadingOverlayHtml = `
-                <div id="calendar-loading-overlay" class="calendar-loading-overlay">
-                    <div class="calendar-loading-spinner"></div>
-                    <div class="calendar-loading-text">データを読み込み中...</div>
-                </div>
-            `;
-            
-            // 1단계: 기본 구조 렌더링
-            updateLoadingText('基本構造を読み込み中...');
-            
             const dateSelector = tempDiv.querySelector('.date-selector');
             const monthlyInfoContainer = tempDiv.querySelector('#monthly-info-container');
             const toggleButtons = tempDiv.querySelectorAll('.toggle-btn, .copy-prev-month-btn');
             const tabSwitcher = tempDiv.querySelector('.tab-switcher');
             
             // 기본 구조 업데이트
-            calendarSection.innerHTML = loadingOverlayHtml;
+            calendarSection.innerHTML = '';
             
             // 날짜 선택기 추가
             if (dateSelector) {
@@ -784,9 +743,6 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
                 console.log('[CALENDAR] 월 이동 시 초기 상태: green 버튼');
             }
             
-            // 2단계: 캘린더/리스트 렌더링
-            updateLoadingText('カレンダー・リストを読み込み中...');
-            
             const calendarTab = tempDiv.querySelector('#calendar-tab');
             const listTab = tempDiv.querySelector('#list-tab');
             
@@ -817,9 +773,6 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
             applyAllHolidaysToCalendar();
             updateCalendarHighlight();
             
-            // 로딩 완료 후 오버레이 숨기기
-            hideCalendarLoading();
-            
             // AJAX로 로드된 콘텐츠에 이벤트 리스너 바인딩
             bindSurveyButtonEvents();
             
@@ -828,8 +781,6 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
         
     } catch (error) {
         console.error('[CALENDAR] 更新エラー:', error);
-        // 에러 시에도 로딩 오버레이 숨기기
-        hideCalendarLoading();
     }
 }
 
