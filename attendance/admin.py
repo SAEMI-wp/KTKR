@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_permission_codename
+from django.contrib.auth.models import Group
 from django.urls import path
 from .models import Employee, AttendanceMonthly, AttendanceDaily, HolidayCalendar
 from .admin_views import profile_view, attendance_overview, payroll_view, employee_detail_view, payroll_detail_view, payroll_pdf_download_view, monthly_approval_action, daily_calendar_view
@@ -11,8 +12,9 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 import csv
-from io import TextIOWrapper
+from io import StringIO, TextIOWrapper
 from django.shortcuts import render
+from .utils import get_group_name_by_code
 
 class CustomAdminSite(admin.AdminSite):
     site_header = '勤怠・給与管理システム管理者'
@@ -20,7 +22,7 @@ class CustomAdminSite(admin.AdminSite):
     index_title = '管理者ダッシュボード'
 
     def has_permission(self, request):
-        # 
+        # is_active이고, 'attendance.can_access_admin' 권한이 있을 때만 접근 허용
         return request.user.is_active and request.user.has_perm('attendance.can_access_admin')
 
     def get_urls(self):
@@ -36,23 +38,21 @@ class CustomAdminSite(admin.AdminSite):
             path('monthly/<int:monthly_id>/<str:action>/', self.admin_view(monthly_approval_action), name='monthly_approval_action'),
             path('daily-calendar/<int:year>/<int:month>/', self.admin_view(daily_calendar_view), name='daily_calendar'),
             path('csv_upload/', self.admin_view(self.csv_upload_view), name='employee_csv_upload'),
+            path('position-management/', self.admin_view(self.position_management_view), name='position_management'),
         ]
         return custom_urls + urls
 
     def index(self, request, extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context['custom_links'] = [
-            {'url': '/admin/payroll/', 'label': '給与明細書管理'},
-            {'url': '/admin/attendance-overview/', 'label': '勤怠管理'},
-        ]
-        return super().index(request, extra_context=extra_context)
-		
+        from django.urls import reverse
+        from django.http import HttpResponseRedirect
+        # 従業員一覧へリダイレクト
+        return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
+
     def csv_upload_view(self, request):
         if request.method == 'POST':
             form = EmployeeCSVUploadForm(request.POST, request.FILES)
             if form.is_valid():
-                csv_file = form.cleaned_data['csv_file']
+                csv_file = form.cleaned_data['csv_file']                
                 decoded_file = TextIOWrapper(csv_file, encoding='utf-8')
                 reader = csv.reader(decoded_file, delimiter=',')
                 duplicated = []
@@ -68,9 +68,10 @@ class CustomAdminSite(admin.AdminSite):
                     if len(employee_no) != 6:
                         duplicated.append(f"{employee_no} (社員番号が6文字ではありません)")
                         continue
+                
                     # 이름 분리
                     if ' ' in name:
-                        last_name, first_name = name.split(' ', 1)
+                        last_name, first_name = name.split(' ', 1)                        
                     else:
                         last_name, first_name = name, ''
                     if Employee.objects.filter(employee_no=employee_no).exists():
@@ -103,6 +104,124 @@ class CustomAdminSite(admin.AdminSite):
         )
         return render(request, "admin/attendance/employee_csv_upload.html", context)
 
+    def position_management_view(self, request):
+        """직급 관리 페이지 (superuser만 접근 가능)"""
+        if not request.user.is_superuser:
+            messages.error(request, 'この機能はスーパーユーザーのみ利用可能です。')
+            return HttpResponseRedirect(reverse('admin:index'))
+        
+        if request.method == 'POST':
+            action = request.POST.get('action')
+            
+            if action == 'add':
+                # 새 직급 추가
+                position_code = request.POST.get('position_code', '').strip()
+                position_name = request.POST.get('position_name', '').strip()
+                
+                if position_code and position_name:
+                    # 코드 중복 체크
+                    if Group.objects.filter(name=position_name).exists():
+                        messages.warning(request, f'職級名 "{position_name}" は既に存在します。')
+                    else:
+                        group = Group.objects.create(name=position_name)
+                        messages.success(request, f'職級 "{position_name}" (コード: {position_code}) を追加しました。')
+                else:
+                    messages.error(request, '職級コードと職級名を入力してください。')
+            
+            elif action == 'delete':
+                # 직급 삭제
+                group_id = request.POST.get('group_id')
+                try:
+                    group = Group.objects.get(id=group_id)
+                    # 해당 그룹에 속한 직원 수 확인
+                    employee_count = group.user_set.count()
+                    if employee_count > 0:
+                        messages.warning(request, f'職級 "{group.name}" には {employee_count}名の従業員が所属しているため削除できません。')
+                    else:
+                        group_name = group.name
+                        group.delete()
+                        messages.success(request, f'職級 "{group_name}" を削除しました。')
+                except Group.DoesNotExist:
+                    messages.error(request, '指定された職級が見つかりません。')
+            
+            elif action == 'edit':
+                # 직급명 수정
+                group_id = request.POST.get('group_id')
+                new_name = request.POST.get('new_name', '').strip()
+                try:
+                    group = Group.objects.get(id=group_id)
+                    if new_name:
+                        if Group.objects.filter(name=new_name).exclude(id=group_id).exists():
+                            messages.warning(request, f'職級名 "{new_name}" は既に存在します。')
+                        else:
+                            old_name = group.name
+                            group.name = new_name
+                            group.save()
+                            messages.success(request, f'職級名を "{old_name}" から "{new_name}" に変更しました。')
+                    else:
+                        messages.error(request, '新しい職級名を入力してください。')
+                except Group.DoesNotExist:
+                    messages.error(request, '指定された職級が見つかりません。')
+            
+            elif action == 'add_defaults':
+                # 기본 직급 일괄 등록
+                default_positions = {
+                    '1': '社長',
+                    '2': '役員', 
+                    '100': '部長',
+                    '101': '担当部長',
+                    '102': '主幹技師',
+                    '104': '技師',
+                    '105': '企画員',
+                    '106': '社員',
+                }
+                
+                added_count = 0
+                skipped_positions = []
+                
+                for code, name in default_positions.items():
+                    if not Group.objects.filter(name=name).exists():
+                        Group.objects.create(name=name)
+                        added_count += 1
+                    else:
+                        skipped_positions.append(name)
+                
+                if added_count > 0:
+                    messages.success(request, f'{added_count}個の基本職級を追加しました。')
+                if skipped_positions:
+                    messages.info(request, f'既に存在する職級: {", ".join(skipped_positions)}')
+        
+        # 현재 등록된 직급 목록 (직급명으로 정렬)
+        groups = Group.objects.all().order_by('name')
+        group_info = []
+        
+        # 기본 직급 코드 매핑
+        default_position_mapping = {
+            '社長': '1',
+            '役員': '2', 
+            '部長': '100',
+            '担当部長': '101',
+            '主幹技師': '102',
+            '技師': '104',
+            '企画員': '105',
+            '社員': '106',
+        }
+        
+        for group in groups:
+            employee_count = group.user_set.count()
+            position_code = default_position_mapping.get(group.name, '未設定')
+            group_info.append({
+                'group': group,
+                'employee_count': employee_count,
+                'position_code': position_code
+            })
+        
+        context = dict(
+            self.each_context(request),
+            group_info=group_info,
+            default_positions=default_position_mapping,
+        )
+        return render(request, "admin/attendance/position_management.html", context)
 
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
@@ -111,29 +230,38 @@ class CustomAdminSite(admin.AdminSite):
         return super().changelist_view(request, extra_context=extra_context)
 
 custom_admin_site = CustomAdminSite(name='custom_admin')
-# 권한별 사원 필터링 유틸
+
+# 권한별 사원 필터링 유틸 (새로운 직급 체계 적용)
 def get_employee_queryset_by_role(request, queryset):
     user = request.user
-    # superuser, 사장, 인사팀, 관리부장: 전체
-    if user.is_superuser or user.groups.filter(name__in=['社長', '인사팀', '관리부장']).exists():
+    if user.is_superuser:
         return queryset
-    # 부장: 본인 팀(근무지)만
-    elif user.groups.filter(name='部長').exists():
-        return queryset.filter(place_work=user.place_work)
-    # 그 외: 본인만
-    else:
-        return queryset.filter(employee_no=user.employee_no)
+    group_name = None
+    if hasattr(user, 'employee_group'):
+        print(f"[DEBUG] user.employee_group: {user.employee_group}")
+        group_name = get_group_name_by_code(user.employee_group)
+        print(f"[DEBUG] group_name by code: {group_name}")
+    print(f"[DEBUG] user.groups: {[g.name for g in user.groups.all()]}")
+    if group_name == '社長':
+        return queryset
+    elif group_name == '部長':
+        user_place = (user.place_work or '').strip()
+        # 모든 직원의 place_work를 split해서 포함 여부로 필터링
+        filtered = queryset.filter(place_work__icontains=user_place)
+        print(f"[DEBUG] 部長 필터 결과: {filtered.count()}명, {[e.employee_no for e in filtered]}")
+        return filtered
+    return queryset.filter(employee_no=user.employee_no)
 
 @admin.register(Employee, site=custom_admin_site)
 class EmployeeAdmin(admin.ModelAdmin):
     """社員管理用のカスタムAdmin"""
     list_display = (
-        'employee_no', 'last_name', 'first_name', 'place_work', 'email', 'detail_button',
+        'employee_no', 'last_name', 'first_name', 'place_work', 'position_groups', 'email', 'detail_button',
     )
-    list_filter = ('place_work','is_active', 'groups')
+    list_filter = ('place_work', 'is_active', 'groups')
     search_fields = ('employee_no', 'last_name', 'first_name', 'place_work', 'email')
     ordering = ('employee_no',)
-
+    
     # フィールドセットのカスタマイズ
     fieldsets = (
         ('社員情報', {'fields': ('employee_no', 'password')}),
@@ -142,15 +270,15 @@ class EmployeeAdmin(admin.ModelAdmin):
         ('権限', {'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions')}),
         ('重要日付', {'fields': ('last_login',)}),
     )
-
+    
     add_fieldsets = (
         ('社員情報', {
             'classes': ('wide',),
             'fields': ('employee_no', 'place_work', 'email', 'password1', 'password2'),
         }),
     )
-
-    actions = ['retire_selected']
+    
+    actions = ['retire_selected', 'delete_selected', 'restore_selected']
 
     change_list_template = "admin/attendance/employee_changelist.html"
 
@@ -158,11 +286,22 @@ class EmployeeAdmin(admin.ModelAdmin):
         """社員番号でソート"""
         qs = super().get_queryset(request).order_by('employee_no')
         return get_employee_queryset_by_role(request, qs)
-
+    
     def retire_selected(self, request, queryset):
         updated = queryset.update(is_active=False)
         self.message_user(request, f"{updated}名退社処理完了.")
     retire_selected.short_description = "退社処理"
+
+    def delete_selected(self, request, queryset):
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"{count}名の従業員を削除しました.")
+    delete_selected.short_description = "削除"
+
+    def restore_selected(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"{updated}名の従業員を復元しました.")
+    restore_selected.short_description = "復元"
 
     def retire_action_button(self, obj):
         if obj.is_active:
@@ -180,9 +319,35 @@ class EmployeeAdmin(admin.ModelAdmin):
         return formfield
 
     def detail_button(self, obj):
-        today = timezone.now().date()
-        return format_html('<a class="button" href="/admin/employee/{}/detail/{}/{}/">勤怠詳細</a>', obj.employee_no, today.year, str(today.month).zfill(2))
+        """권한에 따라 勤怠詳細 버튼 표시"""
+        request = self.request  # 현재 요청 객체 가져오기
+        user = request.user
+        can_access = False
+        # superuser 또는 사장님(社長)은 무조건 허용
+        if user.is_superuser or '社長' in user.groups.values_list('name', flat=True):
+            can_access = True
+        else:
+            user_groups = user.groups.values_list('name', flat=True)
+            # 部長: 같은 work_place 직원만 접근 가능  
+            if '部長' in user_groups:
+                if obj.place_work == user.place_work:
+                    can_access = True
+        if can_access:
+            today = timezone.now().date()
+            return format_html('<a class="button" href="/admin/employee/{}/detail/{}/{}/">勤怠詳細</a>', obj.employee_no, today.year, str(today.month).zfill(2))
+        else:
+            return format_html('<span style="color: #999;">権限なし</span>')
+    
     detail_button.short_description = '勤怠詳細'
+
+    def position_groups(self, obj):
+        """직원이 속한 직급 그룹 표시"""
+        groups = obj.groups.all()
+        if groups:
+            group_names = [group.name for group in groups]
+            return ', '.join(group_names)
+        return '未設定'
+    position_groups.short_description = '職級'
 
     def get_readonly_fields(self, request, obj=None):
         # superuser는 모든 필드 수정 가능, 그 외는 employee_no만 readonly
@@ -202,10 +367,16 @@ class EmployeeAdmin(admin.ModelAdmin):
         )
 
     def changelist_view(self, request, extra_context=None):
+        # request 객체를 인스턴스에 저장하여 다른 메서드에서 사용 가능하게 함
+        self.request = request
         if extra_context is None:
             extra_context = {}
         extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
         return super().changelist_view(request, extra_context=extra_context)
+
+    def has_add_permission(self, request):
+        # 追加ボタンを非表示
+        return False
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
@@ -214,10 +385,14 @@ class AttendanceMonthlyAdmin(admin.ModelAdmin):
     list_filter = ('year', 'month', 'base_calendar', 'employee__place_work')
     search_fields = ('employee__employee_no', 'project_name')
     ordering = ('-year', '-month', 'employee__employee_no')
-
+    
     def employee(self, obj):
         return f"{obj.employee.employee_no:06d} - {obj.employee.last_name}{obj.employee.first_name}"
     employee.short_description = '社員'
+
+    def has_module_permission(self, request):
+        # サイドバーから非表示
+        return False
 
 @admin.register(AttendanceDaily, site=custom_admin_site)
 class AttendanceDailyAdmin(admin.ModelAdmin):
@@ -226,10 +401,14 @@ class AttendanceDailyAdmin(admin.ModelAdmin):
     list_filter = ('work_type', 'is_confirmed', 'date', 'monthly_attendance__employee__place_work')
     search_fields = ('monthly_attendance__employee__employee_no',)
     ordering = ('-date', 'monthly_attendance__employee__employee_no')
-
+    
     def employee(self, obj):
         return f"{obj.monthly_attendance.employee.employee_no:06d} - {obj.monthly_attendance.employee.last_name}{obj.monthly_attendance.employee.first_name}"
     employee.short_description = '社員'
+
+    def has_module_permission(self, request):
+        # サイドバーから非表示
+        return False
 
     def get_fieldsets(self, request, obj=None):
         return (
