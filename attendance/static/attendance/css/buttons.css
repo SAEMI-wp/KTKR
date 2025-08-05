@@ -136,7 +136,7 @@
 .btn-primary {
     background-color: #007bff;
     color: white;
-    margin-top: 3%;
+    margin-top: 2%;
 }
 
 .btn-primary:hover {
@@ -267,7 +267,6 @@ button:hover {
         min-height: 36px;
         padding: 4px 12px;
         font-size: 14px;
-        margin-bottom: 2%
     }
     
     .month-grid button {
@@ -324,6 +323,23 @@ button:hover {
 
 .btn-normal i {
     margin-right: 5px;
+}
+
+.btn-copy {
+    background-color: #43a047;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.btn-copy:hover {
+    background-color: #388e3c;
 }
 
 .btn-edit {
@@ -474,7 +490,6 @@ button:hover {
 .toggle-btn.red {
     border-color: #e53935;
     color: #e53935;
-    margin-bottom: 3%;
 }
 
 /* hover 효과(선명하게) */

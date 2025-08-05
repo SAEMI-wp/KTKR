@@ -62,8 +62,41 @@
 .saturday {
   color: #1976d2 !important;
 }
-.sunday, .holiday {
+.sunday {
   color: #e53935 !important;
+}
+/* 공휴일은 날짜와 요일 셀에만 적용 */
+.holiday {
+  color: #e53935 !important;
+}
+
+/* リストビュー祝日行スタイル - 日曜日と同じ表示 */
+.list-table tbody tr.holiday {
+  background-color: transparent !important;
+}
+
+.list-table tbody tr.holiday:hover {
+  background-color: #e8f4fd !important;
+}
+
+.list-table tbody tr.holiday .date-col,
+.list-table tbody tr.holiday .weekday-col {
+  color: #e53935 !important;
+  font-weight: normal;
+}
+
+/* 勤務区分列のテキスト色 - 全て黒色 */
+.list-table tbody tr td:nth-child(3) {
+  color: #000000 !important;
+}
+
+/* 공휴일 행에서도 다른 셀들은 검은색 유지 */
+.list-table tbody tr.holiday td:nth-child(4),
+.list-table tbody tr.holiday td:nth-child(5),
+.list-table tbody tr.holiday td:nth-child(6),
+.list-table tbody tr.holiday td:nth-child(7),
+.list-table tbody tr.holiday td:nth-child(8) {
+  color: #000000 !important;
 }
 
 /* 日々承認 열 너비 

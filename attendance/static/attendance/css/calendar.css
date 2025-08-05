@@ -204,6 +204,37 @@
     overflow: hidden;
 }
 
+/* 대휴/후리카에 표시 스타일 */
+.calendar-table .work-type-text {
+    font-size: 15px;
+    color: #1976d2;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: block;
+}
+
+.calendar-table .alternative_work_date {
+    font-size: 15px;
+    color: #1976d2;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: block;
+}
+
 .calendar-table td.today {
     background: #fffde7 !important;
 }
@@ -368,4 +399,11 @@
     margin-right: 2px;
     color: #e53935;
     font-size: 0.9em;
+}
+
+/* 年月表示(2025年 9月 등)의 너비를 두자리 기준으로 고정 */
+#current-month-display {
+    min-width: 190px;  
+    display: inline-block;
+    text-align: center;
 }

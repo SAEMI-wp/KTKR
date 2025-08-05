@@ -60,7 +60,7 @@
 }
 
 /* 일본 공휴일 API용 스타일 */
-.calendar-table .holiday-api-name {
+.calendar-table .holiday-cat-item.api {
     color: #e53935;
     font-weight: bold;
     font-size: 0.8em;
@@ -69,7 +69,7 @@
 }
 
 /* DB holidays_db - 共通 */
-.calendar-table .holiday-db-common-name {
+.calendar-table .holiday-cat-item.db.common {
     color: #b71c1c;
     font-weight: bold;
     font-size: 0.8em;
@@ -78,7 +78,7 @@
 }
 
 /* DB holidays_db - base_calendar(Techave, H大甕 등) */
-.calendar-table .holiday-db-base-name {
+.calendar-table .holiday-cat-item.db.base {
     color: #1976d2;
     font-weight: bold;
     font-size: 0.8em;
@@ -87,7 +87,7 @@
 }
 
 /* DB holidays_db - 年休収得(초록색) */
-.calendar-table .holiday-db-green-name {
+.calendar-table .holiday-cat-item.db.green {
     color: #388e3c;
     font-weight: bold;
     font-size: 0.8em;
