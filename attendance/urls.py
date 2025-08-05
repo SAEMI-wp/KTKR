@@ -4,9 +4,8 @@ from django.conf.urls.static import static
 from .views import (
     MainView, MonthlyAttendanceCreateView, MonthlyAttendanceUpdateView, DailyDataUpdateView, DailyDataGetView,
     login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView,
-    CalendarPartialView, FormPartialView, MonthlyInfoSectionView, MonthlyDataAPIView
+    CalendarPartialView, FormPartialView, MonthlyInfoSectionView, MonthlyDataAPIView, attendance_require_day
 )
-from .views import attendance_require_day
 from .views.utility_views import email_candidates
 
 
