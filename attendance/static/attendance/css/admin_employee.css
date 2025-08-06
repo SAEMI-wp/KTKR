@@ -1,0 +1,96 @@
+/* Django Admin Employee List Custom CSS */
+
+/* 모든 submit 버튼 숨기기 - 가장 강력한 방법 */
+input[type="submit"],
+input[type="submit"][value="実行"],
+input[type="submit"][name="index"],
+input[type="submit"][name="apply"],
+.actions input[type="submit"],
+.actions .submit-row input[type="submit"],
+.submit-row input[type="submit"],
+form input[type="submit"],
+.actions form input[type="submit"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    pointer-events: none !important;
+}
+
+/* H1 제목 숨기기 */
+h1 {
+    display: none !important;
+}
+
+/* 액션 카운터 메시지 숨기기 */
+.action-counter,
+[data-actions-icnt] {
+    display: none !important;
+}
+
+/* "操作:" 라벨 숨기기 */
+label {
+    display: none !important;
+}
+
+/* 액션 드롭다운 숨기기 */
+select[name="action"] {
+    display: none !important;
+}
+
+/* 실행 버튼이 포함된 컨테이너도 숨기기 */
+.actions .submit-row,
+.actions form,
+.submit-row {
+    display: none !important;
+}
+
+/* nav-filter 요소 처리 */
+#nav-filter {
+    display: none !important;
+}
+
+/* 커스텀 버튼 스타일 */
+.custom-action-button,
+#retire-selected-btn,
+#delete-selected-btn,
+#restore-selected-btn {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    color: #333 !important;
+    padding: 4px 8px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-right: 5px !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+}
+
+.custom-action-button:hover,
+#retire-selected-btn:hover,
+#delete-selected-btn:hover,
+#restore-selected-btn:hover {
+    background: #f5f5f5 !important;
+    border-color: #999 !important;
+}
+
+/* 복원 버튼만 초록색 */
+#restore-selected-btn {
+    background: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+}
+
+#restore-selected-btn:hover {
+    background: #218838 !important;
+    border-color: #1e7e34 !important;
+} 

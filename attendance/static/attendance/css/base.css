@@ -577,4 +577,214 @@ section h3 {
     color: #b71c1c;
 }
 
+/* 읽기 전용 모드용 스타일 */
+.readonly-mode .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.readonly-mode .header-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.readonly-mode .header-section h1 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 24px;
+}
+
+.readonly-mode .employee-info {
+    color: #666;
+    font-size: 14px;
+}
+
+.readonly-mode .main-content {
+    display: flex;
+    gap: 20px;
+}
+
+.readonly-mode .monthly-info-panel {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.readonly-mode .calendar-panel {
+    flex: 1;
+}
+
+.readonly-mode .no-data-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.readonly-mode .no-data-message h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #999;
+}
+
+.readonly-mode .no-data-message p {
+    font-size: 16px;
+    color: #999;
+}
+
+/* 월 정보 섹션 스타일 */
+.readonly-mode #monthly-info-section {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.readonly-mode #monthly-info-section h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 8px;
+}
+
+.readonly-mode .monthly-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 인쇄 버튼 공간 유지 */
+.print-button-container {
+    width: 50px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.print-button-placeholder {
+    width: 50px;
+    height: 40px;
+}
+
+/* 월별 정보 섹션 스타일 개선 */
+.readonly-mode .monthly-info-content {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.readonly-mode .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.readonly-mode .info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.readonly-mode .info-row:first-child {
+    padding-top: 0;
+}
+
+.readonly-mode .info-row label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 120px;
+    margin-right: 15px;
+}
+
+.readonly-mode .info-row span {
+    font-weight: 500;
+    color: #212529;
+    text-align: right;
+    flex: 1;
+}
+
+.readonly-mode .status-approved {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.readonly-mode .status-pending {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.readonly-mode .status-waiting {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.readonly-mode .no-data-prompt {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* 프린트 모달 스타일 */
+.readonly-mode .print-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.readonly-mode .print-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.readonly-mode .print-option-btn:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.readonly-mode .print-option-btn i {
+    font-size: 18px;
+    width: 20px;
+}
+
+/* 읽기 전용 모드에서 불필요한 버튼들 숨기기 */
+.readonly-mode .survey-button,
+.readonly-mode #survey-btn,
+.readonly-mode .monthly-info-toggle-btn,
+.readonly-mode #monthly-info-toggle-btn,
+.readonly-mode .copy-prev-month-btn,
+.readonly-mode #copy-prev-month-btn,
+.readonly-mode .monthly-register-btn,
+.readonly-mode #monthly-register-btn,
+.readonly-mode .edit-monthly-btn,
+.readonly-mode #edit-monthly-btn {
+    display: none !important;
+}
+
+/* 월 정보 컨테이너 항상 표시 */
+.readonly-mode #monthly-info-container {
+    display: block !important;
+}
+
     
