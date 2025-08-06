@@ -1,2 +1,9 @@
-{# 일본어로 커스텀된 admin base 템플릿. 필요시 추가 커스터마이즈 가능 #}
-{% extends "admin/base.html" %}  
+{% extends "admin/base.html" %}
+{% block title %}{{ site_title|default:"勤怠管理システム" }}{% endblock %}
+{% block branding %}
+<h1 id="site-name">{{ site_header|default:"勤怠管理システム管理者" }}</h1>
+{% endblock %}
+{% block nav-global %}
+{% endblock %}
+{% load static %}
+<link rel="icon" href="{% static 'attendance/favicon.ico' %}"> 
