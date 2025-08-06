@@ -47,6 +47,7 @@ class Employee(AbstractBaseUser, PermissionsMixin):
     place_work = models.CharField(verbose_name='勤務先', max_length=30, blank=True)
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
+    
     USERNAME_FIELD = 'employee_no'
     REQUIRED_FIELDS = ['first_name', 'last_name']
     objects = EmployeeManager()

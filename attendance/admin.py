@@ -236,15 +236,14 @@ def get_employee_queryset_by_role(request, queryset):
     user = request.user
     if user.is_superuser:
         return queryset
-    group_name = None
-    if hasattr(user, 'employee_group'):
-        print(f"[DEBUG] user.employee_group: {user.employee_group}")
-        group_name = get_group_name_by_code(user.employee_group)
-        print(f"[DEBUG] group_name by code: {group_name}")
-    print(f"[DEBUG] user.groups: {[g.name for g in user.groups.all()]}")
-    if group_name == '社長':
+    
+    # Django 기본 groups 사용
+    user_groups = [g.name for g in user.groups.all()]
+    print(f"[DEBUG] user.groups: {user_groups}")
+    
+    if '社長' in user_groups:
         return queryset
-    elif group_name == '部長':
+    elif '部長' in user_groups:
         user_place = (user.place_work or '').strip()
         # 모든 직원의 place_work를 split해서 포함 여부로 필터링
         filtered = queryset.filter(place_work__icontains=user_place)
