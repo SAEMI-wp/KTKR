@@ -49,60 +49,92 @@ class CustomAdminSite(admin.AdminSite):
         return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
 
     def csv_upload_view(self, request):
-        if request.method == 'POST':
-            form = EmployeeCSVUploadForm(request.POST, request.FILES)
-            if form.is_valid():
-                csv_file = form.cleaned_data['csv_file']                
-                decoded_file = TextIOWrapper(csv_file, encoding='utf-8')
-                reader = csv.reader(decoded_file, delimiter=',')
-                duplicated = []
-                created = 0
-                for row in reader:
-                    if len(row) < 4:
-                        continue
-                    employee_no = row[0].strip()
-                    name = row[1].strip()
-                    place_work = row[2].strip()
-                    email = row[3].strip()
-                    # 사원번호 유효성 체크 (6글자 문자열 허용)
-                    if len(employee_no) != 6:
-                        duplicated.append(f"{employee_no} (社員番号が6文字ではありません)")
-                        continue
-                
-                    # 이름 분리
-                    if ' ' in name:
-                        last_name, first_name = name.split(' ', 1)                        
+        try:
+            print(f"[DEBUG] CSV 업로드 시작 - 사용자: {request.user}")
+            
+            if request.method == 'POST':
+                form = EmployeeCSVUploadForm(request.POST, request.FILES)
+                if form.is_valid():
+                    csv_file = form.cleaned_data['csv_file']
+                    print(f"[DEBUG] CSV 파일명: {csv_file.name}")
+                    
+                    decoded_file = TextIOWrapper(csv_file, encoding='utf-8')
+                    reader = csv.reader(decoded_file, delimiter=',')
+                    duplicated = []
+                    created = 0
+                    
+                    for row_num, row in enumerate(reader, 1):
+                        try:
+                            if len(row) < 4:
+                                print(f"[DEBUG] 행 {row_num}: 컬럼 수 부족 ({len(row)})")
+                                continue
+                                
+                            employee_no = row[0].strip()
+                            name = row[1].strip()
+                            place_work = row[2].strip()
+                            email = row[3].strip()
+                            
+                            print(f"[DEBUG] 행 {row_num}: {employee_no}, {name}, {place_work}, {email}")
+                            
+                            # 사원번호 유효성 체크 (6글자 문자열 허용)
+                            if len(employee_no) != 6:
+                                duplicated.append(f"{employee_no} (社員番号が6文字ではありません)")
+                                continue
+                        
+                            # 이름 분리
+                            if ' ' in name:
+                                last_name, first_name = name.split(' ', 1)                        
+                            else:
+                                last_name, first_name = name, ''
+                                
+                            if Employee.objects.filter(employee_no=employee_no).exists():
+                                duplicated.append(f"{employee_no} {last_name} {first_name}")
+                                continue
+                                
+                            emp = Employee(
+                                employee_no=employee_no,
+                                last_name=last_name,
+                                first_name=first_name,
+                                place_work=place_work,
+                                email=email,
+                                is_active=True,
+                                is_superuser=False,
+                            )
+                            emp.set_password('0000')
+                            emp.save()
+                            print(f"[DEBUG] 직원 생성 완료: {employee_no}")
+                            created += 1
+                            
+                        except Exception as e:
+                            print(f"[ERROR] 행 {row_num} 처리 중 오류: {e}")
+                            duplicated.append(f"행 {row_num}: {str(e)}")
+                            continue
+                            
+                    msg = f"{created}名の従業員を追加しました。"
+                    if duplicated:
+                        msg += f"\n以下の社員番号は既に存在するため追加されませんでした:\n" + '\n'.join(duplicated)
+                        messages.warning(request, msg.replace('\n', '<br>'))
                     else:
-                        last_name, first_name = name, ''
-                    if Employee.objects.filter(employee_no=employee_no).exists():
-                        duplicated.append(f"{employee_no} {last_name} {first_name}")
-                        continue
-                    emp = Employee(
-                        employee_no=employee_no,
-                        last_name=last_name,
-                        first_name=first_name,
-                        place_work=place_work,
-                        email=email,
-                        is_active=True,
-                        is_superuser=False,
-                    )
-                    emp.set_password('0000')
-                    emp.save()
-                    created += 1
-                msg = f"{created}名の従業員を追加しました。"
-                if duplicated:
-                    msg += f"\n以下の社員番号は既に存在するため追加されませんでした:\n" + '\n'.join(duplicated)
-                    messages.warning(request, msg.replace('\n', '<br>'))
+                        messages.success(request, msg)
+                    return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
                 else:
-                    messages.success(request, msg)
-                return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
-        else:
-            form = EmployeeCSVUploadForm()
-        context = dict(
-            self.each_context(request),
-            form=form,
-        )
-        return render(request, "admin/attendance/employee_csv_upload.html", context)
+                    print(f"[DEBUG] 폼 유효성 검사 실패: {form.errors}")
+                    messages.error(request, f'CSV 파일 업로드 오류: {form.errors}')
+            else:
+                form = EmployeeCSVUploadForm()
+                
+            context = dict(
+                self.each_context(request),
+                form=form,
+            )
+            return render(request, "admin/attendance/employee_csv_upload.html", context)
+            
+        except Exception as e:
+            print(f"[ERROR] CSV 업로드 중 예외 발생: {e}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'CSV 업로드 중 오류가 발생했습니다: {str(e)}')
+            return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
 
     def position_management_view(self, request):
         """직급 관리 페이지 (superuser만 접근 가능)"""
