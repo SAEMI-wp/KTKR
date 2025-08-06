@@ -100,16 +100,22 @@ class CustomAdminSite(admin.AdminSite):
                     
                     for row_num, row in enumerate(reader, 1):
                         try:
-                            if len(row) < 4:
-                                print(f"[DEBUG] 행 {row_num}: 컬럼 수 부족 ({len(row)})")
+                            # 첫 번째 행은 헤더이므로 건너뛰기
+                            if row_num == 1:
+                                print(f"[DEBUG] 헤더 행 건너뛰기: {row}")
+                                continue
+                                
+                            if len(row) < 5:
+                                print(f"[DEBUG] 행 {row_num}: 컬럼 수 부족 ({len(row)}) - 최소 5개 필요")
                                 continue
                                 
                             employee_no = row[0].strip()
                             name = row[1].strip()
                             place_work = row[2].strip()
                             email = row[3].strip()
+                            position_code = row[4].strip() if len(row) > 4 else ''
                             
-                            print(f"[DEBUG] 행 {row_num}: {employee_no}, {name}, {place_work}, {email}")
+                            print(f"[DEBUG] 행 {row_num}: {employee_no}, {name}, {place_work}, {email}, {position_code}")
                             
                             # 사원번호 유효성 체크 (6글자 문자열 허용)
                             if len(employee_no) != 6:
@@ -122,34 +128,117 @@ class CustomAdminSite(admin.AdminSite):
                             else:
                                 last_name, first_name = name, ''
                                 
-                            if Employee.objects.filter(employee_no=employee_no).exists():
-                                duplicated.append(f"{employee_no} {last_name} {first_name}")
-                                continue
+                            # 기존 직원이 있는지 확인
+                            existing_employee = Employee.objects.filter(employee_no=employee_no).first()
+                            
+                            # 직위코드에 따른 그룹 설정
+                            position_group = None
+                            if position_code:
+                                position_mapping = {
+                                    '1': '社長',
+                                    '2': '役員', 
+                                    '100': '部長',
+                                    '101': '担当部長',
+                                    '102': '主幹技師',
+                                    '104': '技師',
+                                    '105': '企画員',
+                                    '106': '社員',
+                                }
+                                group_name = position_mapping.get(position_code)
+                                if group_name:
+                                    position_group, created_group = Group.objects.get_or_create(name=group_name)
+                                    print(f"[DEBUG] 직위코드 {position_code} -> 그룹 {group_name}")
+                            
+                            if existing_employee:
+                                # 기존 직원 정보 업데이트 (변경된 필드만)
+                                updated_fields = []
                                 
-                            emp = Employee(
-                                employee_no=employee_no,
-                                last_name=last_name,
-                                first_name=first_name,
-                                place_work=place_work,
-                                email=email,
-                                is_active=True,
-                                is_superuser=False,
-                            )
-                            emp.set_password('0000')
-                            emp.save()
-                            print(f"[DEBUG] 직원 생성 완료: {employee_no}")
-                            created += 1
+                                if existing_employee.last_name != last_name:
+                                    existing_employee.last_name = last_name
+                                    updated_fields.append('姓')
+                                
+                                if existing_employee.first_name != first_name:
+                                    existing_employee.first_name = first_name
+                                    updated_fields.append('名')
+                                
+                                if existing_employee.place_work != place_work:
+                                    existing_employee.place_work = place_work
+                                    updated_fields.append('勤務先')
+                                
+                                if existing_employee.email != email:
+                                    existing_employee.email = email
+                                    updated_fields.append('メール')
+                                
+                                if not existing_employee.is_active:
+                                    existing_employee.is_active = True
+                                    updated_fields.append('ステータス')
+                                
+                                # 직위 그룹 업데이트 (변경된 경우만)
+                                current_groups = set(existing_employee.groups.values_list('name', flat=True))
+                                if position_group:
+                                    target_group_name = position_group.name
+                                    if target_group_name not in current_groups:
+                                        # 기존 그룹 제거 후 새로운 그룹 설정
+                                        existing_employee.groups.clear()
+                                        existing_employee.groups.add(position_group)
+                                        updated_fields.append('職級')
+                                        print(f"[DEBUG] 직급 변경: {list(current_groups)} -> {target_group_name}")
+                                else:
+                                    # 직위코드가 없는데 현재 그룹이 있는 경우 제거
+                                    if current_groups:
+                                        existing_employee.groups.clear()
+                                        updated_fields.append('職級削除')
+                                        print(f"[DEBUG] 직급 제거: {list(current_groups)} -> なし")
+                                
+                                # 변경사항이 있는 경우에만 저장
+                                if updated_fields:
+                                    existing_employee.save()
+                                    print(f"[DEBUG] 직원 정보 업데이트 완료: {employee_no} - 변경필드: {', '.join(updated_fields)}")
+                                    duplicated.append(f"{employee_no} {last_name} {first_name} (更新: {', '.join(updated_fields)})")
+                                else:
+                                    print(f"[DEBUG] 직원 정보 변경 없음: {employee_no}")
+                                    duplicated.append(f"{employee_no} {last_name} {first_name} (変更なし)")
+                            else:
+                                # 새 직원 생성
+                                emp = Employee(
+                                    employee_no=employee_no,
+                                    last_name=last_name,
+                                    first_name=first_name,
+                                    place_work=place_work,
+                                    email=email,
+                                    is_active=True,
+                                    is_superuser=False,
+                                )
+                                emp.set_password('0000')
+                                emp.save()
+                                
+                                # 직위 그룹 설정
+                                if position_group:
+                                    emp.groups.add(position_group)
+                                
+                                print(f"[DEBUG] 직원 생성 완료: {employee_no}")
+                                created += 1
                             
                         except Exception as e:
                             print(f"[ERROR] 행 {row_num} 처리 중 오류: {e}")
                             duplicated.append(f"행 {row_num}: {str(e)}")
                             continue
                             
+                    # 업데이트된 직원 수 계산 (변경된 경우만)
+                    updated_count = len([d for d in duplicated if '(更新:' in d])
+                    no_change_count = len([d for d in duplicated if '(変更なし)' in d])
+                    duplicated_without_update = [d for d in duplicated if '(更新:' not in d and '(変更なし)' not in d]
+                    
                     msg = f"{created}名の従業員を追加しました。"
+                    if updated_count > 0:
+                        msg += f" {updated_count}名の従業員情報を更新しました。"
+                    if no_change_count > 0:
+                        msg += f" {no_change_count}名の従業員は変更なしでした。"
                     if used_encoding:
                         msg += f" (使用エンコード: {used_encoding})"
-                    if duplicated:
-                        msg += f"\n以下の社員番号は既に存在するため追加されませんでした:\n" + '\n'.join(duplicated)
+                    
+                    if duplicated_without_update:
+                        msg += f"\n以下の社員番号は処理できませんでした:\n" + '\n'.join(duplicated_without_update)
                         messages.warning(request, msg.replace('\n', '<br>'))
                     else:
                         messages.success(request, msg)
