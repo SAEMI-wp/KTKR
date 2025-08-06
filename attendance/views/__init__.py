@@ -35,6 +35,7 @@ from .daily_views import (
 from .report_views import (
     ExcelDownloadView,
     PDFPreviewView,
+    PDFDownloadView,
     EmailSendView
 )
 
@@ -70,6 +71,7 @@ __all__ = [
     # Report views
     'ExcelDownloadView',
     'PDFPreviewView',
+    'PDFDownloadView',
     'EmailSendView',
     
     # Utility views

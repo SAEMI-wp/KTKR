@@ -78,7 +78,8 @@ class PDFPreviewView(View):
                 content_type='application/pdf'
             )
             
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            # iframe에서 표시할 수 있도록 inline으로 설정
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
             
             # iframe에서 표시할 수 있도록 X-Frame-Options 헤더 설정
             response['X-Frame-Options'] = 'SAMEORIGIN'
@@ -89,6 +90,46 @@ class PDFPreviewView(View):
             
         except ValueError as e:
             print(f"ValueError in PDF preview: {e}")
+            return JsonResponse({'status': 'error', 'message': str(e)})
+        except Exception as e:
+            print(f"Error creating PDF file: {e}")
+            return JsonResponse({'status': 'error', 'message': f'PDFファイルの作成中にエラーが発生しました: {str(e)}'})
+
+
+# PDF 다운로드 뷰（ログ인必須）
+@method_decorator(login_required, name='dispatch')
+class PDFDownloadView(View):
+    def get(self, request, *args, **kwargs):
+        # URLパラメータ부터年月を取得
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        
+        if not year or not month:
+            return JsonResponse({'status': 'error', 'message': '年月が指定されていません'})
+        
+        try:
+            # PDFReportGeneratorを使用してPDFファイルを生成
+            generator = PDFReportGenerator(request.user, int(year), int(month))
+            pdf_buffer = generator.generate_pdf()
+            
+            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
+            employee_name = f"{request.user.display_name}({request.user.employee_no})"
+            filename = f"{year}_{month}_稼動報告書_{employee_name}.pdf"
+            
+            # レスポンスを作成
+            response = HttpResponse(
+                content_type='application/pdf'
+            )
+            
+            # 다운로드용으로 attachment 설정
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            # PDFデータをレスポンスに書き込み
+            response.write(pdf_buffer.getvalue())
+            return response
+            
+        except ValueError as e:
+            print(f"ValueError in PDF download: {e}")
             return JsonResponse({'status': 'error', 'message': str(e)})
         except Exception as e:
             print(f"Error creating PDF file: {e}")
