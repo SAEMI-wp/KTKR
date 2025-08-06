@@ -452,18 +452,31 @@ class EmployeeAdmin(admin.ModelAdmin):
         return get_employee_queryset_by_role(request, qs)
     
     def retire_selected(self, request, queryset):
-        updated = queryset.update(is_active=False)
+        # MySQL 제약사항을 우회하기 위해 개별 업데이트
+        updated = 0
+        for employee in queryset:
+            employee.is_active = False
+            employee.save()
+            updated += 1
         self.message_user(request, f"{updated}名退社処理完了.")
     retire_selected.short_description = "退社処理"
 
     def delete_selected(self, request, queryset):
-        count = queryset.count()
-        queryset.delete()
+        # MySQL 제약사항을 우회하기 위해 개별 삭제
+        count = 0
+        for employee in queryset:
+            employee.delete()
+            count += 1
         self.message_user(request, f"{count}名の従業員を削除しました.")
     delete_selected.short_description = "削除"
 
     def restore_selected(self, request, queryset):
-        updated = queryset.update(is_active=True)
+        # MySQL 제약사항을 우회하기 위해 개별 업데이트
+        updated = 0
+        for employee in queryset:
+            employee.is_active = True
+            employee.save()
+            updated += 1
         self.message_user(request, f"{updated}名の従業員を復元しました.")
     restore_selected.short_description = "復元"
 
