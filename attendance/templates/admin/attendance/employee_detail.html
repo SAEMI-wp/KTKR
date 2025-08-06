@@ -1,59 +1,281 @@
-{% extends 'admin/base_site.html' %}
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load attendance_extras %}
+
+{% block title %}{{ employee.display_name }}({{ employee.employee_no }}) 勤怠詳細{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/base.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/calendar.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/list.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/buttons.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/forms.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/modals.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/holidays.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/email.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'attendance/css/login_card.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
 {% block content %}
-<h1>{{ employee.last_name }}{{ employee.first_name }} ({{ employee.employee_no }}) 勤怠詳細</h1>
-<strong>勤務先:</strong> {{ employee.place_work }}<br>
-<div style="display: flex; flex-direction: column; align-items: center;">
-<div style="margin-bottom: 1em;">
-  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ prev_year }}/{{ prev_month }}/">&#8592; 前月</a>
-  <span style="margin:0 1em;">{{ year }}年 {{ month }}月</span>
-  <a href="/admin/employee/{{ employee.employee_no }}/detail/{{ next_year }}/{{ next_month }}/">後月 &#8594;</a>
+<div class="main-container readonly-mode">
+    <!-- 헤더 섹션 -->
+    <div class="header-section">
+        <h1>{{ employee.last_name }}{{ employee.first_name }} ({{ employee.employee_no }}) 勤怠詳細</h1>
+        <div class="employee-info">
+            <strong>勤務先:</strong> {{ employee.place_work }}
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="main-content">
+        <!-- 좌측: 월 정보 섹션 (항상 열린 상태) -->
+        <div class="monthly-info-panel">
+            <div id="monthly-info-container" style="display: block;">
+                {% if monthly_info %}
+                    <div class="monthly-info-content">
+                        <div class="info-row">
+                            <label>PJ名:</label>
+                            <span>{{ monthly_info.project_name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <label>基準勤務時間:</label>
+                            <span>{{ monthly_info.standard_work_hours }}時間</span>
+                        </div>
+                        <div class="info-row">
+                            <label>昼休み区分:</label>
+                            <span>{{ monthly_info.break_minutes }}分</span>
+                        </div>
+                        <div class="info-row">
+                            <label>勤務日数:</label>
+                            <span>{{ monthly_info.work_days }}日</span>
+                        </div>
+                        <div class="info-row">
+                            <label>有給休暇:</label>
+                            <span>{{ monthly_info.paid_leave_days }}日</span>
+                        </div>
+                        <div class="info-row">
+                            <label>残業時間:</label>
+                            <span>{{ monthly_info.overtime_hours }}時間</span>
+                        </div>
+                        <div class="info-row">
+                            <label>承認状況:</label>
+                            <span class="status-{{ monthly_info.status }}">
+                                {% if monthly_info.status == 'approved' %}
+                                    承認済み
+                                {% elif monthly_info.status == 'pending' %}
+                                    承認待ち
+                                {% else %}
+                                    未申請
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- 월 데이터가 없을 때는 아무것도 표시하지 않음 -->
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 우측: 캘린더/리스트 패널 -->
+        <div class="calendar-panel">
+            <!-- 월 이동 버튼과 현재 월 표시 (항상 표시) -->
+            <div class="date-selector">
+                <button id="prev-month-btn" class="nav-button" onclick="navigateMonth('prev')">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <h2 id="current-month-display" class="current-month" data-year="{{ year }}" data-month="{{ month }}" data-employee-id="{{ employee.employee_no }}">
+                    {{ year }}年 {{ month }}月
+                </h2>
+                <button id="next-month-btn" class="nav-button" onclick="navigateMonth('next')">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <div class="print-button-container">
+                    {% if monthly %}
+                    <button id="print-preview-btn" class="print-preview-button" title="稼働報告書 印刷・保存">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
+                    {% else %}
+                    <div class="print-button-placeholder"></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if monthly %}
+                <!-- 캘린더/리스트 섹션 -->
+                <div id="calendar-section">
+                    <!-- 탭 버튼 -->
+                    <div class="tab-switcher" id="tab-switcher">
+                        <button id="tab-calendar" class="tab-btn active">カレンダー</button>
+                        <button id="tab-list" class="tab-btn">リスト</button>
+                    </div>
+
+                    <!-- 캘린더 탭 -->
+                    <div id="calendar-tab" style="display: block;">
+                        <section class="calendar-view">
+                            <h3>{{ year }}年{{ month }}月の勤務実績カレンダー</h3>
+                            <div class="calendar-container">
+                                <table class="calendar-table">
+                                    <thead>
+                                        <tr>
+                                            <th>日</th>
+                                            <th>月</th>
+                                            <th>火</th>
+                                            <th>水</th>
+                                            <th>木</th>
+                                            <th>金</th>
+                                            <th>土</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for week in calendar_weeks %}
+                                        <tr>
+                                            {% for day in week %}
+                                                {% if day.date %}
+                                                <td class="{% if day.date.month != month %}other-month{% endif %}{% if day.record %} has-record{% endif %}">
+                                                    <div class="cell-inner">
+                                                        <div class="cell-header">
+                                                            <span class="date-number">{{ day.date.day }}</span>
+                                                            <span class="holiday-category"></span>
+                                                        </div>
+                                                        <div class="record-time">
+                                                            {% if day.record %}
+                                                                {% if day.record.work_type == '有給' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                {% elif day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                    {% if day.record.alternative_work_date %}
+                                                                        <div class="alternative_work_date">({{ day.record.alternative_work_date|date:"Y.m.d" }})</div>
+                                                                    {% endif %}
+                                                                {% elif day.record.work_type == '代休(勤)' or day.record.work_type == '振替(勤)' %}
+                                                                    {% if day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
+                                                                        {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
+                                                                    {% endif %}
+                                                                {% elif day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
+                                                                    {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                {% else %}
+                                                <td class="empty-cell"></td>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- 리스트 탭 -->
+                    <div id="list-tab" class="list-tab" style="display: none;">
+                        <section class="list-view">
+                            <h3>{{ year }}年{{ month }}月の勤務実績表</h3>
+                            <div class="list-container">
+                                <table class="list-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="date-col">日付</th>
+                                            <th class="weekday-col">曜日</th>
+                                            <th>勤務区分</th>
+                                            <th>出勤時間</th>
+                                            <th>退勤時間</th>
+                                            <th>代休/振替日</th>
+                                            <th>実施作業内容・備考</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day in month_days_list %}
+                                            <tr class="attendance-list-row" data-date="{{ day.date|date:'Y-m-d' }}" data-default-work-type="{{ day.default_work_type }}" data-has-record="{% if day.record %}1{% else %}0{% endif %}" data-is-api-holiday="{% if day.is_api_holiday %}true{% else %}false{% endif %}">
+                                                {# 日付, 曜日: 색상/너비/붙이기 #}
+                                                <td class="date-col{% if not day.record %}{% if day.is_api_holiday or day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}{% endif %}">{{ day.date|date:"n/j" }}</td>
+                                                <td class="weekday-col{% if not day.record %}{% if day.is_api_holiday or day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}{% endif %}">
+                                                    {% with weekday_names="月,火,水,木,金,土,日"|split:"," %}
+                                                        {{ weekday_names|get_item:day.date.weekday }}
+                                                    {% endwith %}
+                                                </td>
+                                                <td>
+                                                    {% if day.record %}
+                                                        {% if day.record.work_type == '出勤' %}
+                                                            &nbsp;
+                                                        {% else %}
+                                                            {{ day.record.work_type|default:"" }}
+                                                        {% endif %}
+                                                    {% elif day.is_api_holiday %}
+                                                        祝日
+                                                    {% elif day.is_sunday %}
+                                                        休日(法)
+                                                    {% elif day.is_saturday %}
+                                                        休日
+                                                    {% else %}
+                                                        &nbsp;
+                                                    {% endif %}
+                                                </td>
+                                                <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.start_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.end_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.alternative_work_date|date:"n/j"|default:"" }}{% else %}&nbsp;{% endif %}</td>
+                                                <td class="notes-cell">
+                                                    {% if day.record %}
+                                                        <div class="notes-content">
+                                                            {{ day.record.notes|default:"" }}
+                                                        </div>
+                                                    {% else %}
+                                                        &nbsp;
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="7" class="no-data-cell">この月の日別データはまだ登録されていません。</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            {% else %}
+                <!-- 데이터가 없을 때 메시지 -->
+                <div class="no-data-message">
+                    <h2>データがありません</h2>
+                    <p><span>{{ employee.last_name }}・{{ employee.first_name }}の{{ year }}年{{ month }}月勤怠データは登録されていません。</span></p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-<!-- <div style="margin-bottom: 1em;">
-  <strong>今月の残業時間:</strong> {{ overtime_total }}時間
-  <strong style="margin-left:2em;">有給休暇使用日数:</strong> {{ paid_leave_used }}日
-</div> -->
-{% if monthly %}
-  <div style="margin-bottom:1em;">
-    {# 승인 상태별 버튼 표시 #}
-    {% if not monthly.is_required and not monthly.is_confirmed %}
-      <button class="button" style="background:#ccc; color:#fff;" disabled>承認申請前</button>
-      <a href="/admin/monthly/{{ monthly.monthly_id }}/request/" class="button" style="background:#ff9800; color:#fff;">承認申請</a>
-    {% elif monthly.is_required and not monthly.is_confirmed %}
-      <button class="button" style="background:#ff9800; color:#fff;" disabled>承認申請中</button>
-      <a href="/admin/monthly/{{ monthly.monthly_id }}/approve/" class="button" style="background:#8bc34a; color:#fff;">承認確定</a>
-      <a href="/admin/monthly/{{ monthly.monthly_id }}/cancel/" class="button" style="background:#f44336; color:#fff;">承認取消</a>
-      <a href="/admin/monthly/{{ monthly.monthly_id }}/revise/" class="button" style="background:#e91e63; color:#fff;">修正依頼</a>
-    {% elif monthly.is_confirmed %}
-      <button class="button" style="background:#8bc34a; color:#fff;" disabled>承認確定</button>
-      <a href="/admin/monthly/{{ monthly.monthly_id }}/revise/" class="button" style="background:#e91e63; color:#fff;">修正依頼</a>
-    {% endif %}
-  </div>
-{% endif %}
-<table class="admin-table" style="width:80%; margin:auto; border-collapse:collapse; border:2px solid #333;">
-  <thead>
-    <tr>
-      <th style="border:1px solid #888;">日付</th>
-      <th style="border:1px solid #888;">曜日</th>
-      <th style="border:1px solid #888;">勤務区分</th>
-      <th style="border:1px solid #888;">開始</th>
-      <th style="border:1px solid #888;">終了</th>
-      <th style="border:1px solid #888;">備考</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for d in daily_list %}
-    <tr>
-      <td style="border:1px solid #ccc;">{{ d.date|date:'n/j' }}</td>
-      <td style="border:1px solid #ccc;">{{ d.date|date:'D' }}</td>
-      <td style="border:1px solid #ccc;">{{ d.work_type }}</td>
-      <td style="border:1px solid #ccc;">{{ d.start_time }}</td>
-      <td style="border:1px solid #ccc;">{{ d.end_time }}</td>
-      <td style="border:1px solid #ccc;">{{ d.notes }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" style="border:1px solid #ccc;">データ無し</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+
+<!-- 인쇄 모달 -->
+<div id="print-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>稼働報告書 印刷・保存</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="print-options">
+                <button id="pdf-preview-btn" class="print-option-btn">
+                    <i class="fa-solid fa-eye"></i>
+                    PDF プレビュー
+                </button>
+                <button id="pdf-download-btn" class="print-option-btn">
+                    <i class="fa-solid fa-download"></i>
+                    PDF ダウンロード
+                </button>
+                <button id="excel-download-btn" class="print-option-btn">
+                    <i class="fa-solid fa-file-excel"></i>
+                    Excel ダウンロード
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script src="{% static 'attendance/js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'attendance/js/employee_detail.js' %}"></script>
 {% endblock %} 
