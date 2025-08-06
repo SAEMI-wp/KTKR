@@ -1,11 +1,20 @@
 {% extends "admin/change_list.html" %}
 {% load admin_list %}
+{% load static %}
+{% csrf_token %}
+
 {% block object-tools %}
   {{ block.super }}
   <li>
     <a href="{{ csv_upload_url }}" class="addlink">CSVで追加</a>
   </li>
 {% endblock %}
+
+{% block content %}
+  <!-- 기존 admin content -->
+  {{ block.super }}
+{% endblock %}
+
 {% block filters %}
   {% if cl.has_filters %}
     <div id="changelist-filter">
@@ -16,4 +25,23 @@
       {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
     </div>
   {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<!-- 커스텀 CSS 로드 - 절대 경로 사용 -->
+<link rel="stylesheet" type="text/css" href="/static/attendance/css/admin_employee.css">
+<script type="text/javascript">
+console.log('[DEBUG] Django Admin 템플릿 로드됨');
+console.log('[DEBUG] CSS 경로:', '/static/attendance/css/admin_employee.css');
+</script>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<!-- 커스텀 JavaScript 로드 - 절대 경로 사용 -->
+<script type="text/javascript" src="/static/attendance/js/admin_employee.js"></script>
+<script type="text/javascript">
+console.log('[DEBUG] JS 경로:', '/static/attendance/js/admin_employee.js');
+</script>
 {% endblock %} 
