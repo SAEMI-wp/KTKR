@@ -4,7 +4,7 @@ from django.contrib.auth import get_permission_codename
 from django.contrib.auth.models import Group
 from django.urls import path
 from .models import Employee, AttendanceMonthly, AttendanceDaily, HolidayCalendar
-from .admin_views import profile_view, attendance_overview, payroll_view, employee_detail_view, payroll_detail_view, payroll_pdf_download_view, monthly_approval_action, daily_calendar_view
+from .admin_views import profile_view, attendance_overview, payroll_view, employee_detail_view, payroll_detail_view, payroll_pdf_download_view, monthly_approval_action, daily_calendar_view, employee_monthly_data_check_view
 from django.utils.html import format_html
 from django.utils import timezone
 from django import forms
@@ -34,6 +34,7 @@ class CustomAdminSite(admin.AdminSite):
             path('payroll/', self.admin_view(payroll_view), name='payroll'),
             path('employee/<str:employee_no>/detail/<int:year>/<int:month>/', self.admin_view(employee_detail_view), name='employee_detail'),
             path('employee/<str:employee_no>/detail/', self.admin_view(employee_detail_view), name='employee_detail_current'),
+            path('employee/<str:employee_no>/monthly-check/', self.admin_view(employee_monthly_data_check_view), name='employee_monthly_check'),
             path('payroll/<str:employee_no>/<str:year>/<str:month>/', self.admin_view(payroll_detail_view), name='payroll_detail'),
             path('payroll/<str:employee_no>/<str:year>/<str:month>/pdf/', self.admin_view(payroll_pdf_download_view), name='payroll_pdf_download'),
             path('monthly/<int:monthly_id>/<str:action>/', self.admin_view(monthly_approval_action), name='monthly_approval_action'),

@@ -7,7 +7,7 @@ from django.utils import timezone
 from calendar import monthrange
 from datetime import date, timedelta
 from django import forms
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from .paroll_pdf import generate_payslip_pdf
 from django.contrib import messages
@@ -318,6 +318,46 @@ def employee_detail_view(request, employee_no, year=None, month=None):
         traceback.print_exc()
         raise
 
+
+@admin_permission_required
+def employee_monthly_data_check_view(request, employee_no):
+    """직원의 월별 데이터 존재 여부를 확인하는 API"""
+    try:
+        employee = get_object_or_404(Employee, employee_no=employee_no)
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        
+        if not year or not month:
+            return JsonResponse({'error': 'Year and month parameters required'}, status=400)
+        
+        try:
+            year = int(year)
+            month = int(month)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid year or month'}, status=400)
+        
+        # 해당 월의 AttendanceMonthly 확인
+        try:
+            monthly = AttendanceMonthly.objects.get(
+                employee=employee, 
+                year=str(year), 
+                month=str(month).zfill(2)
+            )
+            has_data = True
+        except AttendanceMonthly.DoesNotExist:
+            has_data = False
+        
+        return JsonResponse({
+            'employee_no': employee_no,
+            'year': year,
+            'month': month,
+            'has_data': has_data
+        })
+        
+    except Exception as e:
+        print(f"employee_monthly_data_check_view 오류: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
 class PaySlipForm(forms.ModelForm):
     class Meta:
         model = PaySlip
@@ -411,3 +451,15 @@ def daily_calendar_view(request, year=None, month=None):
         'daily_list': daily_list,
     }
     return render(request, 'admin/attendance/daily_calendar.html', context)
+
+# WeasyPrint 관련 import 및 payroll_pdf_view 함수 삭제
+# 이후 pdf_generator.py의 generate_payslip_pdf 함수 등을 활용할 예정 
+
+perm = Permission.objects.get(codename='can_access_admin')
+president = Group.objects.get(id=1)  # 社長
+bucho = Group.objects.get(id=3)      # 部長
+
+president.permissions.add(perm)
+bucho.permissions.add(perm)
+
+print('社長(id=1), 部長(id=3) 그룹에 관리자 페이지 접근 권한을 부여했습니다.') 
