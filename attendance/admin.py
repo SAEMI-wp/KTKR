@@ -12,9 +12,10 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 import csv
-from io import StringIO, TextIOWrapper
+from io import StringIO, TextIOWrapper, BytesIO
 from django.shortcuts import render
 from .utils import get_group_name_by_code
+import chardet
 
 class CustomAdminSite(admin.AdminSite):
     site_header = '勤怠・給与管理システム管理者'
@@ -58,8 +59,42 @@ class CustomAdminSite(admin.AdminSite):
                     csv_file = form.cleaned_data['csv_file']
                     print(f"[DEBUG] CSV 파일명: {csv_file.name}")
                     
-                    decoded_file = TextIOWrapper(csv_file, encoding='utf-8')
-                    reader = csv.reader(decoded_file, delimiter=',')
+                    # 파일 내용을 바이트로 읽기
+                    csv_file.seek(0)
+                    file_content = csv_file.read()
+                    
+                    # 인코딩 자동 감지
+                    detected_encoding = chardet.detect(file_content)
+                    encoding = detected_encoding['encoding']
+                    confidence = detected_encoding['confidence']
+                    
+                    print(f"[DEBUG] 감지된 인코딩: {encoding} (신뢰도: {confidence:.2f})")
+                    
+                    # 일반적인 일본어 인코딩들 시도
+                    encodings_to_try = ['utf-8', 'shift_jis', 'cp932', 'euc-jp', 'iso-2022-jp']
+                    
+                    if encoding and confidence > 0.7:
+                        encodings_to_try.insert(0, encoding)
+                    
+                    decoded_content = None
+                    used_encoding = None
+                    
+                    for enc in encodings_to_try:
+                        try:
+                            decoded_content = file_content.decode(enc)
+                            used_encoding = enc
+                            print(f"[DEBUG] 성공적으로 디코딩됨: {enc}")
+                            break
+                        except UnicodeDecodeError as e:
+                            print(f"[DEBUG] {enc} 디코딩 실패: {e}")
+                            continue
+                    
+                    if decoded_content is None:
+                        raise Exception(f"CSV 파일의 인코딩을 감지할 수 없습니다. 지원되는 인코딩: {', '.join(encodings_to_try)}")
+                    
+                    # StringIO로 변환하여 CSV 리더 사용
+                    csv_string = StringIO(decoded_content)
+                    reader = csv.reader(csv_string, delimiter=',')
                     duplicated = []
                     created = 0
                     
@@ -111,6 +146,8 @@ class CustomAdminSite(admin.AdminSite):
                             continue
                             
                     msg = f"{created}名の従業員を追加しました。"
+                    if used_encoding:
+                        msg += f" (使用エンコード: {used_encoding})"
                     if duplicated:
                         msg += f"\n以下の社員番号は既に存在するため追加されませんでした:\n" + '\n'.join(duplicated)
                         messages.warning(request, msg.replace('\n', '<br>'))
@@ -133,7 +170,14 @@ class CustomAdminSite(admin.AdminSite):
             print(f"[ERROR] CSV 업로드 중 예외 발생: {e}")
             import traceback
             traceback.print_exc()
-            messages.error(request, f'CSV 업로드 중 오류가 발생했습니다: {str(e)}')
+            
+            # 인코딩 관련 오류인지 확인
+            if 'codec' in str(e).lower() or 'decode' in str(e).lower():
+                error_msg = f'CSV 파일의 인코딩을 감지할 수 없습니다. 파일이 UTF-8, Shift_JIS, CP932 중 하나로 저장되어 있는지 확인해주세요. (오류: {str(e)})'
+            else:
+                error_msg = f'CSV 업로드 중 오류가 발생했습니다: {str(e)}'
+            
+            messages.error(request, error_msg)
             return HttpResponseRedirect(reverse('admin:attendance_employee_changelist'))
 
     def position_management_view(self, request):
