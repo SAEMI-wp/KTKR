@@ -176,20 +176,59 @@ class CustomAdminSite(admin.AdminSite):
                             # 직위코드에 따른 그룹 설정
                             position_group = None
                             if position_code:
-                                position_mapping = {
-                                    '1': '社長',
-                                    '2': '役員', 
-                                    '100': '部長',
-                                    '101': '担当部長',
-                                    '102': '主幹技師',
-                                    '104': '技師',
-                                    '105': '企画員',
-                                    '106': '社員',
-                                }
-                                group_name = position_mapping.get(position_code)
-                                if group_name:
-                                    position_group, created_group = Group.objects.get_or_create(name=group_name)
-                                    print(f"[DEBUG] 직위코드 {position_code} -> 그룹 {group_name}")
+                                # 직급 코드를 특정 ID로 매핑
+                                try:
+                                    position_id = int(position_code)
+                                    # 특정 ID 매핑
+                                    position_mapping = {
+                                        1: '社長',
+                                        2: '役員', 
+                                        100: '部長',
+                                        101: '担当部長',
+                                        102: '主幹技師',
+                                        104: '技師',
+                                        105: '企画員',
+                                        106: '社員',
+                                    }
+                                    
+                                    if position_id in position_mapping:
+                                        group_name = position_mapping[position_id]
+                                        # 먼저 ID로 그룹이 있는지 확인
+                                        try:
+                                            position_group = Group.objects.get(id=position_id)
+                                            print(f"[DEBUG] 기존 그룹 발견: ID {position_id} ({position_group.name})")
+                                        except Group.DoesNotExist:
+                                            # ID가 없으면 raw SQL로 생성
+                                                                                     # AUTO_INCREMENT가 제거되었으므로 직접 ID 설정 가능
+                                         position_group = Group(id=position_id, name=group_name)
+                                         position_group.save()
+                                         print(f"[DEBUG] 직위코드 {position_code} -> 그룹 ID {position_id} ({position_group.name}) 생성됨")
+                                    else:
+                                        # ID가 없으면 이름으로 매핑 시도
+                                        group_name = position_mapping.get(position_code)
+                                        if group_name:
+                                            position_group, created_group = Group.objects.get_or_create(name=group_name)
+                                            print(f"[DEBUG] 직위코드 {position_code} -> 그룹명 {group_name} (ID: {position_group.id})")
+                                        else:
+                                            print(f"[WARNING] 직위코드 {position_code}에 해당하는 그룹을 찾을 수 없습니다.")
+                                except ValueError:
+                                    # 숫자가 아닌 경우 이름으로 매핑
+                                    position_mapping = {
+                                        '1': '社長',
+                                        '2': '役員', 
+                                        '100': '部長',
+                                        '101': '担当部長',
+                                        '102': '主幹技師',
+                                        '104': '技師',
+                                        '105': '企画員',
+                                        '106': '社員',
+                                    }
+                                    group_name = position_mapping.get(position_code)
+                                    if group_name:
+                                        position_group, created_group = Group.objects.get_or_create(name=group_name)
+                                        print(f"[DEBUG] 직위코드 {position_code} -> 그룹명 {group_name} (ID: {position_group.id})")
+                                    else:
+                                        print(f"[WARNING] 직위코드 {position_code}에 해당하는 그룹을 찾을 수 없습니다.")
                             
                             if existing_employee:
                                 # 기존 직원 정보 업데이트 (변경된 필드만)
@@ -326,12 +365,23 @@ class CustomAdminSite(admin.AdminSite):
                 position_name = request.POST.get('position_name', '').strip()
                 
                 if position_code and position_name:
-                    # 코드 중복 체크
-                    if Group.objects.filter(name=position_name).exists():
-                        messages.warning(request, f'職級名 "{position_name}" は既に存在します。')
-                    else:
-                        group = Group.objects.create(name=position_name)
-                        messages.success(request, f'職級 "{position_name}" (コード: {position_code}) を追加しました。')
+                    try:
+                        position_id = int(position_code)
+                        
+                        # ID 중복 체크
+                        if Group.objects.filter(id=position_id).exists():
+                            messages.warning(request, f'職級コード "{position_code}" (ID: {position_id}) 天下之既に存在します。')
+                        # 이름 중복 체크
+                        elif Group.objects.filter(name=position_name).exists():
+                            messages.warning(request, f'職級名 "{position_name}" 天下之既に存在します。')
+                        else:
+                            # AUTO_INCREMENT가 제거되었으므로 직접 ID 설정 가능
+                            group = Group(id=position_id, name=position_name)
+                            group.save()
+                            messages.success(request, f'職級 "{position_name}" (コード: {position_code}, ID: {position_id}) 天下之追加しました。')
+                            print(f"[DEBUG] 직급 생성: ID {position_id} -> {position_name}")
+                    except ValueError:
+                        messages.error(request, '職級コードは数字でなければなりません。')
                 else:
                     messages.error(request, '職級コードと職級名を入力してください。')
             
@@ -371,32 +421,46 @@ class CustomAdminSite(admin.AdminSite):
                     messages.error(request, '指定された職級が見つかりません。')
             
             elif action == 'add_defaults':
-                # 기본 직급 일괄 등록
+                # 기본 직급 일괄 등록 (AUTO_INCREMENT 제거 후 간단한 방식)
                 default_positions = {
-                    '1': '社長',
-                    '2': '役員', 
-                    '100': '部長',
-                    '101': '担当部長',
-                    '102': '主幹技師',
-                    '104': '技師',
-                    '105': '企画員',
-                    '106': '社員',
+                    1: '社長',
+                    2: '役員', 
+                    100: '部長',
+                    101: '担当部長',
+                    102: '主幹技師',
+                    104: '技師',
+                    105: '企画員',
+                    106: '社員',
                 }
                 
-                added_count = 0
-                skipped_positions = []
+                # 기존 그룹들을 모두 삭제 (직원이 없는 경우만)
+                existing_groups = Group.objects.all()
+                deleted_count = 0
+                for group in existing_groups:
+                    if group.user_set.count() == 0:  # 직원이 없는 그룹만 삭제
+                        group.delete()
+                        deleted_count += 1
+                        print(f"[DEBUG] 기존 그룹 삭제: ID {group.id} -> {group.name}")
                 
-                for code, name in default_positions.items():
-                    if not Group.objects.filter(name=name).exists():
-                        Group.objects.create(name=name)
+                if deleted_count > 0:
+                    print(f"[DEBUG] {deleted_count}개 기존 그룹 삭제됨")
+                
+                # 특정 ID로 그룹 생성 (AUTO_INCREMENT 제거 후 간단한 방식)
+                added_count = 0
+                for position_id, name in default_positions.items():
+                    try:
+                        # AUTO_INCREMENT가 제거되었으므로 직접 ID 설정 가능
+                        group = Group(id=position_id, name=name)
+                        group.save()
                         added_count += 1
-                    else:
-                        skipped_positions.append(name)
+                        print(f"[DEBUG] 직급 생성: ID {position_id} -> {name}")
+                    except Exception as e:
+                        print(f"[ERROR] 직급 생성 실패: ID {position_id} -> {name}, 오류: {e}")
                 
                 if added_count > 0:
                     messages.success(request, f'{added_count}個の基本職級を追加しました。')
-                if skipped_positions:
-                    messages.info(request, f'既に存在する職級: {", ".join(skipped_positions)}')
+                    if deleted_count > 0:
+                        messages.info(request, f'{deleted_count}個の既存職級を削除しました。')
         
         # 현재 등록된 직급 목록 (직급명으로 정렬)
         groups = Group.objects.all().order_by('name')
@@ -416,7 +480,18 @@ class CustomAdminSite(admin.AdminSite):
         
         for group in groups:
             employee_count = group.user_set.count()
-            position_code = default_position_mapping.get(group.name, '未設定')
+            # 특정 ID 매핑 표시
+            position_mapping = {
+                1: '1',
+                2: '2', 
+                100: '100',
+                101: '101',
+                102: '102',
+                104: '104',
+                105: '105',
+                106: '106',
+            }
+            position_code = position_mapping.get(group.id, str(group.id))
             group_info.append({
                 'group': group,
                 'employee_count': employee_count,
