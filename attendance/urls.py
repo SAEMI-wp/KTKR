@@ -3,7 +3,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
     MainView, MonthlyAttendanceCreateView, MonthlyAttendanceUpdateView, DailyDataUpdateView, DailyDataGetView,
-    login_view, logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, PDFDownloadView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView,
+    login_view, logout_view, admin_logout_view, MonthlyAttendanceDeleteView, DailyAttendanceDeleteView, ExcelDownloadView, PDFPreviewView, PDFDownloadView, EmailSendView, password_change_view, copy_prev_month, DailyApproveView,
     CalendarPartialView, FormPartialView, MonthlyInfoSectionView, MonthlyDataAPIView, attendance_require_day
 )
 from .views.utility_views import email_candidates
@@ -15,6 +15,7 @@ urlpatterns = [
     path('', MainView.as_view(), name='main'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+    path('admin/logout/', admin_logout_view, name='admin_logout'),
     path('monthly/create/', MonthlyAttendanceCreateView.as_view(), name='monthly_create'),
     path('monthly/update/', MonthlyAttendanceUpdateView.as_view(), name='monthly_update'),
     path('monthly/delete/', MonthlyAttendanceDeleteView.as_view(), name='monthly_delete'),

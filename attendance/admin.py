@@ -26,6 +26,47 @@ class CustomAdminSite(admin.AdminSite):
         # is_active이고, 'attendance.can_access_admin' 권한이 있을 때만 접근 허용
         return request.user.is_active and request.user.has_perm('attendance.can_access_admin')
 
+    def get_app_list(self, request):
+        """
+        커스텀 사이드바 메뉴 구성
+        """
+        app_list = super().get_app_list(request)
+        
+        # 기존 "認証と認可" 섹션을 "管理メニュー"로 변경
+        for app in app_list:
+            if app['app_label'] == 'auth':
+                app['name'] = '管理メニュー'
+                app['has_module_perms'] = False  # 클릭 불가능하게 설정
+                # app_url을 완전히 제거하여 링크 자체를 없앰
+                if 'app_url' in app:
+                    del app['app_url']
+                
+                # 그룹 모델은 "職級管理"로 변경하되 클릭 가능하게 유지
+                for model in app['models']:
+                    if model['object_name'] == 'group':
+                        model['name'] = '職級管理'
+                        model['verbose_name'] = '職級管理'
+                        model['verbose_name_plural'] = '職級管理'
+                        # admin_url은 유지하여 클릭 가능하게 함
+                        # model['admin_url'] = '/admin/auth/group/'  # 기본 URL 유지
+                        model['add_url'] = None  # 추가 버튼만 비활성화
+                        model['view_only'] = False  # 읽기 전용 해제
+                        # 모델 메타데이터도 변경
+                        model['object_name'] = 'group'  # 원래 object_name 유지
+                        model['perms'] = {'add': False, 'change': True, 'delete': False, 'view': True}
+            
+            # Attendance 앱 섹션만 클릭 불가능하게 설정 (모델은 그대로 유지)
+            elif app['app_label'] == 'attendance':
+                app['has_module_perms'] = False  # 앱 섹션만 클릭 불가능
+                # app_url을 완전히 제거하여 앱 링크 자체를 없앰
+                if 'app_url' in app:
+                    del app['app_url']
+                
+                # 모델들은 그대로 유지 (従業員 등은 클릭 가능)
+                # 모델의 링크는 건드리지 않음
+        
+        return app_list
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -410,9 +451,17 @@ def get_employee_queryset_by_role(request, queryset):
     if '社長' in user_groups:
         return queryset
     elif '部長' in user_groups:
-        user_place = (user.place_work or '').strip()
-        # 모든 직원의 place_work를 split해서 포함 여부로 필터링
-        filtered = queryset.filter(place_work__icontains=user_place)
+        from .permissions import get_accessible_work_places
+        accessible_places = get_accessible_work_places(user)
+        print(f"[DEBUG] 部長 접근 가능 근무지: {accessible_places}")
+        
+        # 접근 가능한 근무지의 직원들만 필터링
+        from django.db.models import Q
+        place_filters = Q()
+        for place in accessible_places:
+            place_filters |= Q(place_work=place)
+        
+        filtered = queryset.filter(place_filters)
         print(f"[DEBUG] 部長 필터 결과: {filtered.count()}명, {[e.employee_no for e in filtered]}")
         return filtered
     return queryset.filter(employee_no=user.employee_no)
@@ -506,10 +555,10 @@ class EmployeeAdmin(admin.ModelAdmin):
             can_access = True
         else:
             user_groups = user.groups.values_list('name', flat=True)
-            # 部長: 같은 work_place 직원만 접근 가능  
+            # 部長: 근무지 그룹별 접근 권한 확인
             if '部長' in user_groups:
-                if obj.place_work == user.place_work:
-                    can_access = True
+                from .permissions import can_access_employee_data
+                can_access = can_access_employee_data(user, obj)
         if can_access:
             today = timezone.now().date()
             return format_html('<a class="button" href="/admin/employee/{}/detail/{}/{}/">勤怠詳細</a>', obj.employee_no, today.year, str(today.month).zfill(2))
@@ -553,7 +602,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
     def has_add_permission(self, request):
-        # 追加ボタンを非表示
+        # 追加ボタン을非表示
         return False
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
@@ -602,6 +651,47 @@ class HolidayCalendarAdmin(admin.ModelAdmin):
     list_filter = ('calendar_name', 'category')
     search_fields = ('calendar_name', 'category')
     ordering = ('calendar_name', 'date')
+
+# Group 모델을 CustomAdminSite에 등록
+from django.contrib.auth.admin import GroupAdmin
+
+# Group 모델의 verbose_name 변경
+Group._meta.verbose_name = '職級管理'
+Group._meta.verbose_name_plural = '職級管理'
+
+class CustomGroupAdmin(GroupAdmin):
+    """커스텀 그룹 관리 - ID 컬럼 추가"""
+    list_display = ('code', 'position')
+    list_display_links = ('code', 'position')
+    ordering = ('id',)
+    
+    class Media:
+        css = {
+            'all': ('attendance/css/custom_group_admin.css',)
+        }
+    
+    def code(self, obj):
+        """코드 컬럼"""
+        return obj.id
+    code.short_description = 'コード'
+    code.admin_order_field = 'id'
+    
+    def position(self, obj):
+        """직급 컬럼"""
+        return obj.name
+    position.short_description = '職級'
+    position.admin_order_field = 'name'
+    
+    def get_model_perms(self, request):
+        """모델 권한 설정"""
+        perms = super().get_model_perms(request)
+        # 모델의 verbose_name을 동적으로 변경
+        if hasattr(self.model, '_meta'):
+            self.model._meta.verbose_name = '職級管理'
+            self.model._meta.verbose_name_plural = '職級管理'
+        return perms
+
+custom_admin_site.register(Group, CustomGroupAdmin)
 
 class EmployeeCSVUploadForm(forms.Form):
     csv_file = forms.FileField(label='CSVファイルを選択')
