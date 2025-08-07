@@ -173,6 +173,43 @@ body {
     transform: scale(0.98);
 }
 
+/* 관리자 링크 스타일 */
+.admin-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.admin-link:hover {
+    transform: scale(1.02);
+    opacity: 0.8;
+}
+
+.admin-link .techave-logo {
+    cursor: pointer;
+}
+
+.admin-link .user-info {
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.admin-link .user-info:hover {
+    background-color: rgba(0, 90, 156, 0.1);
+}
+
+.admin-link .user-info i {
+    color: #005A9C;
+}
+
+.admin-link .user-info span {
+    color: #005A9C;
+    font-weight: 500;
+}
+
 /* Main Content */
 .main-content {
     background-color: #ffffff;
@@ -609,6 +646,7 @@ section h3 {
 .readonly-mode .monthly-info-panel {
     width: 300px;
     flex-shrink: 0;
+    position: relative;
 }
 
 .readonly-mode .calendar-panel {
@@ -676,6 +714,7 @@ section h3 {
     padding: 20px;
     margin-top: 15px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
 }
 
 .readonly-mode .info-row {
@@ -785,6 +824,7 @@ section h3 {
 /* 월 정보 컨테이너 항상 표시 */
 .readonly-mode #monthly-info-container {
     display: block !important;
+    position: relative;
 }
 
     
