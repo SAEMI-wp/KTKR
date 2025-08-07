@@ -45,18 +45,37 @@
         <div id="header">
             <header class="header">
                 <div class="header-left">
-                    <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo">
+                    {% if user|has_admin_access %}
+                        <a href="/admin" class="admin-link">
+                            <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo">
+                        </a>
+                    {% else %}
+                        <img src="{% static 'attendance/img/techave_logo.png' %}" alt="TechAve logo" class="techave-logo" id="techave-logo">
+                    {% endif %}
                 </div>
                 <div class="header-right">
                     <div class="user-info">
-                        <i class="fa-solid fa-user"></i>
-                        <span>
-                            {% if user.display_name %}
-                                {{ user.display_name }} ({{ user.employee_no }})
-                            {% else %}
-                                &nbsp;
-                            {% endif %}
-                        </span> 
+                        {% if user|has_admin_access %}
+                            <a href="/admin" class="admin-link">
+                                <i class="fa-solid fa-user"></i>
+                                <span>
+                                    {% if user.display_name %}
+                                        {{ user.display_name }} ({{ user.employee_no }})
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </span>
+                            </a>
+                        {% else %}
+                            <i class="fa-solid fa-user"></i>
+                            <span>
+                                {% if user.display_name %}
+                                    {{ user.display_name }} ({{ user.employee_no }})
+                                {% else %}
+                                    &nbsp;
+                                {% endif %}
+                            </span>
+                        {% endif %}
                     </div>
                     <a href="{% url 'attendance:password_change' %}" class="password-change-button"><i class="fa-solid fa-key"></i><span>パスワード変更</span></a>
                     <a href="{% url 'attendance:logout' %}" class="logout-button"><i class="fa-solid fa-right-from-bracket"></i><span>ログアウト</span></a>
