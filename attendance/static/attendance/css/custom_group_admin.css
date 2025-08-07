@@ -1,0 +1,69 @@
+/* 그룹 관리 페이지 커스텀 스타일 */
+.column-code {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+}
+
+.column-position {
+    width: auto !important;
+}
+
+/* 코드 컬럼 텍스트 중앙 정렬 */
+.column-code a,
+.column-code {
+    text-align: center !important;
+}
+
+/* 管理メニュー 앱 섹션만 클릭 불가능 */
+.app-auth .app-name {
+    color: #666 !important;
+    cursor: default !important;
+    text-decoration: none !important;
+    pointer-events: none !important;
+}
+
+.app-auth .app-name:hover {
+    color: #666 !important;
+    text-decoration: none !important;
+    background: none !important;
+}
+
+/* Attendance 앱 섹션만 클릭 불가능 */
+.app-attendance .app-name {
+    color: #666 !important;
+    cursor: default !important;
+    text-decoration: none !important;
+    pointer-events: none !important;
+}
+
+.app-attendance .app-name:hover {
+    color: #666 !important;
+    text-decoration: none !important;
+    background: none !important;
+}
+
+/* 앱 섹션의 링크만 차단 (모델은 제외) */
+.app-auth > .app-name,
+.app-attendance > .app-name {
+    pointer-events: none !important;
+}
+
+/* 모델들은 클릭 가능하게 유지 */
+.app-auth .model,
+.app-attendance .model {
+    pointer-events: auto !important;
+}
+
+.app-auth .model a,
+.app-attendance .model a {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    color: #447e9b !important;
+}
+
+.app-auth .model a:hover,
+.app-attendance .model a:hover {
+    color: #036 !important;
+    text-decoration: underline !important;
+}

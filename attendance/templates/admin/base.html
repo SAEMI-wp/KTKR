@@ -6,6 +6,6 @@
       {{ request.user.display_name }} ({{ request.user.employee_no }})
     </a>
     <a href="{% url 'attendance:password_change' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">パスワード変更</a>
-    <a href="{% url 'attendance:logout' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">ログアウト</a>
+    <a href="{% url 'attendance:admin_logout' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">ログアウト</a>
   </div>
 {% endblock %} 

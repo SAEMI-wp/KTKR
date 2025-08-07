@@ -23,6 +23,6 @@ def has_admin_access(user):
     
     # 사용자가 속한 그룹 이름들을 확인
     user_groups = [group.name for group in user.groups.all()]
-    admin_positions = ['사장', '이사', '부장']
+    admin_positions = ['社長', '役員', '部長']
     
     return any(position in user_groups for position in admin_positions) 
