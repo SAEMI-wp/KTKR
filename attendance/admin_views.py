@@ -15,17 +15,13 @@ import calendar
 from django.contrib.auth.models import Group, Permission
 from .views.main_views import get_holidays_for_months
 from .structures import DailyData, MonthlyData
-
-def admin_permission_required(view_func):
-    def _wrapped_view(request, *args, **kwargs):
-        user = request.user
-        if not (user.is_authenticated and user.is_active and user.has_perm('attendance.can_access_admin')):
-            raise PermissionDenied
-        return view_func(request, *args, **kwargs)
-    return _wrapped_view
+from .permissions import (
+    permission_required, group_permission_required, 
+    can_access_employee_data, PERMISSIONS
+)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def profile_view(request):
     """
     내 프로필 페이지: 성명, 사번, 근무지, 소속 그룹 표시
@@ -39,7 +35,7 @@ def profile_view(request):
     return render(request, 'admin/attendance/profile.html', context)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def attendance_overview(request):
     """
     근태관리 메인 페이지: 전체/부서별 월별 근태정보 표
@@ -53,7 +49,7 @@ def attendance_overview(request):
     return render(request, 'admin/attendance/attendance_overview.html', context)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_view(request):
     """
     給与明細書管理ページ: 月/年別一覧・PDF保存/印刷ボタン
@@ -65,6 +61,15 @@ def payroll_view(request):
     # 권한별 직원 필터링
     if user.is_superuser or user.groups.filter(name__in=['社長', '人事', '経理']).exists():
         employees = Employee.objects.filter(is_active=True)
+    elif user.groups.filter(name='部長').exists():
+        # 부장님은 급여명세서 접근 불가
+        from .permissions import get_accessible_work_places
+        accessible_places = get_accessible_work_places(user)
+        from django.db.models import Q
+        place_filters = Q()
+        for place in accessible_places:
+            place_filters |= Q(place_work=place)
+        employees = Employee.objects.filter(is_active=True).filter(place_filters)
     else:
         employees = Employee.objects.filter(is_active=True, employee_no=user.employee_no)
     # 급여명세서 데이터
@@ -94,23 +99,16 @@ def payroll_view(request):
     }
     return render(request, 'admin/attendance/payroll.html', context)
 
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def employee_detail_view(request, employee_no, year=None, month=None):
     try:
         user = request.user
         employee = get_object_or_404(Employee, employee_no=employee_no)
         
-        # superuser 또는 사장님(社長)은 무조건 허용
-        if user.is_superuser or '社長' in user.groups.values_list('name', flat=True):
-            pass
-        else:
-            # 部長：同じ work_place の従業員のみアクセス可能
-            user_groups = user.groups.values_list('name', flat=True)
-            if '部長' in user_groups:
-                # 대소문자 무시, 공백 제거로 비교
-                if employee.place_work.strip().lower() != user.place_work.strip().lower():
-                    raise PermissionDenied(f'勤務先({user.place_work})の情報だけ確認できます。')
-            else:
-                raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
+        # 권한 체크
+        if not can_access_employee_data(user, employee):
+            raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
         
         today = timezone.now().date()
         if not year:
@@ -319,7 +317,8 @@ def employee_detail_view(request, employee_no, year=None, month=None):
         raise
 
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def employee_monthly_data_check_view(request, employee_no):
     """직원의 월별 데이터 존재 여부를 확인하는 API"""
     try:
@@ -369,7 +368,8 @@ class PaySlipForm(forms.ModelForm):
             'notes': '備考',
         }
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_detail_view(request, employee_no, year, month):
     employee = get_object_or_404(Employee, employee_no=employee_no)
     payslip, created = PaySlip.objects.get_or_create(employee=employee, year=year, month=month)
@@ -388,7 +388,8 @@ def payroll_detail_view(request, employee_no, year, month):
     }
     return render(request, 'admin/attendance/payroll_detail.html', context)
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_pdf_download_view(request, employee_no, year, month):
     employee = get_object_or_404(Employee, employee_no=employee_no)
     payslip = get_object_or_404(PaySlip, employee=employee, year=year, month=month)
@@ -398,7 +399,8 @@ def payroll_pdf_download_view(request, employee_no, year, month):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def monthly_approval_action(request, monthly_id, action):
     monthly = get_object_or_404(AttendanceMonthly, pk=monthly_id)
     if action == 'request':
@@ -425,7 +427,8 @@ def monthly_approval_action(request, monthly_id, action):
         messages.error(request, '不正な操作です。')
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/admin/'))
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def daily_calendar_view(request, year=None, month=None):
     today = timezone.now().date()
     year = int(year) if year else today.year
