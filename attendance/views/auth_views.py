@@ -62,6 +62,13 @@ def logout_view(request):
     return redirect('attendance:login')
 
 
+# 管理者ログアウトビュー
+@login_required
+def admin_logout_view(request):
+    logout(request)
+    return redirect('admin:login')
+
+
 class PasswordChangeForm(forms.Form):
     old_password = forms.CharField(label='現在のパスワード', widget=forms.PasswordInput)
     new_password1 = forms.CharField(
