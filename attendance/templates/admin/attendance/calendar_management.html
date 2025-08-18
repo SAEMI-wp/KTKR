@@ -12,10 +12,50 @@
 <div class="calendar-management">
     <div class="section">
         <div class="section-header">
-            <h1 class="section-title">現場・カレンダー統合管理</h1>
+            <h2 class="section-title">カレンダー一覧・統計</h2>
         </div>
         <div class="section-content">
-            <p>現場別のカレンダーと休日を統合管理できます。期間を指定して一括で休日を登録したり、既存のカレンダー情報を確認できます。</p>
+            {% if calendar_stats %}
+            <div class="calendar-stats">
+                {% for stat in calendar_stats %}
+                <div class="calendar-card">
+                    <div class="calendar-name">{{ stat.calendar.calendar_name }}</div>
+                    <div class="calendar-details">
+                        {{ stat.calendar.start_time }} ~ {{ stat.calendar.end_time }}<br>
+                        稼働時間: {{ stat.calendar.work_hours }}時間<br>
+                        昼休み: {{ stat.calendar.lunch_time }}分
+                        {% if stat.calendar.etc %}
+                        <br>備考: {{ stat.calendar.etc }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-edit" onclick="editCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}', '{{ stat.calendar.start_time }}', '{{ stat.calendar.end_time }}', '{{ stat.calendar.work_hours }}', '{{ stat.calendar.lunch_time }}', '{{ stat.calendar.etc }}')">編集</button>
+                        <button type="button" class="btn btn-delete" onclick="deleteCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}')">削除</button>
+                    </div>
+                     
+                    <!-- HolidayCalendar 목록 표시 -->
+                    {% if stat.holidays %}
+                    <div class="holiday-list">
+                        <h4>休日一覧</h4>
+                        <div class="holiday-items">
+                            {% for holiday in stat.holidays %}
+                            <div class="holiday-item">
+                                <span class="holiday-date">{{ holiday.date|date:"m/d" }}</span>
+                                <span class="holiday-category">{{ holiday.category }}</span>
+                                <button type="button" class="btn btn-small btn-edit" onclick="editHoliday('{{ holiday.id }}', '{{ holiday.date|date:'Y-m-d' }}', '{{ holiday.category }}')">編集</button>
+                                <button type="button" class="btn btn-small btn-delete" onclick="deleteHoliday('{{ holiday.id }}')">削除</button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>登録されたカレンダーがありません。</p>
+            {% endif %}
         </div>
     </div>
 
@@ -85,8 +125,7 @@
                         {% endif %}
                     </div>
                 </div>
-                
-                                 <input type="hidden" name="edit_calendar_id" id="edit_calendar_id" value="">
+                 <input type="hidden" name="edit_calendar_id" id="edit_calendar_id" value="">
                  <button type="submit" class="btn-primary">カレンダーを作成・更新</button>
                  <button type="button" class="btn btn-secondary" onclick="resetForm()">新規作成</button>
             </form>
@@ -136,83 +175,6 @@
                 
                 <button type="submit" class="btn-primary">休日を一括登録</button>
             </form>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-header">
-            <h2 class="section-title">カレンダー一覧・統計</h2>
-        </div>
-        <div class="section-content">
-            {% if calendar_stats %}
-            <div class="calendar-stats">
-                {% for stat in calendar_stats %}
-                <div class="calendar-card">
-                    <div class="calendar-name">{{ stat.calendar.calendar_name }}</div>
-                                         <div class="calendar-details">
-                         {{ stat.calendar.start_time }} ~ {{ stat.calendar.end_time }}<br>
-                         稼働時間: {{ stat.calendar.work_hours }}時間<br>
-                         昼休み: {{ stat.calendar.lunch_time }}分
-                         {% if stat.calendar.etc %}
-                         <br>備考: {{ stat.calendar.etc }}
-                         {% endif %}
-                     </div>
-                    
-                    <div class="calendar-stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-number">{{ stat.holiday_count }}</div>
-                            <div class="stat-label">休日数</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">{{ stat.employee_count }}</div>
-                            <div class="stat-label">使用従業員数</div>
-                        </div>
-                    </div>
-                    
-                                         <div class="action-buttons">
-                         <button type="button" class="btn btn-edit" onclick="editCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}', '{{ stat.calendar.start_time }}', '{{ stat.calendar.end_time }}', '{{ stat.calendar.work_hours }}', '{{ stat.calendar.lunch_time }}', '{{ stat.calendar.etc }}')">編集</button>
-                         <button type="button" class="btn btn-delete" onclick="deleteCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}')">削除</button>
-                     </div>
-                     
-                     <!-- HolidayCalendar 목록 표시 -->
-                     {% if stat.holidays %}
-                     <div class="holiday-list">
-                         <h4>休日一覧</h4>
-                         <div class="holiday-items">
-                             {% for holiday in stat.holidays %}
-                             <div class="holiday-item">
-                                 <span class="holiday-date">{{ holiday.date|date:"m/d" }}</span>
-                                 <span class="holiday-category">{{ holiday.category }}</span>
-                                 <button type="button" class="btn btn-small btn-edit" onclick="editHoliday('{{ holiday.id }}', '{{ holiday.date|date:'Y-m-d' }}', '{{ holiday.category }}')">編集</button>
-                                 <button type="button" class="btn btn-small btn-delete" onclick="deleteHoliday('{{ holiday.id }}')">削除</button>
-                             </div>
-                             {% endfor %}
-                         </div>
-                     </div>
-                     {% endif %}
-                    
-                    <!-- HolidayCalendar 목록 표시 -->
-                    {% if stat.holidays %}
-                    <div class="holiday-list">
-                        <h4>休日一覧</h4>
-                        <div class="holiday-items">
-                            {% for holiday in stat.holidays %}
-                            <div class="holiday-item">
-                                <span class="holiday-date">{{ holiday.date|date:"m/d" }}</span>
-                                <span class="holiday-category">{{ holiday.category }}</span>
-                                <button type="button" class="btn btn-small btn-edit" onclick="editHoliday('{{ holiday.id }}', '{{ holiday.date|date:'Y-m-d' }}', '{{ holiday.category }}')">編集</button>
-                                <button type="button" class="btn btn-small btn-delete" onclick="deleteHoliday('{{ holiday.id }}')">削除</button>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p>登録されたカレンダーがありません。</p>
-            {% endif %}
         </div>
     </div>
 </div>
