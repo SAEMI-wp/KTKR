@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_permission_codename
 from django.contrib.auth.models import Group
 from django.urls import path
-from .models import Employee, AttendanceMonthly, AttendanceDaily, HolidayCalendar
+from .models import Employee, AttendanceMonthly, AttendanceDaily, HolidayCalendar, Calendar
 from .admin_views import profile_view, attendance_overview, payroll_view, employee_detail_view, payroll_detail_view, payroll_pdf_download_view, monthly_approval_action, daily_calendar_view, employee_monthly_data_check_view
 from django.utils.html import format_html
 from django.utils import timezone
@@ -16,6 +16,44 @@ from io import StringIO, TextIOWrapper, BytesIO
 from django.shortcuts import render
 from .utils import get_group_name_by_code
 import chardet
+
+# パスワード変更のためのカスタムフォーム
+class EmployeeChangeForm(forms.ModelForm):
+    """従業員情報変更のためのカスタムフォーム"""
+    password = forms.CharField(
+        label='パスワード',
+        widget=forms.PasswordInput,
+        required=False,
+        help_text='パスワードを変更する場合は新しいパスワードを入力してください。変更しない場合は空欄のままにしてください。'
+    )
+    
+    class Meta:
+        model = Employee
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # 既存のユーザーの場合はパスワードフィールドを空欄にする
+            self.fields['password'].help_text = 'パスワードを変更する場合は新しいパスワードを入力してください。変更しない場合は空欄のままにしてください。'
+            # 既存のパスワードフィールドの初期値を削除
+            self.fields['password'].initial = ''
+    
+    def save(self, commit=True):
+        employee = super().save(commit=False)
+        
+        # パスワードが入力された場合にのみ暗号化して保存
+        if self.cleaned_data.get('password'):
+            employee.set_password(self.cleaned_data['password'])
+            # パスワード変更のログを追加
+            print(f"[DEBUG] パスワード変更: {employee.employee_no}")
+        else:
+            # パスワードが入力されない場合は既存のパスワードを維持
+            print(f"[DEBUG] パスワード変更なし: {employee.employee_no}")
+        
+        if commit:
+            employee.save()
+        return employee
 
 class CustomAdminSite(admin.AdminSite):
     site_header = '勤怠・給与管理システム管理者'
@@ -544,6 +582,8 @@ def get_employee_queryset_by_role(request, queryset):
 @admin.register(Employee, site=custom_admin_site)
 class EmployeeAdmin(admin.ModelAdmin):
     """社員管理用のカスタムAdmin"""
+    form = EmployeeChangeForm  # カスタムフォームを適用
+    
     list_display = (
         'employee_no', 'last_name', 'first_name', 'place_work', 'position_groups', 'email', 'detail_button',
     )
@@ -553,15 +593,14 @@ class EmployeeAdmin(admin.ModelAdmin):
     
     # フィールドセットのカスタマイズ
     fieldsets = (
-        ('社員番号', {'fields': ('employee_no',)}),
-        ('名前', {'fields': ('last_name', 'first_name')}),
-        ('職級', {'fields': ('groups',)}),
-        ('勤務先', {'fields': ('place_work',)}),
-        ('メール', {'fields': ('email',)}),
-        ('権限', {
-            'fields': ('is_active', 'is_superuser', 'user_permissions'),
-            'description': 'システム管理者にチェックすると全ての権限が付与されます。職級に応じた基本権限は自動的に設定されます。'
+        ('社員情報', {
+            'fields': ('employee_no', 'password'),
+            'description': 'パスワードを変更する場合は新しいパスワードを入力してください。変更しない場合は空欄のままにしてください。'
         }),
+        ('個人情報', {'fields': ('first_name', 'last_name', 'email')}),
+        ('勤務情報', {'fields': ('place_work',)}),
+        ('権限', {'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions')}),
+        ('重要日付', {'fields': ('last_login',)}),
     )
     
     add_fieldsets = (
@@ -574,7 +613,6 @@ class EmployeeAdmin(admin.ModelAdmin):
     actions = ['retire_selected', 'delete_selected', 'restore_selected']
 
     change_list_template = "admin/attendance/employee_changelist.html"
-    add_form_template = "admin/attendance/employee_add_form.html"
 
     def get_queryset(self, request):
         """社員番号でソート"""
@@ -619,37 +657,10 @@ class EmployeeAdmin(admin.ModelAdmin):
     retire_action_button.allow_tags = True
 
     def formfield_for_dbfield(self, db_field, **kwargs):
-        """필드별 도움말과 라벨 커스터마이징"""
+        """employee_no 필드에 도움말 추가"""
         formfield = super().formfield_for_dbfield(db_field, **kwargs)
-        
         if db_field.name == 'employee_no':
             formfield.help_text = '6桁の社員番号を入力してください (例: 123456)'
-            formfield.label = '社員番号'
-        elif db_field.name == 'last_name':
-            formfield.label = '姓'
-            formfield.help_text = '姓を入力してください'
-        elif db_field.name == 'first_name':
-            formfield.label = '名'
-            formfield.help_text = '名を入力してください'
-        elif db_field.name == 'groups':
-            formfield.label = '職級'
-            formfield.help_text = '該当する職級を選択してください'
-        elif db_field.name == 'place_work':
-            formfield.label = '勤務先'
-            formfield.help_text = '勤務先を入力してください'
-        elif db_field.name == 'email':
-            formfield.label = 'メールアドレス'
-            formfield.help_text = 'メールアドレスを入力してください'
-        elif db_field.name == 'is_superuser':
-            formfield.label = 'システム管理者'
-            formfield.help_text = 'チェックすると全ての権限が付与されます'
-        elif db_field.name == 'is_active':
-            formfield.label = 'アクティブ'
-            formfield.help_text = 'チェックするとログイン可能になります'
-        elif db_field.name == 'user_permissions':
-            formfield.label = '個別権限'
-            formfield.help_text = '職級以外の追加権限を設定できます'
-            
         return formfield
 
     def detail_button(self, obj):
@@ -695,11 +706,9 @@ class EmployeeAdmin(admin.ModelAdmin):
             return self.fieldsets
         # 일반 사용자는 최소 필드만 표시
         return (
-            ('社員番号', {'fields': ('employee_no',)}),
-            ('名前', {'fields': ('last_name', 'first_name')}),
-            ('職級', {'fields': ('groups',)}),
-            ('勤務先', {'fields': ('place_work',)}),
-            ('メール', {'fields': ('email',)}),
+            ('社員情報', {'fields': ('employee_no', 'password')}),
+            ('個人情報', {'fields': ('first_name', 'last_name', 'email')}),
+            ('勤務情報', {'fields': ('place_work',)}),
         )
 
     def changelist_view(self, request, extra_context=None):
@@ -710,15 +719,42 @@ class EmployeeAdmin(admin.ModelAdmin):
         extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
         return super().changelist_view(request, extra_context=extra_context)
 
-    def add_view(self, request, form_url='', extra_context=None):
-        if extra_context is None:
-            extra_context = {}
-        extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
-        return super().add_view(request, form_url, extra_context)
-
-    #社員登録ボタンを非表示
     def has_add_permission(self, request):
-        return True
+        # 追加ボタン을非表示
+        return False
+    
+    def add_view(self, request, form_url='', extra_context=None):
+        """新しい従業員を追加するビュー - パスワードの暗号化処理"""
+        if not self.has_add_permission(request):
+            return self.response_post_save_add(request, None)
+        
+        if request.method == 'POST':
+            form = self.get_form(request, request.POST)
+            if form.is_valid():
+                employee = form.save(commit=False)
+                
+                # パスワードが入力された場合にのみ暗号化
+                if form.cleaned_data.get('password'):
+                    employee.set_password(form.cleaned_data['password'])
+                
+                employee.save()
+                form.save_m2m()  # Many-to-many 関係を保存
+                
+                self.log_addition(request, employee, [])
+                return self.response_post_save_add(request, employee)
+        else:
+            form = self.get_form(request)
+        
+        context = {
+            'title': '従業員追加',
+            'form': form,
+            'opts': self.model._meta,
+            'has_add_permission': True,
+        }
+        if extra_context:
+            context.update(extra_context)
+        
+        return render(request, 'admin/attendance/employee_add.html', context)
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
@@ -760,12 +796,26 @@ class AttendanceDailyAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         return []
 
-@admin.register(HolidayCalendar)
+@admin.register(Calendar, site=custom_admin_site)
+class CalendarAdmin(admin.ModelAdmin):
+    """カレンダー管理用のAdmin"""
+    list_display = ('id', 'calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time')
+    list_filter = ('calendar_name',)
+    search_fields = ('calendar_name',)
+    ordering = ('id',)
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time', 'etc')
+        }),
+    )
+
+@admin.register(HolidayCalendar, site=custom_admin_site)
 class HolidayCalendarAdmin(admin.ModelAdmin):
-    list_display = ('calendar_name', 'date', 'category')
-    list_filter = ('calendar_name', 'category')
-    search_fields = ('calendar_name', 'category')
-    ordering = ('calendar_name', 'date')
+    list_display = ('calendar_code', 'date', 'category')
+    list_filter = ('calendar_code', 'category')
+    search_fields = ('calendar_code__calendar_name', 'category')
+    ordering = ('calendar_code', 'date')
 
 # Group 모델을 CustomAdminSite에 등록
 from django.contrib.auth.admin import GroupAdmin
@@ -780,15 +830,11 @@ class CustomGroupAdmin(GroupAdmin):
     list_display_links = ('code', 'position')
     ordering = ('id',)
     
-    # 削除ボタンを非表示にする
-    def has_delete_permission(self, request, obj=None):
-        return False
-    
-    class Media:
-        css = {
-            'all': ('attendance/css/custom_group_admin.css',)
-        }
-        js = ('attendance/js/custom_group_admin.js',)
+    # CSS 파일 참조 제거 (파일이 존재하지 않을 수 있음)
+    # class Media:
+    #     css = {
+    #         'all': ('attendance/css/custom_group_admin.css',)
+    #     }
     
     def code(self, obj):
         """코드 컬럼"""
@@ -802,14 +848,10 @@ class CustomGroupAdmin(GroupAdmin):
     position.short_description = '職級'
     position.admin_order_field = 'name'
     
+    # get_model_perms 메서드 단순화 (500 에러 방지)
     def get_model_perms(self, request):
         """모델 권한 설정"""
-        perms = super().get_model_perms(request)
-        # 모델의 verbose_name을 동적으로 변경
-        if hasattr(self.model, '_meta'):
-            self.model._meta.verbose_name = '職級管理'
-            self.model._meta.verbose_name_plural = '職級管理'
-        return perms
+        return super().get_model_perms(request)
 
 custom_admin_site.register(Group, CustomGroupAdmin)
 

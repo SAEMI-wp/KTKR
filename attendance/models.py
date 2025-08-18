@@ -4,11 +4,11 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 
 class EmployeeManager(BaseUserManager):
     """
-    사용자 생성 매니저 클래스
+    ユーザー生成マネージャークラス
     """
     def create_user(self, employee_no, password=None, **extra_fields):
         if not employee_no:
-            raise ValueError('사원번호는 필수입니다.')
+            raise ValueError('社員番号は必須です。')
         user = self.model(employee_no=employee_no, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -21,7 +21,7 @@ class EmployeeManager(BaseUserManager):
 
 class Employee(AbstractBaseUser, PermissionsMixin):
     """
-    커스텀 User 모델: employee_no를 PK로 사용하며, username 대신 employee_no로 인증
+    カスタムユーザーモデル: employee_noをPKとして使用し、usernameの代わりにemployee_noで認証
     """
     employee_no = models.CharField(
         max_length=6,
@@ -40,10 +40,10 @@ class Employee(AbstractBaseUser, PermissionsMixin):
             ),
         ]
     )
-    # 이름 관련 필드
-    first_name = models.CharField(max_length=30, verbose_name='名前')
+    # 名前関連フィールド
+    first_name = models.CharField(max_length=30, verbose_name='名')
     last_name = models.CharField(max_length=30, verbose_name='姓')
-    # 기타 정보
+    # その他の情報
     place_work = models.CharField(verbose_name='勤務先', max_length=30, blank=True)
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
@@ -57,7 +57,7 @@ class Employee(AbstractBaseUser, PermissionsMixin):
         db_table = 'employee'
         db_table_comment = '社員情報テーブル'
         permissions = [
-            ('can_access_admin', '관리자 페이지 접근 권한'),
+            ('can_access_admin', '管理者ページへのアクセス権限'),
         ]
     def __str__(self):
         return f"{self.employee_no} - {self.last_name} {self.first_name}"
@@ -68,7 +68,7 @@ class Employee(AbstractBaseUser, PermissionsMixin):
         super().clean()
         if self.employee_no and not self.employee_no.isdigit():
             raise models.ValidationError({
-                'employee_no': '社員番号는6桁の数字で入力してください。'
+                'employee_no': '社員番号は6桁の数字で入力してください。'
             })
     # 管理者権限がある場合のみTrueを返す（admin用）
     @property
@@ -132,6 +132,7 @@ class AttendanceDaily(models.Model):
     notes = models.TextField(verbose_name='実施作業内容/備考', null=True, blank=True)
     is_confirmed = models.BooleanField(verbose_name='確認', default=False)
     is_required = models.BooleanField(default=False, verbose_name='承認申請中')
+    day_changed = models.BooleanField(verbose_name='日付変更', default=False, null=False)
     
     class Meta:
         verbose_name = '日別勤怠'
@@ -145,6 +146,31 @@ class AttendanceDaily(models.Model):
 
     def __str__(self):
         return f"{int(self.monthly_attendance.employee.employee_no):06d} - {self.date}"
+
+class Calendar(models.Model):
+    """
+    カレンダーモデル
+    """
+    id = models.AutoField(primary_key=True, verbose_name='ID')
+    calendar_name = models.CharField(
+        verbose_name='現場', 
+        max_length=20, 
+        null=False, 
+        unique=True
+    )
+    start_time = models.TimeField(verbose_name='開始時刻', null=False)
+    end_time = models.TimeField(verbose_name='終了時刻', null=False)
+    work_hours = models.FloatField(verbose_name='稼働時間(Hr)', null=False)
+    lunch_time = models.PositiveSmallIntegerField(verbose_name='昼休み(分)', null=False)
+    etc = models.TextField(verbose_name='備考', blank=True)
+
+    class Meta:
+        verbose_name = 'カレンダー'
+        verbose_name_plural = 'カレンダー'
+        db_table = 'カレンダー'
+
+    def __str__(self):
+        return f"{self.calendar_name} - {self.start_time}~{self.end_time}"
 
 class PaidLeave(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='社員')
@@ -177,20 +203,20 @@ class PaySlip(models.Model):
         return f"{self.employee} {self.year}年{self.month}月 給与明細書"
 
 class HolidayCalendar(models.Model):
-    CALENDAR_CHOICES = [
-        ('共通', '共通'),
-        ('Techave', 'Techave'),
-        ('H大甕', 'H大甕'),
-    ]
-    calendar_name = models.CharField('カレンダー名', max_length=20, choices=CALENDAR_CHOICES)
+    calendar_code = models.ForeignKey(
+        Calendar, 
+        on_delete=models.CASCADE, 
+        verbose_name='カレンダー',
+        db_column='calendar_code'
+    )
     date = models.DateField('日付')
     category = models.CharField('区分', max_length=20)
 
     class Meta:
         db_table = 'holiday_calendar'
-        unique_together = ('calendar_name', 'date', 'category')
+        unique_together = ('calendar_code', 'date', 'category')
         verbose_name = '休日カレンダー'
         verbose_name_plural = '休日カレンダー一覧'
 
     def __str__(self):
-        return f"{self.calendar_name} {self.date} {self.category}"
+        return f"{self.calendar_code.calendar_name} {self.date} {self.category}"
