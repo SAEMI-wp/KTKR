@@ -1,5 +1,9 @@
 {% load static %}
 {% load attendance_extras %}
+<!-- CSS와 JavaScript 파일 참조 -->
+<link rel="stylesheet" href="{% static 'attendance/css/forms.css' %}">
+<script src="{% static 'attendance/js/time_utils.js' %}"></script>
+
 {# ===================== 勤怠登録フォームセクション partial ===================== #}
 <!-- 日々の勤怠登録セクション -->
 <section class="attendance-entry">
@@ -93,15 +97,29 @@
             </div>
             <div class="form-group">
                 <label for="{{ daily_form.start_time.id_for_label }}">作業開始時刻</label>
-                <input type="time" name="start_time" id="{{ daily_form.start_time.id_for_label }}" 
-                       value="{% if selected_daily_data and selected_daily_data.start_time %}{{ selected_daily_data.start_time|time:'H:i' }}{% endif %}"
-                       {% if not monthly_data %}disabled{% endif %}>
+                <div class="time-input-group">
+                    <input type="time" name="start_time" id="{{ daily_form.start_time.id_for_label }}" 
+                           value="{% if selected_daily_data and selected_daily_data.start_time %}{{ selected_daily_data.start_time|time:'H:i' }}{% endif %}"
+                           {% if not monthly_data %}disabled{% endif %}
+                           class="time-input">
+                    <button type="button" class="current-time-btn" onclick="setCurrentTimeForStartTime('{{ daily_form.start_time.id_for_label }}', '{{ daily_form.end_time.id_for_label }}')" 
+                            {% if not monthly_data %}disabled{% endif %}>
+                        現在
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
-                <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
-                       value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
-                       {% if not monthly_data %}disabled{% endif %}>
+                <div class="time-input-group">
+                    <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
+                           value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
+                           {% if not monthly_data %}disabled{% endif %}
+                           class="time-input">
+                    <button type="button" class="current-time-btn" onclick="setCurrentTimeForEndTime('{{ daily_form.end_time.id_for_label }}')"
+                            {% if not monthly_data %}disabled{% endif %}>
+                        現在
+                    </button>
+                </div>
             </div>
             <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
             <div class="form-group" id="alt-work-date-group">
