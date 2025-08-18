@@ -1,0 +1,239 @@
+/* 現場・カレンダー統合管理ページ用CSS */
+
+.calendar-management {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.section-header {
+    background: #f8f9fa;
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.section-title {
+    margin: 0;
+    color: #495057;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.section-content {
+    padding: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+}
+
+.form-group .help-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.calendar-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.calendar-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    transition: transform 0.2s;
+}
+
+.calendar-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.calendar-name {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.calendar-details {
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.calendar-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.stat-number {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.action-buttons {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    display: inline-block;
+}
+
+.btn-edit {
+    background: #28a745;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #218838;
+    color: white;
+}
+
+.btn-holidays {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-holidays:hover {
+    background: #138496;
+    color: white;
+}
+
+.messages {
+    margin-bottom: 20px;
+}
+
+.message {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.message.warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .calendar-management {
+        padding: 10px;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .calendar-stats {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .section-header,
+    .section-content {
+        padding: 15px;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        padding: 15px;
+    }
+}
