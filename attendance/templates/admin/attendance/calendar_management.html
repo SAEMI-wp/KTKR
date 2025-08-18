@@ -169,10 +169,27 @@
                         </div>
                     </div>
                     
-                    <div class="action-buttons">
-                        <button type="button" class="btn btn-edit" onclick="editCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}', '{{ stat.calendar.start_time }}', '{{ stat.calendar.end_time }}', '{{ stat.calendar.work_hours }}', '{{ stat.calendar.lunch_time }}', '{{ stat.calendar.etc }}')">編集</button>
-                        <button type="button" class="btn btn-delete" onclick="deleteCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}')">削除</button>
-                    </div>
+                                         <div class="action-buttons">
+                         <button type="button" class="btn btn-edit" onclick="editCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}', '{{ stat.calendar.start_time }}', '{{ stat.calendar.end_time }}', '{{ stat.calendar.work_hours }}', '{{ stat.calendar.lunch_time }}', '{{ stat.calendar.etc }}')">編集</button>
+                         <button type="button" class="btn btn-delete" onclick="deleteCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}')">削除</button>
+                     </div>
+                     
+                     <!-- HolidayCalendar 목록 표시 -->
+                     {% if stat.holidays %}
+                     <div class="holiday-list">
+                         <h4>休日一覧</h4>
+                         <div class="holiday-items">
+                             {% for holiday in stat.holidays %}
+                             <div class="holiday-item">
+                                 <span class="holiday-date">{{ holiday.date|date:"m/d" }}</span>
+                                 <span class="holiday-category">{{ holiday.category }}</span>
+                                 <button type="button" class="btn btn-small btn-edit" onclick="editHoliday('{{ holiday.id }}', '{{ holiday.date|date:'Y-m-d' }}', '{{ holiday.category }}')">編集</button>
+                                 <button type="button" class="btn btn-small btn-delete" onclick="deleteHoliday('{{ holiday.id }}')">削除</button>
+                             </div>
+                             {% endfor %}
+                         </div>
+                     </div>
+                     {% endif %}
                     
                     <!-- HolidayCalendar 목록 표시 -->
                     {% if stat.holidays %}
