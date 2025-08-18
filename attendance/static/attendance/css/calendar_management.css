@@ -211,6 +211,64 @@
     border: 1px solid #f5c6cb;
 }
 
+/* Holiday 목록 스타일 */
+.holiday-list {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.holiday-list h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 1.1em;
+}
+
+.holiday-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.holiday-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.holiday-date {
+    font-weight: 600;
+    color: #495057;
+    min-width: 40px;
+}
+
+.holiday-category {
+    color: #6c757d;
+    min-width: 60px;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+    color: white;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .calendar-management {
@@ -235,5 +293,13 @@
     .btn-primary {
         width: 100%;
         padding: 15px;
+    }
+    
+    .holiday-items {
+        flex-direction: column;
+    }
+    
+    .holiday-item {
+        justify-content: space-between;
     }
 }
