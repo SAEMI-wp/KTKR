@@ -578,8 +578,6 @@ class CustomAdminSite(admin.AdminSite):
                 start_date = form.cleaned_data['start_date']
                 end_date = form.cleaned_data['end_date']
                 category = form.cleaned_data['category']
-                description = form.cleaned_data['description']
-                is_recurring = form.cleaned_data['is_recurring']
                 
                 # 日付範囲で休日を一括登録
                 from datetime import date, timedelta
@@ -599,9 +597,7 @@ class CustomAdminSite(admin.AdminSite):
                         holiday = HolidayCalendar(
                             calendar_code=calendar,
                             date=current_date,
-                            category=category,
-                            description=description,
-                            is_recurring=is_recurring
+                            category=category
                         )
                         holiday.save()
                         created_count += 1
@@ -918,14 +914,14 @@ class CalendarAdmin(admin.ModelAdmin):
 @admin.register(HolidayCalendar, site=custom_admin_site)
 class HolidayCalendarAdmin(admin.ModelAdmin):
     """現場別休日管理用のAdmin"""
-    list_display = ('calendar_code', 'date', 'category', 'day_name', 'description')
+    list_display = ('calendar_code', 'date', 'category', 'day_name')
     list_filter = ('calendar_code', 'category', 'date')
-    search_fields = ('calendar_code__calendar_name', 'category', 'description')
+    search_fields = ('calendar_code__calendar_name', 'category')
     ordering = ('calendar_code', 'date')
     
     fieldsets = (
         ('基本情報', {
-            'fields': ('calendar_code', 'date', 'category', 'description')
+            'fields': ('calendar_code', 'date', 'category')
         }),
     )
     
@@ -1004,14 +1000,4 @@ class CalendarManagementForm(forms.Form):
         label='区分',
         initial='祝日'
     )
-    description = forms.CharField(
-        label='説明',
-        max_length=100,
-        required=False,
-        help_text='休日の説明を入力してください'
-    )
-    is_recurring = forms.BooleanField(
-        label='毎年繰り返し',
-        required=False,
-        help_text='毎年同じ日付で繰り返す場合はチェックしてください'
-    )
+
