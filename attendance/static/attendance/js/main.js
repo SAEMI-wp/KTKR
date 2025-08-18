@@ -213,30 +213,30 @@ async function handleMonthlyInfoToggle() {
 
 // 初期状態をDOMから読み取り
 function initializeState() {
-    // window.initialData에서 초기값 가져오기
+    // window.initialDataからパースされた初期値を取得
     if (window.initialData) {
         currentState.selectedDate = window.initialData.selectedDate;
         currentState.calendarYear = window.initialData.currentYear;
         currentState.calendarMonth = window.initialData.currentMonth;
         currentState.defaultDay = window.initialData.defaultDay;
         
-        // 백업본 호환성
+        // バックアップ互換性
         currentYear = currentState.calendarYear;
         currentMonth = currentState.calendarMonth;
         } else {
-        // fallback: DOM에서 읽기
+        // fallback: DOMから読み取り
         const dayDisplayEl = document.getElementById('day-display');
         const currentMonthDisplayEl = document.getElementById('current-month-display');
         
         if (dayDisplayEl) {
             const displayText = dayDisplayEl.textContent.trim();
-            // 일본어 형식 (2025年8月1日) 처리
+            // 日本語形式 (2025年8月1日) 処理
             const japaneseMatch = displayText.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
             if (japaneseMatch) {
                 const [, year, month, day] = japaneseMatch;
                 currentState.selectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             } else if (displayText.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
-                // 기존 YYYY/MM/DD 형식 처리
+                // YYYY/MM/DD形式の処理
                 const [year, month, day] = displayText.split('/').map(Number);
                 currentState.selectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             }
@@ -253,10 +253,10 @@ function initializeState() {
         currentState.defaultDay = today.getDate();
     }
     
-    // DOM이 로드된 후 폼 초기화 확인
+    // DOMが読み込まれた後にフォームの初期化を確認
     const dayDisplayEl = document.getElementById('day-display');
     if (dayDisplayEl && (!dayDisplayEl.textContent || dayDisplayEl.textContent.trim() === '')) {
-        console.log('[STATE] day-display가 비어있음, 강제 업데이트');
+        console.log('[STATE] day-displayが空です, 強制的に更新');
         if (currentState.selectedDate) {
             const parsedDate = parseDate(currentState.selectedDate);
             const year = parsedDate.getFullYear();
@@ -709,12 +709,12 @@ async function updateFormSection(selectedDate) {
     }
 }
 
-// カレンダー섹ション 업데이트  (show_list 파라미터 항상 전달)
+// カレンダーセクション更新  (show_list パラメーターは常に渡す)
 async function updateCalendarSection(year, month, showListParam = null, toggleState = null) {
     console.log(`[CALENDAR] カレンダー更新: ${year}-${month}`);
     
     try {
-        // 파라미터가 없으면 localStorage에서 가져오기
+        // パラメーターがない場合はlocalStorageから取得
         if (showListParam === null) {
             const isListTabActive = localStorage.getItem('selectedTab') === 'list';
             showListParam = isListTabActive ? '1' : '0';
@@ -725,14 +725,14 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
         
         const url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}&toggle_state=${toggleState}`;
         
-        // AJAX 요청
+        // AJAXリクエスト
         const response = await fetchWithCsrf(url);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const html = await response.text();
         
-        // 임시 div를 만들어서 HTML 파싱
+        // 一時的なdivを作成してHTMLを解析
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
@@ -743,26 +743,26 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
             const toggleButtons = tempDiv.querySelectorAll('.toggle-btn, .copy-prev-month-btn');
             const tabSwitcher = tempDiv.querySelector('.tab-switcher');
             
-            // 기본 구조 업데이트
+            // 基本構造の更新
             calendarSection.innerHTML = '';
             
-            // 날짜 선택기 추가
+            // 日付選択コンテナの追加
             if (dateSelector) {
                 calendarSection.appendChild(dateSelector.cloneNode(true));
             }
             
-            // 토글 버튼들 추가
+            // トグルボタンの追加
             toggleButtons.forEach(btn => {
                 const clonedBtn = btn.cloneNode(true);
                 calendarSection.appendChild(clonedBtn);
             });
             
-            // 월정보 컨테이너 추가 (빈 상태로)
+            // 月情報コンテナの追加 (空の状態で)
             if (monthlyInfoContainer) {
                 calendarSection.appendChild(monthlyInfoContainer.cloneNode(true));
             }
             
-            // 탭 스위처 추가 (항상 표시)
+            // タブスイッチの追加 (常に表示)
             if (tabSwitcher) {
                 const clonedTabSwitcher = tabSwitcher.cloneNode(true);
                 calendarSection.appendChild(clonedTabSwitcher);
@@ -887,14 +887,14 @@ function handleListRowClick(event) {
     
     populateFormWithData(dailyData, finalWorkType);
     
-    // 캘린더 하이라이트 업데이트 (같은 월인 경우)
+    // カレンダーハイライト更新 (同じ月の場合)
     const selectedDate = parseDate(date);
     if (selectedDate.getFullYear() === currentState.calendarYear && 
         (selectedDate.getMonth() + 1) === currentState.calendarMonth) {
         updateCalendarHighlight();
     }
     
-    // 월정보 경고 상태 업데이트 (새로 추가)
+    // 月情報警告状態の更新 (新規追加)
     updateMonthlyDataWarning(date);
 }
 
@@ -903,7 +903,7 @@ function handleCalendarCellClick(event) {
     const cell = event.currentTarget;
     let date = cell.dataset.date;
     
-    // data-date가 없으면 계산
+    // data-dateがない場合は計算
     if (!date) {
         const dateNumber = cell.querySelector('.date-number');
         if (dateNumber && !cell.classList.contains('other-month')) {
@@ -916,22 +916,22 @@ function handleCalendarCellClick(event) {
     
     console.log(`[CELL] セルクリック: ${date}`);
     
-    // 선택된 날짜 상태 즉시 업데이트
+    // 選択された日付の状態を即時更新
     currentState.selectedDate = date;
     
-    // 즉시 하이라이트 업데이트 (폼 업데이트 전에)
+    // 即時にハイライトを更新 (フォーム更新前に)
     updateCalendarHighlight();
     
-    // 폼 업데이트 (선택된 날짜 변경)
+    // フォーム更新 (選択された日付の変更)
     updateFormSection(date);
     
-    // 월정보 경고 상태 업데이트 (새로 추가)
+    // 月情報警告状態の更新 (新規追加)
     updateMonthlyDataWarning(date);
 }
 
 
 
-// Day Arrow 버튼 처리
+// Day Arrowボタンの処理
 function handleDayArrowClick(direction) {
     console.log(`[DAY_ARROW] 시작: ${direction}, 현재 선택일: ${currentState.selectedDate}`);
     
@@ -960,30 +960,30 @@ function handleDayArrowClick(direction) {
     
     console.log(`[DAY_ARROW] 日付移動: ${currentState.selectedDate} → ${newDateStr}`);
     
-    // 월이 바뀌었고, 현재 캘린더와 선택일의 년월이 같을 때만 캘린더도 이동
+    // 月が変わり、現在のカレンダーと選択日の年月が同じ場合にのみカレンダーも移動
     const currentSelectedDate = parseDate(currentState.selectedDate);
     const currentSelectedYear = currentSelectedDate.getFullYear();
     const currentSelectedMonth = currentSelectedDate.getMonth() + 1;
     
     if (newYear !== currentSelectedYear || newMonth !== currentSelectedMonth) {
-        // 월 경계를 넘어섰음
+        // 月境界を越えた
         if (currentSelectedYear === currentState.calendarYear && currentSelectedMonth === currentState.calendarMonth) {
-            // 현재 캘린더와 선택일이 같은 년월이면 캘린더도 함께 이동
+            // 現在のカレンダーと選択日が同じ年月であればカレンダーも同時に移動
             console.log(`[DAY_ARROW] 月境界越え - カレンダーも移動: ${newYear}-${newMonth}`);
             updateCalendarSection(newYear, newMonth);
         }
     }
     
-    // 상태 먼저 업데이트
+    // 状態を先に更新
     currentState.selectedDate = newDateStr;
     
-    // 폼 업데이트
+    // フォーム更新
     updateFormSection(newDateStr);
     
-    // 월정보 경고 상태 업데이트 (새로 추가)
+    // 月情報警告状態の更新 (新規追加)
     updateMonthlyDataWarning(newDateStr);
     
-    // 캘린더가 같은 년월이면 하이라이트 업데이트
+    // カレンダーが同じ年月であればハイライトを更新
     if (newYear === currentState.calendarYear && newMonth === currentState.calendarMonth) {
         setTimeout(() => {
             updateCalendarHighlight();
@@ -1027,7 +1027,7 @@ function handleMonthNavigation(direction) {
     updateCalendarSection(newYear, newMonth, showListParam, toggleState);
 }
 
-// フォーム提出처리
+// フォーム提出処理
 async function handleFormSubmit(event) {
     event.preventDefault();
     console.log('[FORM] フォーム提出');
@@ -1035,7 +1035,7 @@ async function handleFormSubmit(event) {
     const form = event.target;
     const formData = new FormData(form);
     
-    // 1. 선택된 날짜의 월 정보 확인
+    // 1. 選択された日付の月情報を確認
     console.log('[FORM] 선택된 날짜:', currentState.selectedDate);
     
     const hasMonthlyData = await checkMonthlyDataForSelectedDate(currentState.selectedDate);
@@ -1062,7 +1062,7 @@ async function handleFormSubmit(event) {
         return;
     }
     
-    // 3. 근무 시간 체크 (출근, 퇴근, 대체근무, 대체출근인 경우)
+    // 3. 勤務時間のチェック (出勤, 退勤, 代休, 代休退勤の場合)
     const startTime = formData.get('start_time');
     const endTime = formData.get('end_time');
     const workTypesRequiringTime = ['出勤', '代休(勤)', '振替(勤)'];
@@ -1084,11 +1084,11 @@ async function handleFormSubmit(event) {
     // 警告メッセージを非表示
     hideFormWarning();
     
-    // 실제 제출 로직
+    // 実際の提出ロジック
     submitDailyData(formData);
 }
 
-// 선택된 날짜의 월 정보 확인
+// 選択された日付の月情報を確認
 async function checkMonthlyDataForSelectedDate(selectedDate) {
     if (!selectedDate) {
         console.warn('[FORM] 선택된 날짜가 없습니다');
@@ -1096,7 +1096,7 @@ async function checkMonthlyDataForSelectedDate(selectedDate) {
     }
     
     try {
-        // 날짜 형식 통일 (YYYY年M月D日 -> YYYY-MM-DD)
+        // 日付形式の統一 (YYYY年M月D日 -> YYYY-MM-DD)
         let normalizedDate = selectedDate;
         if (selectedDate.includes('年') && selectedDate.includes('月')) {
             const match = selectedDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
@@ -1154,16 +1154,16 @@ async function checkMonthlyDataForSelectedDate(selectedDate) {
     }
 }
 
-// 일일 데이터 제출
+// 日次データの提出
 async function submitDailyData(formData) {
     try {
-        // FormData를 JSON으로 변환
+        // FormDataをJSONに変換
         const jsonData = {};
         for (const [key, value] of formData.entries()) {
             jsonData[key] = value;
         }
         
-        // 현재 선택된 날짜에서 년, 월, 일 추출
+        // 現在の選択日付から年、月、日を抽出
         if (currentState.selectedDate) {
             const dateParts = currentState.selectedDate.split('-');
             jsonData.year = dateParts[0];
@@ -1183,9 +1183,9 @@ async function submitDailyData(formData) {
         
         if (response.ok) {
             console.log('[FORM] データ提出成功');
-            // 성공 시 캘린더 새로고침
+            // 成功時にカレンダーを更新
             updateCalendarSection(currentState.calendarYear, currentState.calendarMonth);
-            // 현재 선택된 날짜의 폼도 갱신
+            // 現在の選択日付のフォームも更新
             if (currentState.selectedDate) {
                 updateFormSection(currentState.selectedDate);
             }
@@ -1201,20 +1201,20 @@ async function submitDailyData(formData) {
 
 // ===================== 탭 전환 관련 함수 =====================
 
-// 탭 전환 핸들러
+// タブ切り替えハンドラ
 async function handleTabSwitch(event) {
     event.preventDefault();
     const targetTab = event.currentTarget.id;
     const tabListBtn = document.getElementById('tab-list');
     if (targetTab === 'tab-list' && tabListBtn && tabListBtn.disabled) {
-        // 리스트 탭이 비활성화면 아무것도 하지 않음
+        // リストタブが無効なら何もしない
         return;
     }
     
     const isList = (targetTab === 'tab-list');
     localStorage.setItem('selectedTab', isList ? 'list' : 'calendar');
     
-    // 현재 년월 가져오기
+    // 現在の年月を取得
     const currentMonthDisplay = document.getElementById('current-month-display');
     if (!currentMonthDisplay) {
         console.error('[TAB] 현재 년월 정보를 찾을 수 없음');
@@ -1229,20 +1229,17 @@ async function handleTabSwitch(event) {
         return;
     }
     
-    // 토글 상태도 함께 전달
+    // トグル状態も同時に渡す
     const toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
     const showListParam = isList ? '1' : '0';
     
     console.log(`[TAB] 탭 전환: ${isList ? 'list' : 'calendar'}`);
     
-    // AJAX로 전체 캘린더 섹션 다시 로딩 (서버에서 올바른 탭 상태로 렌더링)
+    // AJAXで全カレンダーセクションを再読み込み (サーバーで正しいタブ状態でレンダリング)
     await updateCalendarSection(year, month, showListParam, toggleState);
 }
 
-// 탭 상태 복원 (URL 파라미터 기반이므로 불필요)
-// function restoreTabState() - 제거됨
-
-// ===================== 이벤트 초기화 함수 =====================
+// ===================== イベント初期化関数 =====================
 
 // フォームイベント初期化
 function initializeFormEvents() {
@@ -1364,27 +1361,26 @@ function initializeFormEvents() {
     }
 }
 
-// カレンダーイベント初期化
-// 리스트 이벤트 초기화
+// リストイベント初期化
 function initializeListEvents() {
     console.log('[LIST] リス트イベント初期化開始');
-    // 기존 이벤트 제거
+    // 既存のイベントを削除
     document.removeEventListener('click', handleGlobalListClick);
     document.addEventListener('click', handleGlobalListClick);
-    // 삭제 버튼 이벤트 위임
+    // 削除ボタンイベントの委譲
     document.removeEventListener('click', handleDeleteDailyClick);
     document.addEventListener('click', handleDeleteDailyClick);
-    // 리스트 행 개수 확인
+    // リスト行の数を確認
     const listRows = document.querySelectorAll('.attendance-list-row');
-    console.log(`[LIST] 리스트 행 개수: ${listRows.length}`);
+    console.log(`[LIST] リスト行の数: ${listRows.length}`);
     
     // リストビュー祝日処理初期化
     initializeListViewHolidayHandling();
     
-    console.log('[LIST] リストイベント初期化完료');
+    console.log('[LIST] リストイベント初期化完了');
 }
 
-// 전역 리스트 클릭 핸들러 (함수명으로 등록해야 제거 가능)
+// グローバルリストクリックハンドラ (関数名で登録する必要があるため削除可能)
 function handleGlobalListClick(event) {
     const listRow = event.target.closest('.attendance-list-row');
     if (listRow) {
@@ -1429,6 +1425,7 @@ function handleDeleteDailyClick(event) {
     });
 }
 
+// カレンダーイベント初期化
 function initializeCalendarEvents() {
     console.log('[INIT] カレンダーイベント初期化');
     
@@ -2116,7 +2113,7 @@ function setupEmailSendLogic() {
     const emailHostPasswordInput = document.getElementById('email-host-password');
     const fileTypeModal = document.getElementById('file-type-modal');
     
-    // 메일 필드 초기화 함수
+    // メールフィールドの初期化関数
     function clearEmailFields() {
         if (emailHostUserInput) emailHostUserInput.value = '';
         if (emailHostPasswordInput) emailHostPasswordInput.value = '';
@@ -2125,24 +2122,28 @@ function setupEmailSendLogic() {
         if (emailToSelect) emailToSelect.value = '';
     }
     
-    // 페이지 로드 시 메일 필드 초기화
+    // ページ読み込み時にメールフィールドを初期化
     clearEmailFields();
     
+    // メールフォームの送信イベントを設定
     if (emailForm && emailInput && fileTypeModal) {
         emailForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const email = emailInput.value.trim();
             const hostUser = emailHostUserInput ? emailHostUserInput.value.trim() : '';
             const hostPassword = emailHostPasswordInput ? emailHostPasswordInput.value.trim() : '';
-            if (!email) return;
+            if (!email) return; // メールアドレスが空の場合は何もしない
+            // 送信中のメール情報を保存
             pendingEmail = email;
             pendingHostUser = hostUser;
             pendingHostPassword = hostPassword;
+            // ファイル選択モーダルを表示
             fileTypeModal.classList.add('show');
         });
     }
 }
 
+// メール送信ステータスメッセージの表示
 function showEmailStatus(msg, isError=false) {
     const emailStatus = document.getElementById('email-status-message');
     if (emailStatus) {
@@ -2153,8 +2154,9 @@ function showEmailStatus(msg, isError=false) {
     }
 }
 
+// メール送信リクエスト
 async function sendMailRequest(fileType) {
-    if (!pendingEmail) return;
+    if (!pendingEmail) return; // 送信中のメールアドレスがない場合は何もしない
     const year = document.getElementById('current-month-display').dataset.year;
     const month = document.getElementById('current-month-display').dataset.month;
     showEmailStatus('送信中...', false);
@@ -2196,17 +2198,19 @@ function setupFileTypeModalEvents() {
     const closeFileTypeModalBtn = document.getElementById('close-file-type-modal-btn');
     const fileTypeModal = document.getElementById('file-type-modal');
     
-    // 기존 이벤트 리스너 제거 (중복 방지)
+    //PDFファイルの送信ボタン
     if (sendPdfBtn) {
         sendPdfBtn.removeEventListener('click', sendPdfBtn._pdfHandler);
         sendPdfBtn._pdfHandler = function() { sendMailRequest('pdf'); };
         sendPdfBtn.addEventListener('click', sendPdfBtn._pdfHandler);
     }
+    //Excelファイルの送信ボタン
     if (sendExcelBtn) {
         sendExcelBtn.removeEventListener('click', sendExcelBtn._excelHandler);
         sendExcelBtn._excelHandler = function() { sendMailRequest('excel'); };
         sendExcelBtn.addEventListener('click', sendExcelBtn._excelHandler);
     }
+    //モーダルの閉じるボタン
     if (closeFileTypeModalBtn && fileTypeModal) {
         closeFileTypeModalBtn.removeEventListener('click', closeFileTypeModalBtn._closeHandler);
         closeFileTypeModalBtn._closeHandler = function() {
@@ -2216,39 +2220,34 @@ function setupFileTypeModalEvents() {
     }
 }
 
-// ===================== メール送信ロジック =====================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[APP] アプリケーション初期화 시작');
+    console.log('[APP] アプリケーション初期化開始');
     
-    // TTL 기반 캐시 사용 (5분 자동 만료)
-    // clearCacheOnPageLoad();
-    
-    // 상태 초기화
+    // 状態の初期化
     initializeState();
     
-    // 이벤트 초기화
+    // イベントの初期化
     initializeFormEvents();
     initializeCalendarEvents();
-    initializeListEvents(); // 리스트 이벤트 초기화
-    initializeTabSwitching(true); // 탭 전환 초기화 (상태 복원 포함)
-    setupEmailSelectLogic(); // 受信者メール セレクト+直接入力ロジック初期化
-    setupEmailSendLogic(); // メール送信ロジック初期化
-    setupFileTypeModalEvents(); // ファイル選択モーダルイベント初期化
-    // setupEmailSendLogic(); // メール送信・モーダル・状態メッセージ初期化（未定義のため一時的に無効化）
-    setupPrintPreviewLogic(); // 印刷プレビューボタン初期化
+    initializeListEvents(); // リストイベントの初期化
+    initializeTabSwitching(true); // タブ切り替えの初期化 (状態の復元を含む)
+    setupEmailSelectLogic(); // 受信者メールセレクト+直接入力ロジックの初期化
+    setupEmailSendLogic(); // メール送信ロジックの初期化
+    setupFileTypeModalEvents(); // ファイル選択モーダルイベントの初期化
+    setupPrintPreviewLogic(); // 印刷プレビューボタンの初期化
     
-    // 초기 설정 (한 번만 실행)
+    // 初期設定 (一度だけ実行)
     setTimeout(() => {
         applyAllHolidaysToCalendar();
         
-        // 초기 선택된 날짜가 있으면 하이라이트
+        // 初期選択された日付があればハイライト
         if (currentState.selectedDate) {
             updateCalendarHighlight();
         }
-        MonthlyInfoToggle.init(); // 월정보 토글 상태 복원 및 표시
+        MonthlyInfoToggle.init(); // 月情報トグル状態の復元と表示
     }, 500);
     
-    updateCalendarSection(currentYear, currentMonth); // 최초 진입 시에도 ajax로 캘린더 불러오기
+    updateCalendarSection(currentYear, currentMonth); // 最初の入力時にもajaxでカレンダーを読み込む
     console.log('[APP] アプリケーション初期化完了');
 });
 
@@ -2805,6 +2804,11 @@ function restoreInitialState() {
     // 서버에서 이미 토글 상태에 따라 올바르게 렌더링되었으므로
     // 추가적인 클라이언트 측 처리는 불필요
     console.log('[INIT] 서버에서 토글 상태 처리됨');
+    
+    // 日替りチェックボックスの初期状態を確認
+    setTimeout(() => {
+        checkDayChange();
+    }, 100);
 }
 
 // 勤務区分 툴팁 설정 함수 (AJAX 로드 후 재바인딩용)
@@ -2864,7 +2868,39 @@ function handleWorktypeTooltipClose(e) {
     }
 }
 
-// DOM 로드 완료 시 초기화
+// ===================== 日替りチェックボックス管理関数 =====================
+
+/**
+ * 開始時刻と終了時刻を比較して、日替りチェックボックスを自動チェックする関数
+ * end_timeがstart_timeより前の時刻の場合、自動的にチェックされる
+ */
+function checkDayChange() {
+    const startTimeInput = document.querySelector('input[name="start_time"]');
+    const endTimeInput = document.querySelector('input[name="end_time"]');
+    const dayChangeCheckbox = document.getElementById('day_change_checkbox');
+    
+    if (!startTimeInput || !endTimeInput || !dayChangeCheckbox) {
+        console.warn('[DAY_CHANGE] 必要な要素が見つかりません');
+        return;
+    }
+    
+    const startTime = startTimeInput.value;
+    const endTime = endTimeInput.value;
+    
+    if (!startTime || !endTime) {
+        return; // 時刻が入力されていない場合は何もしない
+    }
+    
+    // 時刻を比較して日替りかどうかを判定
+    const isDayChange = endTime < startTime;
+    
+    // チェックボックスを自動チェック/アンチェック
+    dayChangeCheckbox.checked = isDayChange;
+    
+    console.log(`[DAY_CHANGE] 開始時刻: ${startTime}, 終了時刻: ${endTime}, 日替り: ${isDayChange}`);
+}
+
+// DOM読み込み完了時に初期化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initializeState();

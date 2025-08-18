@@ -1,49 +1,37 @@
 /**
- * 시간 입력 필드 관련 유틸리티 함수들
+ * 時間入力関連のユーティリティ関数
  */
 
-// 시작시간 "現在" 버튼 클릭 시: 시작시간에 현재시간 + 通常 버튼과 동일한 로직으로 종료시간 설정
+// 開始時刻 "現在" ボタン クリック時: 開始時刻に現在時刻 + 通常 ボタンと同じロジックで終了時刻を設定
 function setCurrentTimeForStartTime(startTimeInputId, endTimeInputId) {
     const startInput = document.getElementById(startTimeInputId);
     const endInput = document.getElementById(endTimeInputId);
     
-    if (!startInput || !endInput) return;
+    if (!startInput || !endInput) return;　// 開始時刻と終了時刻が存在しない場合は処理を終了
     
-    // 현재 시간 가져오기
+    // 現在の時刻を取得
     const now = new Date();
     const currentHours = String(now.getHours()).padStart(2, '0');
     const currentMinutes = String(now.getMinutes()).padStart(2, '0');
     const currentTime = `${currentHours}:${currentMinutes}`;
     
-    // 시작시간에 현재시간 설정
+    // 開始時刻に現在時刻を設定
     startInput.value = currentTime;
     startInput.dispatchEvent(new Event('change', { bubbles: true }));
     
-    // 通常 버튼과 동일한 로직으로 종료시간 설정
-    // 월별 데이터의 기준 캘린더 확인 (通常 버튼에서 가져온 로직)
+    // 通常 ボタンと同じロジックで終了時刻を設定
+    // 月別データの基準カレンダーを確認 (通常 ボタンから取得したロジック)
     const normalHoursBtn = document.getElementById('normal-hours-btn');
     let endTime;
     
     if (normalHoursBtn && normalHoursBtn.dataset.baseCalendar === 'H大甕') {
-        // H大甕 캘린더: 현재시간 + 8시간 30분 (휴게시간 45분 포함)
-        const startTime = new Date(`2000-01-01T${currentTime}`);
-        const calculatedEndTime = new Date(startTime.getTime() + (8.5 * 60 * 60 * 1000));
-        
-        const endHours = String(calculatedEndTime.getHours()).padStart(2, '0');
-        const endMinutes = String(calculatedEndTime.getMinutes()).padStart(2, '0');
-        endTime = `${endHours}:${endMinutes}`;
-        
-        console.log(`[DEBUG] H大甕 캘린더: 시작시간 ${currentTime} -> 종료시간 계산: ${endTime} (휴게시간 45분 포함)`);
+        // H大甕 캘린더: 고정 종료시간 17:10
+        endTime = '17:10';
+        console.log(`[DEBUG] H大甕 캘린더: 시작시간 ${currentTime} -> 종료시간 고정: ${endTime}`);
     } else {
-        // 기준 캘린더: 현재시간 + 9시간 (휴게시간 60분 포함)
-        const startTime = new Date(`2000-01-01T${currentTime}`);
-        const calculatedEndTime = new Date(startTime.getTime() + (9 * 60 * 60 * 1000));
-        
-        const endHours = String(calculatedEndTime.getHours()).padStart(2, '0');
-        const endMinutes = String(calculatedEndTime.getMinutes()).padStart(2, '0');
-        endTime = `${endHours}:${endMinutes}`;
-        
-        console.log(`[DEBUG] 기준 캘린더: 시작시간 ${currentTime} -> 종료시간 계산: ${endTime} (휴게시간 60분 포함)`);
+        // 기준 캘린더: 고정 종료시간 18:00
+        endTime = '18:00';
+        console.log(`[DEBUG] 기준 캘린더: 시작시간 ${currentTime} -> 종료시간 고정: ${endTime}`);
     }
     
     // 종료시간 설정
@@ -182,33 +170,6 @@ function validateTimeInput(input) {
     } else {
         input.setCustomValidity('');
     }
-}
-
-// 현재 시간 힌트 표시 (선택사항)
-function showCurrentTimeHint(input) {
-    const currentTime = getCurrentTime();
-    const hint = `현재 시간: ${currentTime.time}`;
-    
-    // 기존 힌트 제거
-    const existingHint = input.parentNode.querySelector('.time-hint');
-    if (existingHint) {
-        existingHint.remove();
-    }
-    
-    // 새 힌트 추가
-    const hintElement = document.createElement('div');
-    hintElement.className = 'time-hint';
-    hintElement.style.cssText = 'font-size: 12px; color: #6c757d; margin-top: 2px;';
-    hintElement.textContent = hint;
-    
-    input.parentNode.appendChild(hintElement);
-    
-    // 3초 후 힌트 제거
-    setTimeout(() => {
-        if (hintElement.parentNode) {
-            hintElement.remove();
-        }
-    }, 3000);
 }
 
 // 전역 함수로 노출
