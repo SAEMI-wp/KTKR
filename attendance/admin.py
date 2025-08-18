@@ -633,8 +633,8 @@ class CustomAdminSite(admin.AdminSite):
                         calendar_name = calendar_to_delete.calendar_name
                         
                         # 해당 Calendar를 사용하는 직원이 있는지 확인
-                        if calendar_to_delete.attendancemonthly_set.exists():
-                            messages.error(request, f'カレンダー「{calendar_name}」は使用中のため削除できません。')
+                        if AttendanceMonthly.objects.filter(base_calendar=calendar_name).exists():
+                             messages.error(request, f'カレンダー「{calendar_name}」は使用中のため削除できません。')
                         else:
                             # 관련된 HolidayCalendar도 삭제
                             calendar_to_delete.holidaycalendar_set.all().delete()
@@ -728,11 +728,19 @@ class CustomAdminSite(admin.AdminSite):
         calendar_stats = []
         
         for cal in calendars:
-            holiday_count = cal.holidaycalendar_set.count()
-            employee_count = cal.attendancemonthly_set.count()
-            
-            # 각 Calendar의 HolidayCalendar 목록도 가져오기
-            holidays = cal.holidaycalendar_set.all().order_by('date')
+            try:
+                holiday_count = cal.holidaycalendar_set.count()
+                # base_calendar 필드를 통해 간접적으로 직원 수 계산
+                employee_count = AttendanceMonthly.objects.filter(base_calendar=cal.calendar_name).count()
+                
+                # 각 Calendar의 HolidayCalendar 목록도 가져오기
+                holidays = cal.holidaycalendar_set.all().order_by('date')
+            except Exception as e:
+                # エラーが発生した場合のフォールバック
+                print(f"[DEBUG] Calendar {cal.calendar_name} 処理中にエラー: {e}")
+                holiday_count = 0
+                employee_count = 0
+                holidays = []
             
             calendar_stats.append({
                 'calendar': cal,
