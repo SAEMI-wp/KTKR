@@ -103,6 +103,25 @@ class CustomAdminSite(admin.AdminSite):
                 # 모델들은 그대로 유지 (従業員 등은 클릭 가능)
                 # 모델의 링크는 건드리지 않음
         
+        # 現場・カレンダ管理 메뉴 추가
+        calendar_management_app = {
+            'name': '現場・カレンダ管理',
+            'app_label': 'calendar_management',
+            'app_url': '/admin/calendar-management/',
+            'has_module_perms': True,
+            'models': [
+                {
+                    'name': '現場・カレンダー統合管理',
+                    'object_name': 'calendar_management',
+                    'admin_url': '/admin/calendar-management/',
+                    'add_url': None,
+                    'view_only': False,
+                    'perms': {'add': False, 'change': True, 'delete': False, 'view': True}
+                }
+            ]
+        }
+        app_list.append(calendar_management_app)
+        
         return app_list
 
     def get_urls(self):
@@ -120,6 +139,7 @@ class CustomAdminSite(admin.AdminSite):
             path('daily-calendar/<int:year>/<int:month>/', self.admin_view(daily_calendar_view), name='daily_calendar'),
             path('csv_upload/', self.admin_view(self.csv_upload_view), name='employee_csv_upload'),
             path('position-management/', self.admin_view(self.position_management_view), name='position_management'),
+            path('calendar-management/', self.admin_view(self.calendar_management_view), name='calendar_management'),
         ]
         return custom_urls + urls
 
@@ -549,6 +569,74 @@ class CustomAdminSite(admin.AdminSite):
         extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
         return super().changelist_view(request, extra_context=extra_context)
 
+    def calendar_management_view(self, request):
+        """現場・カレンダー統合管理ページ"""
+        if request.method == 'POST':
+            form = CalendarManagementForm(request.POST)
+            if form.is_valid():
+                calendar = form.cleaned_data['calendar']
+                start_date = form.cleaned_data['start_date']
+                end_date = form.cleaned_data['end_date']
+                category = form.cleaned_data['category']
+                description = form.cleaned_data['description']
+                is_recurring = form.cleaned_data['is_recurring']
+                
+                # 日付範囲で休日を一括登録
+                from datetime import date, timedelta
+                current_date = start_date
+                created_count = 0
+                
+                while current_date <= end_date:
+                    # 既存の休日があるかチェック
+                    existing_holiday = HolidayCalendar.objects.filter(
+                        calendar_code=calendar,
+                        date=current_date,
+                        category=category
+                    ).first()
+                    
+                    if not existing_holiday:
+                        # 新しい休日を作成
+                        holiday = HolidayCalendar(
+                            calendar_code=calendar,
+                            date=current_date,
+                            category=category,
+                            description=description,
+                            is_recurring=is_recurring
+                        )
+                        holiday.save()
+                        created_count += 1
+                    
+                    current_date += timedelta(days=1)
+                
+                if created_count > 0:
+                    messages.success(request, f'{calendar.calendar_name}に{created_count}件の休日を登録しました。')
+                else:
+                    messages.info(request, '指定された期間の休日は既に登録されています。')
+                
+                return HttpResponseRedirect(reverse('admin:calendar_management'))
+        else:
+            form = CalendarManagementForm()
+        
+        # カレンダー一覧と休日統計を取得
+        calendars = Calendar.objects.all().order_by('calendar_name')
+        calendar_stats = []
+        
+        for cal in calendars:
+            holiday_count = cal.holidaycalendar_set.count()
+            employee_count = cal.attendancemonthly_set.count()
+            calendar_stats.append({
+                'calendar': cal,
+                'holiday_count': holiday_count,
+                'employee_count': employee_count
+            })
+        
+        context = dict(
+            self.each_context(request),
+            form=form,
+            calendar_stats=calendar_stats,
+        )
+        return render(request, "admin/attendance/calendar_management.html", context)
+
 custom_admin_site = CustomAdminSite(name='custom_admin')
 
 # 권한별 사원 필터링 유틸 (새로운 직급 체계 적용)
@@ -798,8 +886,8 @@ class AttendanceDailyAdmin(admin.ModelAdmin):
 
 @admin.register(Calendar, site=custom_admin_site)
 class CalendarAdmin(admin.ModelAdmin):
-    """カレンダー管理用のAdmin"""
-    list_display = ('id', 'calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time')
+    """現場・カレンダー管理用のAdmin"""
+    list_display = ('id', 'calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time', 'holiday_count', 'employee_count')
     list_filter = ('calendar_name',)
     search_fields = ('calendar_name',)
     ordering = ('id',)
@@ -809,13 +897,43 @@ class CalendarAdmin(admin.ModelAdmin):
             'fields': ('calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time', 'etc')
         }),
     )
+    
+    class Media:
+        css = {
+            'all': ('attendance/css/calendar_management.css',)
+        }
+    
+    def holiday_count(self, obj):
+        """このカレンダーの休日数を表示"""
+        count = obj.holidaycalendar_set.count()
+        return f"{count}件"
+    holiday_count.short_description = '休日数'
+    
+    def employee_count(self, obj):
+        """このカレンダーを使用している従業員数を表示"""
+        count = obj.attendancemonthly_set.count()
+        return f"{count}名"
+    employee_count.short_description = '使用従業員数'
 
 @admin.register(HolidayCalendar, site=custom_admin_site)
 class HolidayCalendarAdmin(admin.ModelAdmin):
-    list_display = ('calendar_code', 'date', 'category')
-    list_filter = ('calendar_code', 'category')
-    search_fields = ('calendar_code__calendar_name', 'category')
+    """現場別休日管理用のAdmin"""
+    list_display = ('calendar_code', 'date', 'category', 'day_name', 'description')
+    list_filter = ('calendar_code', 'category', 'date')
+    search_fields = ('calendar_code__calendar_name', 'category', 'description')
     ordering = ('calendar_code', 'date')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('calendar_code', 'date', 'category', 'description')
+        }),
+    )
+    
+    def day_name(self, obj):
+        """曜日名を表示"""
+        weekdays = ['月', '火', '水', '木', '金', '土', '日']
+        return weekdays[obj.date.weekday()]
+    day_name.short_description = '曜日'
 
 # Group 모델을 CustomAdminSite에 등록
 from django.contrib.auth.admin import GroupAdmin
@@ -857,3 +975,43 @@ custom_admin_site.register(Group, CustomGroupAdmin)
 
 class EmployeeCSVUploadForm(forms.Form):
     csv_file = forms.FileField(label='CSVファイルを選択')
+
+class CalendarManagementForm(forms.Form):
+    """現場・カレンダー統合管理フォーム"""
+    calendar = forms.ModelChoiceField(
+        queryset=Calendar.objects.all(),
+        label='カレンダー選択',
+        empty_label='カレンダーを選択してください'
+    )
+    start_date = forms.DateField(
+        label='開始日',
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text='休日登録の開始日を選択してください'
+    )
+    end_date = forms.DateField(
+        label='終了日',
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text='休日登録の終了日を選択してください'
+    )
+    category = forms.ChoiceField(
+        choices=[
+            ('祝日', '祝日'),
+            ('休日', '休日'),
+            ('休日(法)', '休日(法)'),
+            ('特別休暇', '特別休暇'),
+            ('その他', 'その他'),
+        ],
+        label='区分',
+        initial='祝日'
+    )
+    description = forms.CharField(
+        label='説明',
+        max_length=100,
+        required=False,
+        help_text='休日の説明を入力してください'
+    )
+    is_recurring = forms.BooleanField(
+        label='毎年繰り返し',
+        required=False,
+        help_text='毎年同じ日付で繰り返す場合はチェックしてください'
+    )
