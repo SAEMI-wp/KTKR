@@ -101,7 +101,8 @@
                     <input type="time" name="start_time" id="{{ daily_form.start_time.id_for_label }}" 
                            value="{% if selected_daily_data and selected_daily_data.start_time %}{{ selected_daily_data.start_time|time:'H:i' }}{% endif %}"
                            {% if not monthly_data %}disabled{% endif %}
-                           class="time-input">
+                           class="time-input"
+                           onchange="checkDayChange()">
                     <button type="button" class="current-time-btn" onclick="setCurrentTimeForStartTime('{{ daily_form.start_time.id_for_label }}', '{{ daily_form.end_time.id_for_label }}')" 
                             {% if not monthly_data %}disabled{% endif %}>
                         現在
@@ -114,11 +115,17 @@
                     <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
                            value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
                            {% if not monthly_data %}disabled{% endif %}
-                           class="time-input">
+                           class="time-input"
+                           onchange="checkDayChange()">
                     <button type="button" class="current-time-btn" onclick="setCurrentTimeForEndTime('{{ daily_form.end_time.id_for_label }}')"
                             {% if not monthly_data %}disabled{% endif %}>
                         現在
                     </button>
+                </div>
+                <div class="day-change-checkbox">
+                    <input type="checkbox" id="day_change_checkbox" name="day_change" 
+                           {% if not monthly_data %}disabled{% endif %}>
+                    <label for="day_change_checkbox">日替り</label>
                 </div>
             </div>
             <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
