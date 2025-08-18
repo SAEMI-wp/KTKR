@@ -553,11 +553,15 @@ class EmployeeAdmin(admin.ModelAdmin):
     
     # フィールドセットのカスタマイズ
     fieldsets = (
-        ('社員情報', {'fields': ('employee_no', 'password')}),
-        ('個人情報', {'fields': ('first_name', 'last_name', 'email')}),
-        ('勤務情報', {'fields': ('place_work',)}),
-        ('権限', {'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions')}),
-        ('重要日付', {'fields': ('last_login',)}),
+        ('社員番号', {'fields': ('employee_no',)}),
+        ('名前', {'fields': ('last_name', 'first_name')}),
+        ('職級', {'fields': ('groups',)}),
+        ('勤務先', {'fields': ('place_work',)}),
+        ('メール', {'fields': ('email',)}),
+        ('権限', {
+            'fields': ('is_active', 'is_superuser', 'user_permissions'),
+            'description': 'システム管理者にチェックすると全ての権限が付与されます。職級に応じた基本権限は自動的に設定されます。'
+        }),
     )
     
     add_fieldsets = (
@@ -570,6 +574,7 @@ class EmployeeAdmin(admin.ModelAdmin):
     actions = ['retire_selected', 'delete_selected', 'restore_selected']
 
     change_list_template = "admin/attendance/employee_changelist.html"
+    add_form_template = "admin/attendance/employee_add_form.html"
 
     def get_queryset(self, request):
         """社員番号でソート"""
@@ -614,10 +619,37 @@ class EmployeeAdmin(admin.ModelAdmin):
     retire_action_button.allow_tags = True
 
     def formfield_for_dbfield(self, db_field, **kwargs):
-        """employee_no 필드에 도움말 추가"""
+        """필드별 도움말과 라벨 커스터마이징"""
         formfield = super().formfield_for_dbfield(db_field, **kwargs)
+        
         if db_field.name == 'employee_no':
             formfield.help_text = '6桁の社員番号を入力してください (例: 123456)'
+            formfield.label = '社員番号'
+        elif db_field.name == 'last_name':
+            formfield.label = '姓'
+            formfield.help_text = '姓を入力してください'
+        elif db_field.name == 'first_name':
+            formfield.label = '名'
+            formfield.help_text = '名を入力してください'
+        elif db_field.name == 'groups':
+            formfield.label = '職級'
+            formfield.help_text = '該当する職級を選択してください'
+        elif db_field.name == 'place_work':
+            formfield.label = '勤務先'
+            formfield.help_text = '勤務先を入力してください'
+        elif db_field.name == 'email':
+            formfield.label = 'メールアドレス'
+            formfield.help_text = 'メールアドレスを入力してください'
+        elif db_field.name == 'is_superuser':
+            formfield.label = 'システム管理者'
+            formfield.help_text = 'チェックすると全ての権限が付与されます'
+        elif db_field.name == 'is_active':
+            formfield.label = 'アクティブ'
+            formfield.help_text = 'チェックするとログイン可能になります'
+        elif db_field.name == 'user_permissions':
+            formfield.label = '個別権限'
+            formfield.help_text = '職級以外の追加権限を設定できます'
+            
         return formfield
 
     def detail_button(self, obj):
@@ -663,9 +695,11 @@ class EmployeeAdmin(admin.ModelAdmin):
             return self.fieldsets
         # 일반 사용자는 최소 필드만 표시
         return (
-            ('社員情報', {'fields': ('employee_no', 'password')}),
-            ('個人情報', {'fields': ('first_name', 'last_name', 'email')}),
-            ('勤務情報', {'fields': ('place_work',)}),
+            ('社員番号', {'fields': ('employee_no',)}),
+            ('名前', {'fields': ('last_name', 'first_name')}),
+            ('職級', {'fields': ('groups',)}),
+            ('勤務先', {'fields': ('place_work',)}),
+            ('メール', {'fields': ('email',)}),
         )
 
     def changelist_view(self, request, extra_context=None):
@@ -676,9 +710,15 @@ class EmployeeAdmin(admin.ModelAdmin):
         extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
         return super().changelist_view(request, extra_context=extra_context)
 
+    def add_view(self, request, form_url='', extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
+        return super().add_view(request, form_url, extra_context)
+
+    #社員登録ボタンを非表示
     def has_add_permission(self, request):
-        # 追加ボタン을非表示
-        return False
+        return True
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
@@ -740,10 +780,15 @@ class CustomGroupAdmin(GroupAdmin):
     list_display_links = ('code', 'position')
     ordering = ('id',)
     
+    # 削除ボタンを非表示にする
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
     class Media:
         css = {
             'all': ('attendance/css/custom_group_admin.css',)
         }
+        js = ('attendance/js/custom_group_admin.js',)
     
     def code(self, obj):
         """코드 컬럼"""
