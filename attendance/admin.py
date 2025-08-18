@@ -100,8 +100,11 @@ class CustomAdminSite(admin.AdminSite):
                 if 'app_url' in app:
                     del app['app_url']
                 
-                # 모델들은 그대로 유지 (従業員 등은 클릭 가능)
-                # 모델의 링크는 건드리지 않음
+                # Calendar와 HolidayCalendar 모델은 숨기기 (통합 관리에서 처리)
+                app['models'] = [
+                    model for model in app['models'] 
+                    if model['object_name'] not in ['calendar', 'holidaycalendar']
+                ]
         
         # 現場・カレンダ管理 메뉴 추가
         calendar_management_app = {
@@ -574,42 +577,138 @@ class CustomAdminSite(admin.AdminSite):
         if request.method == 'POST':
             form = CalendarManagementForm(request.POST)
             if form.is_valid():
-                calendar = form.cleaned_data['calendar']
-                start_date = form.cleaned_data['start_date']
-                end_date = form.cleaned_data['end_date']
-                category = form.cleaned_data['category']
+                # Calendar 생성/수정 처리
+                calendar_name = form.cleaned_data['calendar_name']
+                start_time = form.cleaned_data['start_time']
+                end_time = form.cleaned_data['end_time']
+                work_hours = form.cleaned_data['work_hours']
+                lunch_time = form.cleaned_data['lunch_time']
+                etc = form.cleaned_data['etc']
                 
-                # 日付範囲で休日を一括登録
-                from datetime import date, timedelta
-                current_date = start_date
-                created_count = 0
-                
-                while current_date <= end_date:
-                    # 既存の休日があるかチェック
-                    existing_holiday = HolidayCalendar.objects.filter(
-                        calendar_code=calendar,
-                        date=current_date,
-                        category=category
-                    ).first()
+                # Calendar 생성/수정 처리
+                if calendar_name and start_time and end_time and work_hours is not None and lunch_time is not None:
+                    # 기존 Calendar가 있는지 확인
+                    existing_calendar = Calendar.objects.filter(calendar_name=calendar_name).first()
                     
-                    if not existing_holiday:
-                        # 新しい休日を作成
-                        holiday = HolidayCalendar(
+                    if existing_calendar:
+                        # 기존 Calendar 수정
+                        existing_calendar.start_time = start_time
+                        existing_calendar.end_time = end_time
+                        existing_calendar.work_hours = work_hours
+                        existing_calendar.lunch_time = lunch_time
+                        existing_calendar.etc = etc or ''
+                        existing_calendar.save()
+                        messages.success(request, f'カレンダー「{calendar_name}」を更新しました。')
+                    else:
+                        # 새로운 Calendar 생성
+                        calendar = Calendar(
+                            calendar_name=calendar_name,
+                            start_time=start_time,
+                            end_time=end_time,
+                            work_hours=work_hours,
+                            lunch_time=lunch_time,
+                            etc=etc or ''
+                        )
+                        calendar.save()
+                        messages.success(request, f'カレンダー「{calendar_name}」を作成しました。')
+                    
+                    return HttpResponseRedirect(reverse('admin:calendar_management'))
+                
+                # Calendar 삭제 처리
+                delete_calendar_id = request.POST.get('delete_calendar_id')
+                if delete_calendar_id:
+                    try:
+                        calendar_to_delete = Calendar.objects.get(id=delete_calendar_id)
+                        calendar_name = calendar_to_delete.calendar_name
+                        
+                        # 해당 Calendar를 사용하는 직원이 있는지 확인
+                        if calendar_to_delete.attendancemonthly_set.exists():
+                            messages.error(request, f'カレンダー「{calendar_name}」は使用中のため削除できません。')
+                        else:
+                            # 관련된 HolidayCalendar도 삭제
+                            calendar_to_delete.holidaycalendar_set.all().delete()
+                            calendar_to_delete.delete()
+                            messages.success(request, f'カレンダー「{calendar_name}」を削除しました。')
+                        
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                    except Calendar.DoesNotExist:
+                        messages.error(request, '指定されたカレンダーが見つかりません。')
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                
+                # 기존 Calendar 선택하여 HolidayCalendar 생성
+                calendar = form.cleaned_data['calendar']
+                if calendar:
+                    start_date = form.cleaned_data['start_date']
+                    end_date = form.cleaned_data['end_date']
+                    category = form.cleaned_data['category']
+                    
+                    # 日付範囲で休日を一括登録
+                    from datetime import date, timedelta
+                    current_date = start_date
+                    created_count = 0
+                    
+                    while current_date <= end_date:
+                        # 既存の休日があるかチェック
+                        existing_holiday = HolidayCalendar.objects.filter(
                             calendar_code=calendar,
                             date=current_date,
                             category=category
-                        )
-                        holiday.save()
-                        created_count += 1
+                        ).first()
+                        
+                        if not existing_holiday:
+                            # 新しい休日を作成
+                            holiday = HolidayCalendar(
+                                calendar_code=calendar,
+                                date=current_date,
+                                category=category
+                            )
+                            holiday.save()
+                            created_count += 1
+                        
+                        current_date += timedelta(days=1)
                     
-                    current_date += timedelta(days=1)
+                    if created_count > 0:
+                        messages.success(request, f'{calendar.calendar_name}に{created_count}件の休日を登録しました。')
+                    else:
+                        messages.info(request, '指定された期間の休日は既に登録されています。')
+                    
+                    return HttpResponseRedirect(reverse('admin:calendar_management'))
                 
-                if created_count > 0:
-                    messages.success(request, f'{calendar.calendar_name}に{created_count}件の休日を登録しました。')
+                # HolidayCalendar 개별 삭제 처리
+                delete_holiday_id = request.POST.get('delete_holiday_id')
+                if delete_holiday_id:
+                    try:
+                        holiday_to_delete = HolidayCalendar.objects.get(id=delete_holiday_id)
+                        holiday_to_delete.delete()
+                        messages.success(request, '休日を削除しました。')
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                    except HolidayCalendar.DoesNotExist:
+                        messages.error(request, '指定された休日が見つかりません。')
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                
+                # HolidayCalendar 개별 수정 처리
+                edit_holiday_id = request.POST.get('edit_holiday_id')
+                if edit_holiday_id:
+                    try:
+                        holiday_to_edit = HolidayCalendar.objects.get(id=edit_holiday_id)
+                        new_date = request.POST.get('edit_holiday_date')
+                        new_category = request.POST.get('edit_holiday_category')
+                        
+                        if new_date and new_category:
+                            holiday_to_edit.date = new_date
+                            holiday_to_edit.category = new_category
+                            holiday_to_edit.save()
+                            messages.success(request, '休日を更新しました。')
+                        else:
+                            messages.error(request, '日付と区分を入力してください。')
+                        
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                    except HolidayCalendar.DoesNotExist:
+                        messages.error(request, '指定された休日が見つかりません。')
+                        return HttpResponseRedirect(reverse('admin:calendar_management'))
+                
                 else:
-                    messages.info(request, '指定された期間の休日は既に登録されています。')
-                
-                return HttpResponseRedirect(reverse('admin:calendar_management'))
+                    messages.error(request, 'カレンダーを選択するか、新しいカレンダーを作成してください。')
         else:
             form = CalendarManagementForm()
         
@@ -620,10 +719,15 @@ class CustomAdminSite(admin.AdminSite):
         for cal in calendars:
             holiday_count = cal.holidaycalendar_set.count()
             employee_count = cal.attendancemonthly_set.count()
+            
+            # 각 Calendar의 HolidayCalendar 목록도 가져오기
+            holidays = cal.holidaycalendar_set.all().order_by('date')
+            
             calendar_stats.append({
                 'calendar': cal,
                 'holiday_count': holiday_count,
-                'employee_count': employee_count
+                'employee_count': employee_count,
+                'holidays': holidays
             })
         
         context = dict(
@@ -880,56 +984,6 @@ class AttendanceDailyAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         return []
 
-@admin.register(Calendar, site=custom_admin_site)
-class CalendarAdmin(admin.ModelAdmin):
-    """現場・カレンダー管理用のAdmin"""
-    list_display = ('id', 'calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time', 'holiday_count', 'employee_count')
-    list_filter = ('calendar_name',)
-    search_fields = ('calendar_name',)
-    ordering = ('id',)
-    
-    fieldsets = (
-        ('基本情報', {
-            'fields': ('calendar_name', 'start_time', 'end_time', 'work_hours', 'lunch_time', 'etc')
-        }),
-    )
-    
-    class Media:
-        css = {
-            'all': ('attendance/css/calendar_management.css',)
-        }
-    
-    def holiday_count(self, obj):
-        """このカレンダーの休日数を表示"""
-        count = obj.holidaycalendar_set.count()
-        return f"{count}件"
-    holiday_count.short_description = '休日数'
-    
-    def employee_count(self, obj):
-        """このカレンダーを使用している従業員数を表示"""
-        count = obj.attendancemonthly_set.count()
-        return f"{count}名"
-    employee_count.short_description = '使用従業員数'
-
-@admin.register(HolidayCalendar, site=custom_admin_site)
-class HolidayCalendarAdmin(admin.ModelAdmin):
-    """現場別休日管理用のAdmin"""
-    list_display = ('calendar_code', 'date', 'category', 'day_name')
-    list_filter = ('calendar_code', 'category', 'date')
-    search_fields = ('calendar_code__calendar_name', 'category')
-    ordering = ('calendar_code', 'date')
-    
-    fieldsets = (
-        ('基本情報', {
-            'fields': ('calendar_code', 'date', 'category')
-        }),
-    )
-    
-    def day_name(self, obj):
-        """曜日名を表示"""
-        weekdays = ['月', '火', '水', '木', '金', '土', '日']
-        return weekdays[obj.date.weekday()]
-    day_name.short_description = '曜日'
 
 # Group 모델을 CustomAdminSite에 등록
 from django.contrib.auth.admin import GroupAdmin
@@ -974,11 +1028,57 @@ class EmployeeCSVUploadForm(forms.Form):
 
 class CalendarManagementForm(forms.Form):
     """現場・カレンダー統合管理フォーム"""
+    # Calendar 선택 (기존 Calendar가 있는 경우)
     calendar = forms.ModelChoiceField(
         queryset=Calendar.objects.all(),
         label='カレンダー選択',
-        empty_label='カレンダーを選択してください'
+        empty_label='カレンダーを選択してください',
+        required=False,
+        help_text='既存のカレンダーを選択するか、下記で新規作成してください'
     )
+    
+    # Calendar 생성/수정을 위한 필드들
+    calendar_name = forms.CharField(
+        label='カレンダー名',
+        max_length=20,
+        required=False,
+        help_text='新しいカレンダーを作成する場合は入力してください'
+    )
+    start_time = forms.TimeField(
+        label='開始時刻',
+        required=False,
+        widget=forms.TimeInput(attrs={'type': 'time'}),
+        help_text='勤務開始時刻'
+    )
+    end_time = forms.TimeField(
+        label='終了時刻',
+        required=False,
+        widget=forms.TimeInput(attrs={'type': 'time'}),
+        help_text='勤務終了時刻'
+    )
+    work_hours = forms.FloatField(
+        label='稼働時間(時間)',
+        required=False,
+        min_value=0,
+        max_value=24,
+        help_text='1日の勤務時間（時間単位）'
+    )
+    lunch_time = forms.IntegerField(
+        label='昼休み(分)',
+        required=False,
+        min_value=0,
+        max_value=180,
+        help_text='昼休み時間（分単位）'
+    )
+    etc = forms.CharField(
+        label='備考',
+        max_length=200,
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='カレンダーに関する備考'
+    )
+    
+    # HolidayCalendar 생성을 위한 필드들
     start_date = forms.DateField(
         label='開始日',
         widget=forms.DateInput(attrs={'type': 'date'}),
