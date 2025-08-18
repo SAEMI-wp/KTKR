@@ -167,7 +167,7 @@ class Calendar(models.Model):
     class Meta:
         verbose_name = 'カレンダー'
         verbose_name_plural = 'カレンダー'
-        db_table = 'カレンダー'
+        db_table = 'calendar'
 
     def __str__(self):
         return f"{self.calendar_name} - {self.start_time}~{self.end_time}"
