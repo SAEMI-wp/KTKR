@@ -587,20 +587,31 @@ class CustomAdminSite(admin.AdminSite):
                 
                 # Calendar 생성/수정 처리
                 if calendar_name and start_time and end_time and work_hours is not None and lunch_time is not None:
-                    # 기존 Calendar가 있는지 확인
-                    existing_calendar = Calendar.objects.filter(calendar_name=calendar_name).first()
+                    # Calendar ID가 전달되었는지 확인 (수정 모드)
+                    calendar_id = request.POST.get('edit_calendar_id')
                     
-                    if existing_calendar:
+                    if calendar_id:
                         # 기존 Calendar 수정
-                        existing_calendar.start_time = start_time
-                        existing_calendar.end_time = end_time
-                        existing_calendar.work_hours = work_hours
-                        existing_calendar.lunch_time = lunch_time
-                        existing_calendar.etc = etc or ''
-                        existing_calendar.save()
-                        messages.success(request, f'カレンダー「{calendar_name}」を更新しました。')
+                        try:
+                            existing_calendar = Calendar.objects.get(id=calendar_id)
+                            existing_calendar.calendar_name = calendar_name
+                            existing_calendar.start_time = start_time
+                            existing_calendar.end_time = end_time
+                            existing_calendar.work_hours = work_hours
+                            existing_calendar.lunch_time = lunch_time
+                            existing_calendar.etc = etc or ''
+                            existing_calendar.save()
+                            messages.success(request, f'カレンダー「{calendar_name}」を更新しました。')
+                        except Calendar.DoesNotExist:
+                            messages.error(request, '指定されたカレンダーが見つかりません。')
+                            return HttpResponseRedirect(reverse('admin:calendar_management'))
                     else:
                         # 새로운 Calendar 생성
+                        # 이름 중복 체크
+                        if Calendar.objects.filter(calendar_name=calendar_name).exists():
+                            messages.error(request, f'カレンダー名「{calendar_name}」は既に存在します。')
+                            return HttpResponseRedirect(reverse('admin:calendar_management'))
+                        
                         calendar = Calendar(
                             calendar_name=calendar_name,
                             start_time=start_time,
