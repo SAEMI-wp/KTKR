@@ -31,6 +31,68 @@
 
     <div class="section">
         <div class="section-header">
+            <h2 class="section-title">カレンダー作成・編集</h2>
+        </div>
+        <div class="section-content">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.calendar_name.id_for_label }}">{{ form.calendar_name.label }}</label>
+                        {{ form.calendar_name }}
+                        {% if form.calendar_name.help_text %}
+                        <div class="help-text">{{ form.calendar_name.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.start_time.id_for_label }}">{{ form.start_time.label }}</label>
+                        {{ form.start_time }}
+                        {% if form.start_time.help_text %}
+                        <div class="help-text">{{ form.start_time.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.end_time.id_for_label }}">{{ form.end_time.label }}</label>
+                        {{ form.end_time }}
+                        {% if form.end_time.help_text %}
+                        <div class="help-text">{{ form.end_time.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.work_hours.id_for_label }}">{{ form.work_hours.label }}</label>
+                        {{ form.work_hours }}
+                        {% if form.work_hours.help_text %}
+                        <div class="help-text">{{ form.work_hours.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.lunch_time.id_for_label }}">{{ form.lunch_time.label }}</label>
+                        {{ form.lunch_time }}
+                        {% if form.lunch_time.help_text %}
+                        <div class="help-text">{{ form.lunch_time.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.etc.id_for_label }}">{{ form.etc.label }}</label>
+                        {{ form.etc }}
+                        {% if form.etc.help_text %}
+                        <div class="help-text">{{ form.etc.help_text }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">カレンダーを作成・更新</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
             <h2 class="section-title">休日一括登録</h2>
         </div>
         <div class="section-content">
@@ -68,8 +130,6 @@
                         <div class="help-text">{{ form.category.help_text }}</div>
                         {% endif %}
                     </div>
-                    
-
                 </div>
                 
                 <button type="submit" class="btn-primary">休日を一括登録</button>
@@ -108,9 +168,26 @@
                     </div>
                     
                     <div class="action-buttons">
-                        <a href="{% url 'admin:attendance_calendar_change' stat.calendar.id %}" class="btn btn-edit">編集</a>
-                        <a href="{% url 'admin:attendance_holidaycalendar_changelist' %}?calendar_code__id__exact={{ stat.calendar.id }}" class="btn btn-holidays">休日一覧</a>
+                        <button type="button" class="btn btn-edit" onclick="editCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}', '{{ stat.calendar.start_time }}', '{{ stat.calendar.end_time }}', '{{ stat.calendar.work_hours }}', '{{ stat.calendar.lunch_time }}', '{{ stat.calendar.etc }}')">編集</button>
+                        <button type="button" class="btn btn-delete" onclick="deleteCalendar('{{ stat.calendar.id }}', '{{ stat.calendar.calendar_name }}')">削除</button>
                     </div>
+                    
+                    <!-- HolidayCalendar 목록 표시 -->
+                    {% if stat.holidays %}
+                    <div class="holiday-list">
+                        <h4>休日一覧</h4>
+                        <div class="holiday-items">
+                            {% for holiday in stat.holidays %}
+                            <div class="holiday-item">
+                                <span class="holiday-date">{{ holiday.date|date:"m/d" }}</span>
+                                <span class="holiday-category">{{ holiday.category }}</span>
+                                <button type="button" class="btn btn-small btn-edit" onclick="editHoliday('{{ holiday.id }}', '{{ holiday.date|date:'Y-m-d' }}', '{{ holiday.category }}')">編集</button>
+                                <button type="button" class="btn btn-small btn-delete" onclick="deleteHoliday('{{ holiday.id }}')">削除</button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -120,4 +197,70 @@
         </div>
     </div>
 </div>
+
+<script>
+// Calendar 편집 함수
+function editCalendar(id, name, startTime, endTime, workHours, lunchTime, etc) {
+    document.getElementById('{{ form.calendar_name.id_for_label }}').value = name;
+    document.getElementById('{{ form.start_time.id_for_label }}').value = startTime;
+    document.getElementById('{{ form.end_time.id_for_label }}').value = endTime;
+    document.getElementById('{{ form.work_hours.id_for_label }}').value = workHours;
+    document.getElementById('{{ form.lunch_time.id_for_label }}').value = lunchTime;
+    document.getElementById('{{ form.etc.id_for_label }}').value = etc || '';
+    
+    // 폼 제출 버튼 텍스트 변경
+    document.querySelector('.btn-primary').textContent = 'カレンダーを更新';
+    
+    // 페이지 상단으로 스크롤
+    window.scrollTo(0, 0);
+}
+
+// Calendar 삭제 함수
+function deleteCalendar(id, name) {
+    if (confirm(`カレンダー「${name}」を削除しますか？\n関連する休日も削除されます。`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+            <input type="hidden" name="delete_calendar_id" value="${id}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Holiday 편집 함수
+function editHoliday(id, date, category) {
+    // 간단한 편집을 위한 모달 또는 인라인 편집 구현
+    const newDate = prompt('新しい日付を入力してください (YYYY-MM-DD):', date);
+    const newCategory = prompt('新しい区分を入力してください:', category);
+    
+    if (newDate && newCategory) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+            <input type="hidden" name="edit_holiday_id" value="${id}">
+            <input type="hidden" name="edit_holiday_date" value="${newDate}">
+            <input type="hidden" name="edit_holiday_category" value="${newCategory}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Holiday 삭제 함수
+function deleteHoliday(id) {
+    if (confirm('この休日を削除しますか？')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            {% csrf_token %}
+            <input type="hidden" name="delete_holiday_id" value="${id}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}
