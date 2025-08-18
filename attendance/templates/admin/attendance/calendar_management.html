@@ -69,23 +69,7 @@
                         {% endif %}
                     </div>
                     
-                    <div class="form-group">
-                        <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-                        {{ form.description }}
-                        {% if form.description.help_text %}
-                        <div class="help-text">{{ form.description.help_text }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            {{ form.is_recurring }}
-                            {{ form.is_recurring.label }}
-                        </label>
-                        {% if form.is_recurring.help_text %}
-                        <div class="help-text">{{ form.is_recurring.help_text }}</div>
-                        {% endif %}
-                    </div>
+
                 </div>
                 
                 <button type="submit" class="btn-primary">休日を一括登録</button>
@@ -103,11 +87,14 @@
                 {% for stat in calendar_stats %}
                 <div class="calendar-card">
                     <div class="calendar-name">{{ stat.calendar.calendar_name }}</div>
-                    <div class="calendar-details">
-                        {{ stat.calendar.start_time }} ~ {{ stat.calendar.end_time }}<br>
-                        稼働時間: {{ stat.calendar.work_hours }}時間<br>
-                        昼休み: {{ stat.calendar.lunch_time }}分
-                    </div>
+                                         <div class="calendar-details">
+                         {{ stat.calendar.start_time }} ~ {{ stat.calendar.end_time }}<br>
+                         稼働時間: {{ stat.calendar.work_hours }}時間<br>
+                         昼休み: {{ stat.calendar.lunch_time }}分
+                         {% if stat.calendar.etc %}
+                         <br>備考: {{ stat.calendar.etc }}
+                         {% endif %}
+                     </div>
                     
                     <div class="calendar-stats-grid">
                         <div class="stat-item">
