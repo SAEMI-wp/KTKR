@@ -503,12 +503,12 @@ class DailyData:
             self.overtime_hours = None
             return
 
-        # 2．計算された退勤時間を作成
+        # 2．計算された退勤時間を作成（24時間を超える場合の処理）
         calculated_end_time = self.end_time
-        if self.end_time < self.start_time and self.end_time < time(1, 0):
-            # end_time < start_time 이면서 end_time < 1 (다음날 퇴근했는데 다음날 처리가 안됨)
-            # 퇴근시간에 +24시간을 해줌 (1일 추가)
-            calculated_end_time = time((self.end_time.hour + 1) % 24, self.end_time.minute)
+        if self.end_time < self.start_time:
+            # 退勤時間が出勤時間より小さい場合、翌日に跨がったと判断
+            # 24時間を加算して処理
+            calculated_end_time = time((self.end_time.hour + 24) % 24, self.end_time.minute)
 
         # 출근시간을 엑셀 시간으로 변환
         start_decimal = self._time_to_excel_decimal(self.start_time)
@@ -561,17 +561,17 @@ class DailyData:
         self.overtime_hours = round(overtime_value, 2)
         
     def _calculate_late_night_hours(self):
-        """심야시간 계산"""
-        # ① start_time 또는 end_time이 NULL → NULL
+        """深夜時間計算"""
+        # ① start_time または end_timeがNULL、またはstart_timeとend_timeが同じ場合、NULLを返す
         if not self.start_time or not self.end_time or self.start_time == self.end_time:
             self.late_night_overtime_hours = None
             return
 
-        # 계산된 퇴근시간 만들기 (잔업시간과 동일)
+        # 計算された退勤時間を作成（24時間を超える場合の処理）
         calculated_end_time = self.end_time
-        if self.end_time < self.start_time and self.end_time < time(1, 0):
-            # end_time < start_time 이면서 end_time < 1 (다음날 퇴근했는데 다음날 처리가 안됨)
-            # 퇴근시간에 +24시간을 해줌 (1일 추가)
+        if self.end_time < self.start_time:
+            # 退勤時間が出勤時間より小さい場合、翌日に跨がったと判断
+            # 24時間を加算して処理
             calculated_end_time = time((self.end_time.hour + 24) % 24, self.end_time.minute)
 
         # 출근시간을 엑셀 시간으로 변환
