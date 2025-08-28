@@ -2451,8 +2451,7 @@ function bindMonthlyUpdateModalFieldLogic() {
             lunchBreak.value = '60';
             standardTime.value = '8.00';
         }
-        // readonly 필드는 폼 제출 시 값이 전송되므로 disabled 대신 readonly 사용
-        // 사용자가 직접 편집하지 못하도록 이벤트 차단
+        // 昼休み区分은 readonly 유지 (기준카레더에 따라 자동 설정되므로)
         ['input', 'change', 'keydown'].forEach(evt => {
             lunchBreak.addEventListener(evt, e => { 
                 if (e.type === 'change' && e.target === baseCalendar) return; // base_calendar 변경은 허용
@@ -2460,13 +2459,8 @@ function bindMonthlyUpdateModalFieldLogic() {
                 e.stopPropagation(); 
                 return false; 
             });
-            standardTime.addEventListener(evt, e => { 
-                if (e.type === 'change' && e.target === baseCalendar) return; // base_calendar 변경은 허용
-                e.preventDefault(); 
-                e.stopPropagation(); 
-                return false; 
-            });
         });
+        // 기준시간은 사용자가 직접 수정 가능하도록 이벤트 차단하지 않음
     }
 }
 
