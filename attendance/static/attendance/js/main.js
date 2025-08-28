@@ -2185,7 +2185,9 @@ async function sendMailRequest(fileType) {
         clearTimeout(timeoutId);
         const result = await response.json();
         if (result.status === 'success') {
-            showEmailStatus('メールが正常に送信されました！', false);
+            // 메시지가 있으면 그것을 표시, 없으면 기본 메시지
+            const message = result.message || 'メールが正常に送信されました！';
+            showEmailStatus(message, false);
         } else {
             showEmailStatus(result.message || '送信に失敗しました。', true);
         }
