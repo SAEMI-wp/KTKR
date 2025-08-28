@@ -2161,6 +2161,10 @@ async function sendMailRequest(fileType) {
     const month = document.getElementById('current-month-display').dataset.month;
     showEmailStatus('送信中...', false);
     try {
+        // タイムアウト設定
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分 타임아웃
+        
         const response = await fetch('/attendance/email/send/', {
             method: 'POST',
             headers: {
@@ -2174,8 +2178,11 @@ async function sendMailRequest(fileType) {
                 month: month,
                 email_host_user: pendingHostUser,
                 email_host_password: pendingHostPassword
-            })
+            }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         const result = await response.json();
         if (result.status === 'success') {
             showEmailStatus('メールが正常に送信されました！', false);
@@ -2183,7 +2190,12 @@ async function sendMailRequest(fileType) {
             showEmailStatus(result.message || '送信に失敗しました。', true);
         }
     } catch (err) {
-        showEmailStatus('送信中にエラーが発生しました。', true);
+        if (err.name === 'AbortError') {
+            showEmailStatus('送信がタイムアウトしました。ファイルサイズが大きいか、ネットワークが不安定です。', true);
+        } else {
+            showEmailStatus('送信中にエラーが発生しました。', true);
+        }
+        console.error('Email send error:', err);
     }
     const fileTypeModal = document.getElementById('file-type-modal');
     if (fileTypeModal) fileTypeModal.classList.remove('show');
