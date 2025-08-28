@@ -6,11 +6,44 @@ from django.views import View
 from django.http import JsonResponse, HttpResponse
 import tempfile
 import json
+import threading
+import time
 
 from ..excel_generator import ExcelReportGenerator
 from ..pdf_generator import PDFReportGenerator
 from django.core.mail import EmailMessage
 from django.conf import settings
+
+
+def send_email_async(user_email, user_password, to_email, subject, body, attachment_data, filename, mime_type):
+    """비동기로 메일을 전송하는 함수"""
+    def email_worker():
+        try:
+            print(f"비동기 메일 전송 시작 - From: {user_email}, To: {to_email}", flush=True)
+            print(f"첨부파일: {filename}, 크기: {len(attachment_data)} bytes", flush=True)
+            
+            from attendance.utils import send_mail_dynamic
+            
+            send_mail_dynamic(
+                user=user_email,
+                password=user_password,
+                to_email=to_email,
+                subject=subject,
+                body=body,
+                attachment=attachment_data,
+                attachment_filename=filename,
+                mime_type=mime_type
+            )
+            print("비동기 메일 전송 성공", flush=True)
+        except Exception as e:
+            print(f"비동기 메일 전송 실패: {str(e)}", flush=True)
+            import traceback
+            traceback.print_exc()
+    
+    # 별도 스레드에서 실행
+    thread = threading.Thread(target=email_worker)
+    thread.daemon = True
+    thread.start()
 
 
 # エクセルダウンロードビュー（ログイン必須）
@@ -165,14 +198,19 @@ class EmailSendView(View):
                 try:
                     print("Excel生成開始", flush=True)
                     generator = ExcelReportGenerator(request.user, int(year), int(month))
+                    
+                    # Excel 생성 시간 측정
+                    start_time = time.time()
                     workbook = generator.generate_report()
-                    print("Excel生成完了", flush=True)
+                    generation_time = time.time() - start_time
+                    print(f"Excel生成完了 (소요시간: {generation_time:.2f}초)", flush=True)
                     
-                    file_buffer = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
-                    print(f"一時ファイル作成: {file_buffer.name}", flush=True)
-                    
-                    workbook.save(file_buffer.name)
-                    print("Excel保存成功", flush=True)
+                    # 메모리 사용량 최적화: BytesIO 사용
+                    from io import BytesIO
+                    file_buffer = BytesIO()
+                    workbook.save(file_buffer)
+                    file_buffer.seek(0)
+                    print("Excel메모리 저장 성공", flush=True)
                     
                     file_ext = 'xlsx'
                     mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -196,7 +234,7 @@ class EmailSendView(View):
             
             from_email = email_host_user
             
-            print('send_mail_dynamic 호출 전', flush=True)
+            print('첨부파일 데이터 준비 시작', flush=True)
             month_str = f"{int(month):02d}"
             # 添付ファイルデータを準備
             if file_type == 'pdf':
@@ -205,39 +243,30 @@ class EmailSendView(View):
                 attachment_data = file_buffer.getvalue()
             else:
                 filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.xlsx"
-                file_buffer.seek(0)
-                attachment_data = file_buffer.read()
+                attachment_data = file_buffer.getvalue()  # BytesIO에서 바로 가져오기
+            
+            print(f"첨부파일 크기: {len(attachment_data)} bytes", flush=True)
 
-            from attendance.utils import send_mail_dynamic
-            try:
-                print(f"メール送信開始 - From: {from_email}, To: {email_to}", flush=True)
-                send_mail_dynamic(
-                    user=from_email,
-                    password=email_host_password,
-                    to_email=email_to,
-                    subject=subject,
-                    body=body,
-                    attachment=attachment_data,
-                    attachment_filename=filename,
-                    mime_type=mime_type
-                )
-                print("メール送信成功", flush=True)
-            except Exception as e:
-                print(f"メール送信エラー: {str(e)}", flush=True)
-                import traceback
-                traceback.print_exc()
-                # 일시 파일 정리
-                if file_type == 'excel':
-                    import os
-                    file_buffer.close()
-                    os.unlink(file_buffer.name)
-                return JsonResponse({'status': 'error', 'message': f'メール送信に失敗しました: {str(e)}'})
-            # 一時ファイルを整理
-            if file_type == 'excel':
-                import os
-                file_buffer.close()
-                os.unlink(file_buffer.name)
-            return JsonResponse({'status': 'success'})
+            # 비동기로 메일 전송 (즉시 응답 반환)
+            print(f"비동기 메일 전송 요청 - From: {from_email}, To: {email_to}", flush=True)
+            
+            # Excel의 경우 BytesIO를 사용하므로 임시 파일 불필요
+            temp_file_path = None
+            
+            # 비동기 메일 전송 시작
+            send_email_async(
+                user_email=from_email,
+                user_password=email_host_password,
+                to_email=email_to,
+                subject=subject,
+                body=body,
+                attachment_data=attachment_data,
+                filename=filename,
+                mime_type=mime_type
+            )
+            
+            print("비동기 메일 전송 작업 시작됨 - 즉시 응답 반환", flush=True)
+            return JsonResponse({'status': 'success', 'message': 'メール送信を開始しました。送信完了まで少々お待ちください。'})
         except Exception as e:
             import traceback
             traceback.print_exc()
