@@ -44,6 +44,42 @@ class ExcelReportGenerator:
         self.workbook = None
         self.worksheet = None
         self.styles = ExcelStyles()
+    
+    def _get_month_holidays_optimized(self, year, month):
+        """해당 월의 공휴일만 효율적으로 가져옵니다."""
+        try:
+            import requests
+            
+            print(f"[EXCEL HOLIDAY OPTIMIZED] {year}년 {month}월 공휴일 가져오기 시작", flush=True)
+            
+            # 해당 년도의 공휴일만 가져오기
+            url = f"https://holidays-jp.github.io/api/v1/{year}/date.json"
+            response = requests.get(url, timeout=5)  # 타임아웃 단축
+            response.raise_for_status()
+            
+            holidays_data = response.json()
+            print(f"[EXCEL HOLIDAY OPTIMIZED] {year}년 전체 공휴일: {len(holidays_data)}개", flush=True)
+            
+            # 해당 월의 공휴일만 필터링
+            month_holidays = set()
+            month_str = f"{month:02d}"
+            
+            for date_str, holiday_name in holidays_data.items():
+                # YYYY-MM-DD 형식에서 월 확인
+                if date_str.startswith(f"{year}-{month_str}"):
+                    try:
+                        holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        month_holidays.add(holiday_date)
+                        print(f"[EXCEL HOLIDAY OPTIMIZED] {date_str} ({holiday_name}) 추가", flush=True)
+                    except ValueError:
+                        continue
+            
+            print(f"[EXCEL HOLIDAY OPTIMIZED] {year}년 {month}월 공휴일: {len(month_holidays)}개", flush=True)
+            return month_holidays
+            
+        except Exception as e:
+            print(f"[EXCEL HOLIDAY OPTIMIZED] 공휴일 가져오기 실패: {e}", flush=True)
+            return set()
         
     def generate_report(self):
         """가동보고서 엑셀 파일을 생성합니다."""
@@ -59,18 +95,8 @@ class ExcelReportGenerator:
             if not monthly_data:
                 raise ValueError("該当月の情報が見つかりません。")
             
-            # 공휴일 데이터 가져오기 (PDF generator와 동일한 로직)
-            from attendance.views.main_views import get_holidays_for_months
-            api_holidays = get_holidays_for_months(self.year, self.month)
-            
-            # API 공휴일을 date 객체로 변환
-            api_holiday_dates = set()
-            for date_str in api_holidays.keys():
-                try:
-                    holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                    api_holiday_dates.add(holiday_date)
-                except ValueError:
-                    continue
+            # 공휴일 데이터 가져오기 (해당 월만 최적화)
+            api_holiday_dates = self._get_month_holidays_optimized(self.year, self.month)
             
             self.api_holiday_dates = api_holiday_dates
             print(f"[EXCEL HOLIDAY] 공휴일 데이터 로딩 완료: {len(api_holiday_dates)}개")

@@ -177,12 +177,59 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
 
     try:
         print(f"SMTP 접속 시도: smtp.gmail.com:587", flush=True)
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.ehlo()
-            print("EHLO 성공", flush=True)
-            server.starttls()
-            print("STARTTLS 성공", flush=True)
-            server.ehlo()
+        
+        # Railway에서 포트 587이 차단될 수 있으므로 대체 포트도 시도
+        ports_to_try = [587, 465, 25]
+        server = None
+        
+        for port in ports_to_try:
+            try:
+                print(f"포트 {port} 연결 시도...", flush=True)
+                if port == 465:
+                    # SSL 포트
+                    server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=30)
+                else:
+                    # TLS 포트
+                    server = smtplib.SMTP('smtp.gmail.com', port, timeout=30)
+                print(f"포트 {port} 연결 성공!", flush=True)
+                break
+            except Exception as e:
+                print(f"포트 {port} 연결 실패: {e}", flush=True)
+                if server:
+                    try:
+                        server.quit()
+                    except:
+                        pass
+                server = None
+                continue
+        
+        if not server:
+            error_msg = """
+모든 SMTP 포트 연결 실패 - Railway에서 Gmail SMTP가 차단되었을 수 있습니다.
+
+해결방법:
+1. SendGrid 사용: https://sendgrid.com (무료 100통/일)
+2. Mailgun 사용: https://www.mailgun.com (무료 5,000통/월)
+3. Railway Variables에 다음 설정:
+   EMAIL_HOST=smtp.sendgrid.net
+   EMAIL_PORT=587
+   EMAIL_HOST_USER=apikey
+   EMAIL_HOST_PASSWORD=your-sendgrid-api-key
+
+또는 로컬 환경에서 테스트해보세요.
+            """.strip()
+            raise Exception(error_msg)
+        
+        with server:
+            # SSL이 아닌 경우에만 STARTTLS 실행
+            if not isinstance(server, smtplib.SMTP_SSL):
+                server.ehlo()
+                print("EHLO 성공", flush=True)
+                server.starttls()
+                print("STARTTLS 성공", flush=True)
+                server.ehlo()
+            else:
+                print("SMTP_SSL 사용 - STARTTLS 건너뛰기", flush=True)
             
             print(f'로그인 시도 - 사용자: {user}', flush=True)
             server.login(user, password)
