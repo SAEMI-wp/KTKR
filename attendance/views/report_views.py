@@ -136,7 +136,7 @@ class PDFDownloadView(View):
             return JsonResponse({'status': 'error', 'message': f'PDFファイルの作成中にエラーが発生しました: {str(e)}'})
 
 
-# 이메일 전송 뷰
+# メール送信ビュー
 @method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
 class EmailSendView(View):
@@ -154,7 +154,7 @@ class EmailSendView(View):
             
             if not email_to or not file_type or not year or not month:
                 return JsonResponse({'status': 'error', 'message': '必要な情報が不足しています。'})
-            # 파일 생성
+            # ファイル生成
             if file_type == 'pdf':
                 from ..pdf_generator import PDFReportGenerator
                 generator = PDFReportGenerator(request.user, int(year), int(month))
@@ -162,25 +162,33 @@ class EmailSendView(View):
                 file_ext = 'pdf'
                 mime_type = 'application/pdf'
             elif file_type == 'excel':
-                generator = ExcelReportGenerator(request.user, int(year), int(month))
-                workbook = generator.generate_report()
-                file_buffer = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
                 try:
-                    print("엑셀 저장 직전")
+                    print("Excel生成開始", flush=True)
+                    generator = ExcelReportGenerator(request.user, int(year), int(month))
+                    workbook = generator.generate_report()
+                    print("Excel生成完了", flush=True)
+                    
+                    file_buffer = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+                    print(f"一時ファイル作成: {file_buffer.name}", flush=True)
+                    
                     workbook.save(file_buffer.name)
-                    print("엑셀 저장 성공")
+                    print("Excel保存成功", flush=True)
+                    
+                    file_ext = 'xlsx'
+                    mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 except Exception as e:
-                    print("엑셀 저장 중 에러:", e)
-                file_ext = 'xlsx'
-                mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    print(f"Excel生成中のエラー: {str(e)}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    return JsonResponse({'status': 'error', 'message': f'Excelファイルの生成に失敗しました: {str(e)}'})
             else:
                 return JsonResponse({'status': 'error', 'message': 'ファイル種別が不正です。'})
-            # 메일 전송
+            # メール送信
             subject = f"[{employee_name}]{year}年{month}月 稼働報告書"
             # メール本文を指定フォーマットで作成
             body = f"""===========================\n提出者：{request.user.display_name}({request.user.employee_no})\n期間：{year}年{int(month):d}月\n添付：稼働報告書\n\nいつもお世話になっております。{int(month):d}月稼働報告書を提出します。\n==========================="""
             
-            # 발신자 이메일 설정 (폼에서 입력받은 값만 사용)
+            # 送信者メールを設定 (フォームから入力された値のみ使用)
             if not email_host_user:
                 return JsonResponse({'status': 'error', 'message': '発信者メールを入力してください。'})
             if not email_host_password:
@@ -190,7 +198,7 @@ class EmailSendView(View):
             
             print('send_mail_dynamic 호출 전', flush=True)
             month_str = f"{int(month):02d}"
-            # 첨부파일 데이터 준비
+            # 添付ファイルデータを準備
             if file_type == 'pdf':
                 # 月を必ず2桁で表示（ゼロ埋め）
                 filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.pdf"
@@ -200,9 +208,9 @@ class EmailSendView(View):
                 file_buffer.seek(0)
                 attachment_data = file_buffer.read()
 
-            # send_mail_dynamic 함수 호출 (utils에서 import 필요)
             from attendance.utils import send_mail_dynamic
             try:
+                print(f"メール送信開始 - From: {from_email}, To: {email_to}", flush=True)
                 send_mail_dynamic(
                     user=from_email,
                     password=email_host_password,
@@ -213,9 +221,18 @@ class EmailSendView(View):
                     attachment_filename=filename,
                     mime_type=mime_type
                 )
+                print("メール送信成功", flush=True)
             except Exception as e:
-                raise
-            # 임시파일 정리
+                print(f"メール送信エラー: {str(e)}", flush=True)
+                import traceback
+                traceback.print_exc()
+                # 일시 파일 정리
+                if file_type == 'excel':
+                    import os
+                    file_buffer.close()
+                    os.unlink(file_buffer.name)
+                return JsonResponse({'status': 'error', 'message': f'メール送信に失敗しました: {str(e)}'})
+            # 一時ファイルを整理
             if file_type == 'excel':
                 import os
                 file_buffer.close()
