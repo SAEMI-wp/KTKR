@@ -48,6 +48,7 @@ class ExcelReportGenerator:
     def generate_report(self):
         """가동보고서 엑셀 파일을 생성합니다."""
         try:
+            print(f"Excel 생성 시작 - 사용자: {self.employee.employee_no}, 연월: {self.year}/{self.month}", flush=True)
             # 구조체 기반으로 월별 데이터 가져오기
             monthly_data = get_or_create_monthly_structure(
                 employee=self.employee,

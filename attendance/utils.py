@@ -176,17 +176,37 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
         msg.attach(part)
 
     try:
+        print(f"SMTP 접속 시도: smtp.gmail.com:587", flush=True)
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.ehlo()
+            print("EHLO 성공", flush=True)
             server.starttls()
+            print("STARTTLS 성공", flush=True)
             server.ehlo()
-            print('login user:', repr(user))
+            
+            print(f'로그인 시도 - 사용자: {user}', flush=True)
             server.login(user, password)
+            print("로그인 성공", flush=True)
+            
+            print(f"메일 전송 시도 - To: {to_email}", flush=True)
             server.sendmail(user, [to_email], msg.as_string())
             print('메일 전송 성공', flush=True)
+    except smtplib.SMTPAuthenticationError as e:
+        error_msg = f'Gmail 인증 실패: {str(e)} - 이메일 주소와 앱 비밀번호를 확인해주세요'
+        print(error_msg, flush=True)
+        raise Exception(error_msg)
+    except smtplib.SMTPRecipientsRefused as e:
+        error_msg = f'수신자 주소 오류: {str(e)}'
+        print(error_msg, flush=True)
+        raise Exception(error_msg)
+    except smtplib.SMTPServerDisconnected as e:
+        error_msg = f'SMTP 서버 연결 실패: {str(e)}'
+        print(error_msg, flush=True)
+        raise Exception(error_msg)
     except Exception as e:
-        print('메일 전송 실패:', e, flush=True)
-        raise 
+        error_msg = f'메일 전송 실패: {str(e)}'
+        print(error_msg, flush=True)
+        raise Exception(error_msg) 
 
 def get_group_name_by_code(code):
     """
