@@ -58,6 +58,24 @@ class ExcelReportGenerator:
             if not monthly_data:
                 raise ValueError("該当月の情報が見つかりません。")
             
+            # 공휴일 데이터 가져오기 (PDF generator와 동일한 로직)
+            from attendance.views.main_views import get_holidays_for_months
+            api_holidays = get_holidays_for_months(self.year, self.month)
+            
+            # API 공휴일을 date 객체로 변환
+            api_holiday_dates = set()
+            for date_str in api_holidays.keys():
+                try:
+                    holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    api_holiday_dates.add(holiday_date)
+                except ValueError:
+                    continue
+            
+            self.api_holiday_dates = api_holiday_dates
+            print(f"[EXCEL HOLIDAY] 공휴일 데이터 로딩 완료: {len(api_holiday_dates)}개")
+            for holiday_date in api_holiday_dates:
+                print(f"[EXCEL HOLIDAY] 공휴일: {holiday_date}")
+            
             # 엑셀 워크북 생성
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
@@ -226,7 +244,7 @@ class ExcelReportGenerator:
         
         # --- 日別データ入力ロジック修正 ---
         current_row = 12  # 初期化を追加
-        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
+        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)", "祝日"]
         for day in range(1, last_day + 1):
             if current_row > 42:
                 break
@@ -238,8 +256,17 @@ class ExcelReportGenerator:
             self.worksheet[f'C{current_row}'] = weekday
             daily = daily_dict.get(day)
             if daily:
-                work_type = daily.work_type or "-"
-                # 勤務区分は常に表示（出勤は空欄）
+                work_type = daily.work_type or ""
+                
+                # 공휴일 체크 (PDF generator와 동일한 로직)
+                is_api_holiday = current_date in getattr(self, 'api_holiday_dates', set())
+                
+                # 공휴일이고 work_type이 비어있거나 祝日이면 祝日로 설정
+                if is_api_holiday and (not work_type or work_type == "祝日"):
+                    work_type = "祝日"
+                    print(f"[EXCEL HOLIDAY] {current_date} 공휴일로 설정: {work_type}")
+                
+                # 勤務区分は常に表示（출근만 空欄）
                 if work_type == "出勤":
                     self.worksheet[f'D{current_row}'] = ""
                 else:
@@ -309,8 +336,13 @@ class ExcelReportGenerator:
                     for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
                         self.worksheet[f'{col}{current_row}'] = ""
             else:
-                # 데이터가 없는 경우 토요일/일요일 자동 휴일 설정
-                if weekday == "土":
+                # 데이터가 없는 경우 공휴일/토요일/일요일 자동 설정
+                is_api_holiday = current_date in getattr(self, 'api_holiday_dates', set())
+                
+                if is_api_holiday:
+                    self.worksheet[f'D{current_row}'] = "祝日"
+                    print(f"[EXCEL HOLIDAY] {current_date} 데이터 없는 공휴일로 설정: 祝日")
+                elif weekday == "土":
                     self.worksheet[f'D{current_row}'] = "休日"
                 elif weekday == "日":
                     self.worksheet[f'D{current_row}'] = "休日(法)"
