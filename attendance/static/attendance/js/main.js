@@ -2696,9 +2696,10 @@ function filterWorkTypeOptionsByDate(dateStr) {
     } else {
         Array.from(workTypeSelect.options).forEach(option => {
             const value = option.value;
-            const isHolidayType = value === '休日' || value === '休日(法)' || value === '祝日';
+            // 평일에도 休日은 선택 가능하도록 수정 (休日(法), 祝日은 여전히 숨김)
+            const isRestrictedHolidayType = value === '休日(法)' || value === '祝日';
             const isDaiQ = value === '代休(勤)' || value === '振替(勤)';
-            const shouldShow = !isHolidayType && !isDaiQ && value !== '';
+            const shouldShow = !isRestrictedHolidayType && !isDaiQ && value !== '';
             option.style.display = shouldShow ? '' : 'none';
         });
     }
