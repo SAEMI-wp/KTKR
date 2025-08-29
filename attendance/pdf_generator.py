@@ -272,12 +272,23 @@ class PDFReportGenerator:
                 holiday_keywords = ["休日", "休日(法)", "振替(休)", "振替(法)", "祝日"]
                 if any(keyword in work_type for keyword in holiday_keywords):
                     is_holiday_row = True
-                # 出勤/退勤時間が同じ、または特定勤務区分なら 구분만 표시, 나머지는 빈칸
+                # 出勤/退勤時間が同じ、または特定勤務区分の処理
                 if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
-                    # 나머지 11개를 정확히 추가
-                    while len(row_data) < 12:
+                    
+                    # 代休/振替の勤務日は常に表示
+                    if daily.alternative_work_date:
+                        alt_date_str = f"{daily.alternative_work_date.month}/{daily.alternative_work_date.day}"
+                        row_data.append(Paragraph(alt_date_str, self.styles.STYLES['NormalCenter']))
+                    else:
                         row_data.append('')
+                    
+                    # 時間関連項目(작업시작~소계)는 빈칸
+                    for _ in range(7):  # F~L열까지 7개 컬럼
+                        row_data.append('')
+                    
+                    # 実施作業内容・備考は常に表示
+                    row_data.append(Paragraph(daily.notes or "", self.styles.STYLES['Normal']))
                 else:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
                     # 代休/振替の勤務日: 8/1 형식으로 변경 (앞의 0 제거)

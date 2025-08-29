@@ -298,10 +298,20 @@ class ExcelReportGenerator:
                     self.worksheet[f'D{current_row}'] = ""
                 else:
                     self.worksheet[f'D{current_row}'] = work_type
-                # 欠勤, 有給, 特別休暇, 振替(休), 代休(休)または出勤/退勤時間が同じ場合はE~M全て空欄
+                # 欠勤, 有給, 特別休暇, 振替(休), 代休(休)または出勤/退勤時間が同じ場合の処理
                 if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
-                    for col in ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']:
+                    # 時間関連項目(F~L)は空欄にする
+                    for col in ['F', 'G', 'H', 'I', 'J', 'K', 'L']:
                         self.worksheet[f'{col}{current_row}'] = ""
+                    
+                    # 代休/振替の勤務日は常に表示
+                    if daily.alternative_work_date:
+                        self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
+                    else:
+                        self.worksheet[f'E{current_row}'] = ""
+                    
+                    # 実施作業内容・備考は常に表示
+                    self.worksheet[f'M{current_row}'] = daily.notes or ""
                 # 通常入力
                 elif daily.start_time and daily.end_time and daily.start_time != daily.end_time:
                     try:
