@@ -15,7 +15,7 @@
         </button>
     </div>
 
-    <!-- 토글 버튼 (서버에서 상태에 따라 렌더링) -->
+    <!-- トグルボタン (サーバーからの状態に応じてレンダリング) -->
     {% if toggle_state == '1' %}
     <button id="monthly-info-toggle-btn" class="toggle-btn red" title="月情報を隠す">
         <i class="fa-solid fa-minus"></i>
@@ -35,15 +35,15 @@
     </button>
     {% endif %}
 
-    <!-- 월정보 섹션 컨테이너 (토글 상태에 따라 표시/숨김) -->
+    <!-- 月情報セクションコンテナ (トグル状態に応じて表示/非表示) -->
     <div id="monthly-info-container" style="display:{% if toggle_state == '1' %}block{% else %}none{% endif %};"></div>
     
-    <!-- 탭 버튼 (언제나 표시) -->
+    <!-- タブボタン -->
     <div class="tab-switcher" id="tab-switcher">
         <button id="tab-calendar" class="tab-btn{% if calendar_tab_active %} active{% endif %}">カレンダー</button>
         <button id="tab-list" class="tab-btn{% if list_tab_active %} active{% endif %}">リスト</button>
     </div>
-    <!-- 탭 컨텐츠 (서버에서 상태에 따라 렌더링) -->
+    <!-- タブコンテンツ (サーバーからの状態に応じてレンダリング) -->
     <div id="calendar-tab" style="display:{{ calendar_tab_display }};">
         <section class="calendar-view">
             <h3>{{ calendar_date|date:"Y年n月" }}の勤務実績カレンダー</h3>
@@ -75,6 +75,14 @@
                                             {% if day.record %}
                                                 {% if day.record.work_type == '有給' %}
                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                {% elif day.record.work_type == '欠勤' %}
+                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                {% elif day.record.work_type == '特別休暇' %}
+                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                {% elif day.record.work_type == '休日' %}
+                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                {% elif day.record.work_type == 'その他' %}
+                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
                                                 {% elif day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' %}
                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                     {% if day.record.alternative_work_date %}
@@ -90,14 +98,11 @@
                                             {% endif %}
                                         </div>
                                         <div class="cell-footer">
-                                            <!-- <span class="approval-icon"
-                                                  data-required="{{ day.record.is_required|default:0 }}"
-                                                  data-confirmed="{{ day.record.is_confirmed|default:0 }}">
-                                            </span> -->
+
                                         </div>
                                     </div>
                                     {% else %}
-                                    <!-- 빈 셀 -->
+                                    <!-- 空のセル -->
                                     {% endif %}
                                 </td>
                             {% endfor %}
@@ -132,7 +137,6 @@
                     <tbody>
                         {% for day in month_days_list %}
                             <tr class="attendance-list-row" data-date="{{ day.date|date:'Y-m-d' }}" data-default-work-type="{{ day.default_work_type }}" data-has-record="{% if day.record %}1{% else %}0{% endif %}" data-is-api-holiday="{% if day.is_api_holiday %}true{% else %}false{% endif %}">
-                                {# 日付, 曜日: 색상/너비/붙이기 #}
                                 <td class="date-col{% if not day.record %}{% if day.is_api_holiday or day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}{% endif %}">{{ day.date|date:"n/j" }}</td>
                                 <td class="weekday-col{% if not day.record %}{% if day.is_api_holiday or day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}{% endif %}">
                                     {% with weekday_names="月,火,水,木,金,土,日"|split:"," %}
@@ -169,24 +173,6 @@
                                         &nbsp;
                                     {% endif %}
                                 </td>
-                                {# 日々承認 셀 #}
-                                <!-- <td class="approval-col">
-                                    {% if day.record %}
-                                        {% if not day.record.is_required and not day.record.is_confirmed %}
-                                            <button class="approval-btn request-btn" data-date="{{ day.date|date:'Y-m-d' }}" title="承認申請">
-                                                <img src="/static/attendance/img/up-arrow.png" alt="申請" style="width:24px;height:24px;">
-                                            </button>
-                                        {% elif day.record.is_required and not day.record.is_confirmed %}
-                                            <span class="approval-waiting" title="承認待ち">
-                                                <img src="/static/attendance/img/waiting.png" alt="待機中" style="width:24px;height:24px;">
-                                            </span>
-                                        {% elif not day.record.is_required and day.record.is_confirmed %}
-                                            <span class="approval-done" title="承認済み">
-                                                <img src="/static/attendance/img/check-green.png" alt="承認済み" style="width:24px;height:24px;">
-                                            </span>
-                                        {% endif %}
-                                    {% endif %}
-                                </td> -->
                             </tr>
                         {% empty %}
                             <tr>
