@@ -927,8 +927,8 @@ class EmployeeAdmin(admin.ModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
     def has_add_permission(self, request):
-        # 追加ボタン을非表示
-        return False
+        # superuser만 추가 버튼 표시
+        return request.user.is_superuser
     
     def add_view(self, request, form_url='', extra_context=None):
         """新しい従業員を追加するビュー - パスワードの暗号化処理"""
