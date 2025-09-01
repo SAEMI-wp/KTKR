@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
 import tempfile
 import json
 import threading
@@ -11,8 +12,30 @@ import time
 
 from ..excel_generator import ExcelReportGenerator
 from ..pdf_generator import PDFReportGenerator
+from ..models import Employee
 from django.core.mail import EmailMessage
 from django.conf import settings
+import urllib.parse
+
+
+def create_edge_compatible_filename(filename):
+    """
+    Microsoft Edge에서 파일명이 제대로 표시되도록 인코딩을 처리합니다.
+    """
+    
+    # ASCII 전용 파일명 생성 (Edge 호환성)
+    ascii_filename = filename.encode('ascii', 'ignore').decode('ascii')
+    
+    # UTF-8 인코딩된 파일명
+    utf8_filename = urllib.parse.quote(filename.encode('utf-8'))
+    
+    # Edge 호환 Content-Disposition 헤더 생성
+    content_disposition = (
+        f'attachment; filename="{ascii_filename}"; '
+        f'filename*=UTF-8\'\'{utf8_filename}'
+    )
+    
+    return content_disposition
 
 
 def send_email_async(user_email, user_password, to_email, subject, body, attachment_data, filename, mime_type):
@@ -50,27 +73,43 @@ def send_email_async(user_email, user_password, to_email, subject, body, attachm
 @method_decorator(login_required, name='dispatch')
 class ExcelDownloadView(View):
     def get(self, request, *args, **kwargs):
-        # URLパラメータから年月を取得
+        # URLパラメータから年月을 取得
         year = request.GET.get('year')
         month = request.GET.get('month')
+        employee_no = request.GET.get('employee_no')
         
         if not year or not month:
             return JsonResponse({'status': 'error', 'message': '年月が指定されていません'})
         
+        # 대상 직원 결정
+        if employee_no:
+            # 관리자 권한 체크
+            if not request.user.has_perm('attendance.can_access_admin'):
+                return JsonResponse({'status': 'error', 'message': '権限がありません。'})
+            target_employee = get_object_or_404(Employee, employee_no=employee_no)
+        else:
+            target_employee = request.user
+        
         try:
             # ExcelReportGeneratorを使用してエクセルファイルを生成
-            generator = ExcelReportGenerator(request.user, int(year), int(month))
+            generator = ExcelReportGenerator(target_employee, int(year), int(month))
             workbook = generator.generate_report()
             
-            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
-            employee_name = f"{request.user.display_name}_{request.user.employee_no}"
+            # employee_nameを '名前_社員番号' 형식で設정（括弧をアンダーバーに変환）
+            employee_name = f"{target_employee.display_name}_{target_employee.employee_no}"
             filename = f"{year}_{month}_稼動報告書_{employee_name}.xlsx"
             
             # レスポンスを作成
             response = HttpResponse(
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            # Edge 호환 Content-Disposition 헤더 설정
+            response['Content-Disposition'] = create_edge_compatible_filename(filename)
+            
+            # 추가 헤더로 Edge 호환성 향상
+            response['Cache-Control'] = 'no-cache'
+            response['Pragma'] = 'no-cache'
             
             # 엑셀 저장 직전
             print("엑셀 저장 직전")
@@ -90,20 +129,30 @@ class ExcelDownloadView(View):
 @method_decorator(login_required, name='dispatch')
 class PDFPreviewView(View):
     def get(self, request, *args, **kwargs):
-        # URLパラメータから年月を取得
+        # URLパラメータから年月을 取得
         year = request.GET.get('year')
         month = request.GET.get('month')
+        employee_no = request.GET.get('employee_no')
         
         if not year or not month:
             return JsonResponse({'status': 'error', 'message': '年月が指定されていません'})
         
+        # 대상 직원 결정
+        if employee_no:
+            # 관리자 권한 체크
+            if not request.user.has_perm('attendance.can_access_admin'):
+                return JsonResponse({'status': 'error', 'message': '権限がありません。'})
+            target_employee = get_object_or_404(Employee, employee_no=employee_no)
+        else:
+            target_employee = request.user
+        
         try:
             # PDFReportGeneratorを使用してPDFファイルを生成
-            generator = PDFReportGenerator(request.user, int(year), int(month))
+            generator = PDFReportGenerator(target_employee, int(year), int(month))
             pdf_buffer = generator.generate_pdf()
             
-            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
-            employee_name = f"{request.user.display_name}({request.user.employee_no})"
+            # employee_nameを '名前_社員番号' 형식で설정（括弧をアンダーバーに変환）
+            employee_name = f"{target_employee.display_name}({target_employee.employee_no})"
             filename = f"{year}_{month}_稼動報告書_{employee_name}.pdf"
             
             # レスポンスを作成
@@ -111,11 +160,15 @@ class PDFPreviewView(View):
                 content_type='application/pdf'
             )
             
-            # iframe에서 표시할 수 있도록 inline으로 설정
-            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            # Edge 호환 Content-Disposition 헤더 설정 (inline + filename)
+            response['Content-Disposition'] = f'inline; filename="{filename}"; filename*=UTF-8\'\'{urllib.parse.quote(filename.encode("utf-8"))}'
             
             # iframe에서 표시할 수 있도록 X-Frame-Options 헤더 설정
             response['X-Frame-Options'] = 'SAMEORIGIN'
+            
+            # 추가 헤더로 Edge 호환성 향상
+            response['Cache-Control'] = 'no-cache'
+            response['Pragma'] = 'no-cache'
             
             # PDFデータをレスポンスに書き込み
             response.write(pdf_buffer.getvalue())
@@ -133,20 +186,30 @@ class PDFPreviewView(View):
 @method_decorator(login_required, name='dispatch')
 class PDFDownloadView(View):
     def get(self, request, *args, **kwargs):
-        # URLパラメータ부터年月を取得
+        # URLパラメータから年月을 取得
         year = request.GET.get('year')
         month = request.GET.get('month')
+        employee_no = request.GET.get('employee_no')
         
         if not year or not month:
             return JsonResponse({'status': 'error', 'message': '年月が指定されていません'})
         
+        # 대상 직원 결정
+        if employee_no:
+            # 관리자 권한 체크
+            if not request.user.has_perm('attendance.can_access_admin'):
+                return JsonResponse({'status': 'error', 'message': '권한がありません。'})
+            target_employee = get_object_or_404(Employee, employee_no=employee_no)
+        else:
+            target_employee = request.user
+        
         try:
             # PDFReportGeneratorを使用してPDFファイルを生成
-            generator = PDFReportGenerator(request.user, int(year), int(month))
+            generator = PDFReportGenerator(target_employee, int(year), int(month))
             pdf_buffer = generator.generate_pdf()
             
-            # employee_nameを '名前_社員番号' 形式で設定（括弧をアンダーバーに変換）
-            employee_name = f"{request.user.display_name}({request.user.employee_no})"
+            # employee_nameを '名前_社員番号' 형식で설정（括弧をアンダーバーに変換）
+            employee_name = f"{target_employee.display_name}({target_employee.employee_no})"
             filename = f"{year}_{month}_稼動報告書_{employee_name}.pdf"
             
             # レスポンスを作成
@@ -154,8 +217,12 @@ class PDFDownloadView(View):
                 content_type='application/pdf'
             )
             
-            # 다운로드용으로 attachment 설정
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            # Edge 호환 Content-Disposition 헤더 설정
+            response['Content-Disposition'] = create_edge_compatible_filename(filename)
+            
+            # 추가 헤더로 Edge 호환성 향상
+            response['Cache-Control'] = 'no-cache'
+            response['Pragma'] = 'no-cache'
             
             # PDFデータをレスポンスに書き込み
             response.write(pdf_buffer.getvalue())
@@ -175,7 +242,6 @@ class PDFDownloadView(View):
 class EmailSendView(View):
     def post(self, request, *args, **kwargs):
         import json
-        employee_name = f"{request.user.display_name}_{request.user.employee_no}"
         try:
             data = json.loads(request.body)
             email_to = data.get('email')
@@ -184,20 +250,33 @@ class EmailSendView(View):
             month = data.get('month')
             email_host_user = data.get('email_host_user')
             email_host_password = data.get('email_host_password')
+            employee_no = data.get('employee_no')
             
             if not email_to or not file_type or not year or not month:
                 return JsonResponse({'status': 'error', 'message': '必要な情報が不足しています。'})
+            
+            # 대상 직원 결정
+            if employee_no:
+                # 관리자 권한 체크
+                if not request.user.has_perm('attendance.can_access_admin'):
+                    return JsonResponse({'status': 'error', 'message': '権限がありません。'})
+                target_employee = get_object_or_404(Employee, employee_no=employee_no)
+            else:
+                target_employee = request.user
+            
+            employee_name = f"{target_employee.display_name}_{target_employee.employee_no}"
+            
             # ファイル生成
             if file_type == 'pdf':
                 from ..pdf_generator import PDFReportGenerator
-                generator = PDFReportGenerator(request.user, int(year), int(month))
+                generator = PDFReportGenerator(target_employee, int(year), int(month))
                 file_buffer = generator.generate_pdf()
                 file_ext = 'pdf'
                 mime_type = 'application/pdf'
             elif file_type == 'excel':
                 try:
                     print("Excel生成開始", flush=True)
-                    generator = ExcelReportGenerator(request.user, int(year), int(month))
+                    generator = ExcelReportGenerator(target_employee, int(year), int(month))
                     
                     # Excel 생성 시간 측정
                     start_time = time.time()
@@ -224,7 +303,7 @@ class EmailSendView(View):
             # メール送信
             subject = f"[{employee_name}]{year}年{month}月 稼働報告書"
             # メール本文を指定フォーマットで作成
-            body = f"""===========================\n提出者：{request.user.display_name}({request.user.employee_no})\n期間：{year}年{int(month):d}月\n添付：稼働報告書\n\nいつもお世話になっております。{int(month):d}月稼働報告書を提出します。\n==========================="""
+            body = f"""===========================\n提出者：{target_employee.display_name}({target_employee.employee_no})\n期間：{year}年{int(month):d}月\n添付：稼働報告書\n\nいつもお世話になっております。{int(month):d}月稼働報告書を提出します。\n==========================="""
             
             # 送信者メールを設定 (フォームから入力された値のみ使用)
             if not email_host_user:
@@ -239,10 +318,10 @@ class EmailSendView(View):
             # 添付ファイルデータを準備
             if file_type == 'pdf':
                 # 月を必ず2桁で表示（ゼロ埋め）
-                filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.pdf"
+                filename = f"Attendance Report({year}_{month_str})_{target_employee.employee_no}.pdf"
                 attachment_data = file_buffer.getvalue()
             else:
-                filename = f"Attendance Report({year}_{month_str})_{request.user.employee_no}.xlsx"
+                filename = f"Attendance Report({year}_{month_str})_{target_employee.employee_no}.xlsx"
                 attachment_data = file_buffer.getvalue()  # BytesIO에서 바로 가져오기
             
             print(f"첨부파일 크기: {len(attachment_data)} bytes", flush=True)
