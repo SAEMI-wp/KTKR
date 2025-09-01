@@ -381,7 +381,15 @@ class DailyData:
         elif hour == 8 and minute >= 30:
             return 6.0  # 8:30~9:00
             
-        # 9:01~18:30 → 0
+        # 9:00~18:30 → 0
+        elif hour >= 9 and (hour < 18 or (hour == 18 and minute < 30)):
+            return 0.0
+            
+        # 0:00~5:59 → 22:00~6:30 구간과 동일하게 3.5
+        elif hour >= 0 and hour < 6:
+            return 3.5
+            
+        # 그 외 시간 (예외처리)
         else:
             return 0.0
 
