@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (printPreviewBtn) {
         printPreviewBtn.addEventListener('click', function() {
             // 바로 PDF 미리보기 모달 열기
-            const pdfUrl = `/attendance/pdf/preview/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}`;
+            const pdfUrl = `/attendance/pdf/preview/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}&employee_no=${CURRENT_EMPLOYEE_ID}`;
             const pdfIframe = document.getElementById('pdf-iframe');
             const pdfModal = document.getElementById('pdf-preview-modal');
             
@@ -125,13 +125,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (downloadPdfBtn) {
         downloadPdfBtn.addEventListener('click', function() {
-            window.location.href = `/attendance/pdf/download/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}`;
+            window.location.href = `/attendance/pdf/download/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}&employee_no=${CURRENT_EMPLOYEE_ID}`;
         });
     }
 
     if (downloadExcelBtn) {
         downloadExcelBtn.addEventListener('click', function() {
-            window.location.href = `/attendance/excel/download/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}`;
+            window.location.href = `/attendance/excel/download/?year=${CURRENT_YEAR}&month=${CURRENT_MONTH.toString().padStart(2, '0')}&employee_no=${CURRENT_EMPLOYEE_ID}`;
         });
     }
 });
