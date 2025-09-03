@@ -10,12 +10,12 @@ let currentState = {
     defaultDay: 0            // 今日の日 (固定値)
 };
 
-// 백업본 호환성을 위한 변수
+// バックアップ互換性をための変数
 let currentYear, currentMonth;
 
 // ===================== ユーティリティ関数 =====================
 
-// CSRF를 포함한 fetch 함수
+// CSRFを含むfetch関数 (セッション 有効期限切れ時 自動リダイレクト 含む)
 function fetchWithCsrf(url, options = {}) {
     const defaultOptions = {
                 headers: {
@@ -30,10 +30,19 @@ function fetchWithCsrf(url, options = {}) {
         delete defaultOptions.headers['Content-Type'];
     }
     
-    return fetch(url, { ...defaultOptions, ...options });
+    return fetch(url, { ...defaultOptions, ...options })
+        .then(response => {
+            // 세션 만료나 인증 실패 시 로그인 페이지로 리다이렉트
+            if (response.status === 401 || response.status === 403) {
+                console.log('[AUTH] セッションが失敗しました, ログイン ページに移動します.');
+                window.location.href = '/login/';
+                return Promise.reject(new Error('Session expired'));
+            }
+            return response;
+        });
 }
 
-// 날짜 관련 유틸리티
+// 日付関連 ユーティリティ
 function formatDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -42,14 +51,14 @@ function formatDate(date) {
 }
 
 function parseDate(dateStr) {
-    // 일본어 형식 (2025年8月1日) 처리
+    // 日本語形式 (2025年8月1日) 処理
     const japaneseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (japaneseMatch) {
         const [, year, month, day] = japaneseMatch;
         return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
     
-    // 기존 YYYY-MM-DD 형식 처리
+    // `元のYYYY-MM-DD形式 処理
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
 }
@@ -58,35 +67,35 @@ function getTodayDate() {
     return formatDate(new Date());
 }
 
-// ===================== 네비게이션 함수 =====================
+// ===================== ナビゲーション関数 =====================
 
-// 캘린더나 리스트를 특정 년월에 업데이트 (페이지 리로드)
+// カレンダーまたはリストを特定の年月に更新 (ページリロード)
 function navigate(year, month, day) {
     let url = `?year=${year}&month=${month}`;
     if (day) url += `&day=${day}`;
     window.location.href = url;
 }
 
-// 홈으로 돌아가기 (오늘 날짜)
+// ホームに戻る (今日の日付)
 function goToToday() {
     const today = new Date();
-    console.log(`[HOME] 오늘로 이동: ${getTodayDate()}`);
+    console.log(`[HOME] 今日に移動: ${getTodayDate()}`);
     navigate(today.getFullYear(), today.getMonth() + 1, today.getDate());
 }
 
-// ===================== 월정보 토글 관리 함수 =====================
+// ===================== 月月情報 トグル 管理 関数 =====================
 
-// 서버에서 토글 상태를 처리하므로 클라이언트 측 버튼 변경 함수는 불필요
+// サーバーでトグル状態を処理
 
 /**
- * 월정보 섹션을 AJAX로 로드하는 함수
- * @param {number} year - 년도
- * @param {number} month - 월
- * @returns {Promise<boolean>} - 월정보 존재 여부
+ * 月情報 セクションをAJAXで読み込む関数
+ * @param {number} year - 年
+ * @param {number} month - 月
+ * @returns {Promise<boolean>} - 月情報 存在 有無
  */
 async function loadMonthlyInfoSection(year, month) {
     try {
-        console.log(`[MONTHLY_INFO] 월정보 로딩 시작: ${year}-${month}`);
+        console.log(`[MONTHLY_INFO] 月情報 読み込み開始: ${year}-${month}`);
         
         const url = `/attendance/monthly-info/section/?year=${year}&month=${month}`;
         const response = await fetchWithCsrf(url, {
@@ -97,7 +106,7 @@ async function loadMonthlyInfoSection(year, month) {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP エラー! status: ${response.status}`);
         }
         
         const html = await response.text();
@@ -106,16 +115,16 @@ async function loadMonthlyInfoSection(year, month) {
         if (container) {
             container.innerHTML = html;
             container.style.display = 'block';
-            console.log(`[MONTHLY_INFO] 월정보 로딩 완료: ${year}-${month}`);
+            console.log(`[MONTHLY_INFO] 月情報 読み込み完了: ${year}-${month}`);
             
-            // 월정보 수정 버튼 이벤트 핸들러 등록
+            // 月情報 修正 ボタン イベント ハンドラ 登録
             const editMonthlyBtn = container.querySelector('#edit-monthly-btn');
             if (editMonthlyBtn) {
                 editMonthlyBtn.addEventListener('click', MonthlyUpdateModalModule.open);
                 console.log('[MONTHLY_INFO] 월정보 수정 버튼 이벤트 등록 완료');
             }
             
-            // 월정보 수정 모달의 닫기 버튼과 폼 이벤트도 등록
+            // 月情報修正モーダルの閉じるボタンとフォームイベントも登録
             const closeUpdateModalBtn = document.getElementById('close-update-modal-btn');
             const monthlyUpdateForm = document.getElementById('monthly-update-form');
             
@@ -127,23 +136,23 @@ async function loadMonthlyInfoSection(year, month) {
                 monthlyUpdateForm.addEventListener('submit', MonthlyUpdateModalModule.submit);
             }
             
-            // 월정보 존재 여부 확인
+            // 月情報 存在 確認
             const monthlySection = container.querySelector('#monthly-info-section');
             const hasMonthlyData = monthlySection !== null;
             
-            // 월정보 경고 상태 업데이트 (새로 추가)
+            // 月情報 警告 状態 更新 (新規追加)
             if (currentState.selectedDate) {
                 updateMonthlyDataWarning(currentState.selectedDate);
             }
             
-            // 월정보 등록 버튼 이벤트 등록
+            // 月情報 登録 ボタン イベント 登録
             const createMonthlyBtn = container.querySelector('#create-monthly-btn');
             if (createMonthlyBtn) {
                 createMonthlyBtn.addEventListener('click', MonthlyModalModule.open);
-                console.log('[MONTHLY_INFO] 월정보 등록 버튼 이벤트 등록 완료');
+                console.log('[MONTHLY_INFO] 月情報 登録 ボタン イベント 登録 完了');
             }
             
-            // 월정보 등록 모달의 닫기 버튼과 폼 이벤트도 등록
+            // 月情報 登録 モーダルの閉じるボタンとフォームイベントも登録
             const closeModalBtn = document.getElementById('close-modal-btn');
             const monthlyForm = document.getElementById('monthly-form');
             
@@ -161,9 +170,9 @@ async function loadMonthlyInfoSection(year, month) {
         return false;
         
     } catch (error) {
-        console.error(`[MONTHLY_INFO] 월정보 로딩 실패: ${error}`);
+        console.error(`[MONTHLY_INFO] 月情報 読み込み失敗: ${error}`);
         
-        // 에러 시 월정보 컨테이너와 탭 스위처 숨김
+        // エラー時 月情報 コンテナとタブスイッチ 隠し
         const container = document.getElementById('monthly-info-container');
         const tabSwitcher = document.getElementById('tab-switcher');
         if (container) container.style.display = 'none';
@@ -173,26 +182,25 @@ async function loadMonthlyInfoSection(year, month) {
     }
 }
 
-// 서버에서 토글 상태를 처리하므로 클라이언트 측 숨김 함수는 불필요
-
 /**
- * 토글 버튼 클릭 이벤트 핸들러
+ * トグル ボタン クリック イベント ハンドラ
+ * @returns {Promise<void>}
  */
 async function handleMonthlyInfoToggle() {
     const toggleBtn = document.getElementById('monthly-info-toggle-btn');
     if (!toggleBtn) return;
     
-    // 현재 버튼 상태 확인
+    // 現在ボタン状態確認
     const isGreen = toggleBtn.classList.contains('green');
     
-    // 토글 상태 업데이트
+    // トグル状態更新
     const newToggleState = isGreen ? '1' : '0';
     localStorage.setItem('monthlyInfoOpen', newToggleState);
     
-    // 현재 년월 가져오기
+    // 現在の年月 取得
     const currentMonthDisplay = document.getElementById('current-month-display');
     if (!currentMonthDisplay) {
-        console.error('[TOGGLE] 현재 년월 정보를 찾을 수 없음');
+        console.error('[TOGGLE] 現在の年月の情報を見つけることができません');
         return;
     }
     
@@ -200,17 +208,16 @@ async function handleMonthlyInfoToggle() {
     const month = parseInt(currentMonthDisplay.dataset.month);
     
     if (!year || !month) {
-        console.error('[TOGGLE] 년월 정보가 유효하지 않음');
+        console.error('[TOGGLE] 年月情報が無効です');
         return;
     }
     
-    // AJAX로 전체 캘린더 섹션 다시 로딩 (서버에서 올바른 상태로 렌더링)
-    console.log(`[TOGGLE] 토글 상태 변경: ${isGreen ? 'green' : 'red'} → ${isGreen ? 'red' : 'green'}`);
+    // AJAXで全カレンダーセクション再読み込み (サーバーで正しい状態でレンダリング)
+    console.log(`[TOGGLE] トグル状態変更: ${isGreen ? 'green' : 'red'} → ${isGreen ? 'red' : 'green'}`);
     await updateCalendarSection(year, month);
 }
 
 // ===================== 状態 初期化 =====================
-
 // 初期状態をDOMから読み取り
 function initializeState() {
     // window.initialDataからパースされた初期値を取得
@@ -275,7 +282,7 @@ function initializeState() {
     console.log('[STATE] 初期化完了:', currentState);
 }
 
-// ===================== 데이터 처리 함수 =====================
+// ===================== データ 処理 関数 =====================
 
 // 셀이나 행에서 일일 데이터 추출
 function getDailyDataFromCell(element) {
@@ -597,115 +604,53 @@ async function updateFormSection(selectedDate) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
-        // 필요한 요소들만 업데이트 (전체 교체 대신)
+        // 전체 form section을 교체하여 서버의 비활성화 상태 반영
         const formSection = document.getElementById('form-section');
         if (formSection) {
-            // 날짜 표시만 업데이트
-            const newDayDisplay = tempDiv.querySelector('#day-display');
-            const currentDayDisplay = formSection.querySelector('#day-display');
-            if (newDayDisplay && currentDayDisplay) {
-                currentDayDisplay.textContent = newDayDisplay.textContent;
-            }
+            // 전체 HTML 교체
+            formSection.innerHTML = html;
             
-            const newDayInputHidden = tempDiv.querySelector('#day-input-hidden');
-            const currentDayInputHidden = formSection.querySelector('#day-input-hidden');
-            if (newDayInputHidden && currentDayInputHidden) {
-                currentDayInputHidden.value = newDayInputHidden.value;
-            }
-            
-            // 폼 필드들만 업데이트
-            const newForm = tempDiv.querySelector('#daily-entry-form');
-            const currentForm = formSection.querySelector('#daily-entry-form');
-            if (newForm && currentForm) {
-                // work_type - 공휴일인 경우 getDefaultWorkType 사용
-                const newWorkType = newForm.querySelector('[name="work_type"]');
-                const currentWorkType = currentForm.querySelector('[name="work_type"]');
-                if (newWorkType && currentWorkType) {
-                    // 데이터가 없는 경우에만 getDefaultWorkType 사용
-                    if (!newWorkType.value || newWorkType.value === '出勤') {
-                        const defaultWorkType = getDefaultWorkType(selectedDate);
-                        currentWorkType.value = defaultWorkType;
-                        console.log(`[FORM] 캘린더 클릭 - 공휴일 기본값 설정: ${selectedDate} -> ${defaultWorkType}`);
-                    } else {
-                        currentWorkType.value = newWorkType.value;
-                    }
-                }
-                
-                // start_time
-                const newStartTime = newForm.querySelector('[name="start_time"]');
-                const currentStartTime = currentForm.querySelector('[name="start_time"]');
-                if (newStartTime && currentStartTime) {
-                    currentStartTime.value = newStartTime.value;
-                }
-                
-                // end_time
-                const newEndTime = newForm.querySelector('[name="end_time"]');
-                const currentEndTime = currentForm.querySelector('[name="end_time"]');
-                if (newEndTime && currentEndTime) {
-                    currentEndTime.value = newEndTime.value;
-                }
-                
-                // alternative_work_date
-                const newAltDate = newForm.querySelector('[name="alternative_work_date"]');
-                const currentAltDate = currentForm.querySelector('[name="alternative_work_date"]');
-                if (newAltDate && currentAltDate) {
-                    currentAltDate.value = newAltDate.value;
-                }
-                
-                // notes
-                const newNotes = newForm.querySelector('[name="notes"]');
-                const currentNotes = currentForm.querySelector('[name="notes"]');
-                if (newNotes && currentNotes) {
-                    currentNotes.value = newNotes.value;
-                }
-            }
-            
-            // 통상 버튼의 data-base-calendar 업데이트
-            const newNormalBtn = tempDiv.querySelector('#normal-hours-btn');
-            const currentNormalBtn = formSection.querySelector('#normal-hours-btn');
-            if (newNormalBtn && currentNormalBtn) {
-                currentNormalBtn.dataset.baseCalendar = newNormalBtn.dataset.baseCalendar;
-                currentNormalBtn.disabled = newNormalBtn.disabled;
-            }
-            
-            // 상태 업데이트
-            updateSelectedDateDisplay(selectedDate);
-            
-            // 폼 상태 동기화
-            const workTypeSelect = currentForm?.querySelector('[name="work_type"]');
-            const startTimeInput = currentForm?.querySelector('[name="start_time"]');
-            const endTimeInput = currentForm?.querySelector('[name="end_time"]');
-            const normalHoursBtn = formSection.querySelector('#normal-hours-btn');
-            
-            if (workTypeSelect && startTimeInput && endTimeInput && normalHoursBtn) {
-                syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
-                toggleAltWorkDateField(workTypeSelect.value);
-                
-                // 날짜 기준 옵션 필터링
-                let dateStr = null;
-                const dayInputHidden = formSection.querySelector('#day-input-hidden');
-                if (dayInputHidden) {
-                    const y = currentYear;
-                    const m = String(currentMonth).padStart(2, '0');
-                    const d = String(dayInputHidden.value).padStart(2, '0');
-                    dateStr = `${y}-${m}-${d}`;
-                }
-                if (dateStr) {
-                    filterWorkTypeOptionsByDate(dateStr);
-                }
-            }
-            
-            console.log('[FORM] フォーム更新完了 (플리커 방지)');
-            
-            // 툴팁 이벤트 재바인딩
-            setupWorkTypeTooltip();
-            
-            // 월정보 경고 상태 업데이트 (새로 추가)
-            updateMonthlyDataWarning(selectedDate);
+            // Day Arrow 이벤트만 재바인딩
+            rebindDayArrowEvents();
         }
         
     } catch (error) {
         console.error('[FORM] 更新エラー:', error);
+    }
+}
+
+// カレンダーセクション更新  (show_list パラメーターは常に渡す)
+async function updateCalendarSection(year, month, showListParam = null, toggleState = null) {
+    console.log(`[CALENDAR] カレンダー更新: ${year}-${month}`);
+    
+    try {
+        // パラメーターがない場合はlocalStorageから取得
+        if (showListParam === null) {
+            const isListTabActive = localStorage.getItem('selectedTab') === 'list';
+            showListParam = isListTabActive ? '1' : '0';
+        }
+        if (toggleState === null) {
+            toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
+        }
+        
+        const url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}&toggle_state=${toggleState}`;
+        
+        const response = await fetchWithCsrf(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const html = await response.text();
+        
+        // 캘린더 섹션 업데이트 로직
+        const calendarSection = document.getElementById('calendar-section');
+        if (calendarSection) {
+            calendarSection.innerHTML = html;
+            console.log('[CALENDAR] 캘린더 섹션 업데이트 완료');
+        }
+        
+    } catch (error) {
+        console.error('[CALENDAR] 更新エラー:', error);
     }
 }
 
@@ -1241,6 +1186,79 @@ async function handleTabSwitch(event) {
 
 // ===================== イベント初期化関数 =====================
 
+// Day Arrow 이벤트만 재바인딩 (간단한 해결책)
+function rebindDayArrowEvents() {
+    const dayArrowLeft = document.getElementById('day-arrow-left');
+    const dayArrowRight = document.getElementById('day-arrow-right');
+    
+    if (dayArrowLeft) {
+        dayArrowLeft.addEventListener('click', () => handleDayArrowClick('prev'));
+    }
+    if (dayArrowRight) {
+        dayArrowRight.addEventListener('click', () => handleDayArrowClick('next'));
+    }
+    
+    console.log('[FORM] Day Arrow 이벤트 재바인딩 완료');
+}
+
+// 폼 이벤트 재바인딩 (전체 HTML 교체 후)
+function rebindFormEvents() {
+    console.log('[FORM] 이벤트 재바인딩');
+    
+    // Day Arrow 버튼
+    const dayArrowLeft = document.getElementById('day-arrow-left');
+    const dayArrowRight = document.getElementById('day-arrow-right');
+    
+    if (dayArrowLeft) {
+        dayArrowLeft.addEventListener('click', () => handleDayArrowClick('prev'));
+    }
+    if (dayArrowRight) {
+        dayArrowRight.addEventListener('click', () => handleDayArrowClick('next'));
+    }
+    
+    // 통상 버튼 이벤트
+    const normalHoursBtn = document.getElementById('normal-hours-btn');
+    if (normalHoursBtn) {
+        normalHoursBtn.addEventListener('click', () => {
+            const startTimeInput = document.querySelector('[name="start_time"]');
+            const endTimeInput = document.querySelector('[name="end_time"]');
+            const baseCalendar = normalHoursBtn.dataset.baseCalendar;
+            
+            if (baseCalendar === 'H大甕') {
+                if (startTimeInput) startTimeInput.value = '08:40';
+                if (endTimeInput) endTimeInput.value = '17:10';
+            } else {
+                if (startTimeInput) startTimeInput.value = '09:00';
+                if (endTimeInput) endTimeInput.value = '18:00';
+            }
+        });
+    }
+    
+    // 폼 제출 이벤트
+    const dailyForm = document.getElementById('daily-entry-form');
+    if (dailyForm) {
+        dailyForm.addEventListener('submit', handleFormSubmit);
+        
+        // 근무구분 변경 이벤트
+        const workTypeSelect = dailyForm.querySelector('[name="work_type"]');
+        if (workTypeSelect) {
+            workTypeSelect.addEventListener('change', function() {
+                const startTimeInput = dailyForm.querySelector('[name="start_time"]');
+                const endTimeInput = dailyForm.querySelector('[name="end_time"]');
+                const normalHoursBtn = document.getElementById('normal-hours-btn');
+                
+                if (startTimeInput && endTimeInput && normalHoursBtn) {
+                    syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+                    toggleAltWorkDateField(workTypeSelect.value);
+                }
+            });
+        }
+    }
+    
+    // 툴팁 이벤트 재바인딩
+    setupWorkTypeTooltip();
+}
+
 // フォームイベント初期化
 function initializeFormEvents() {
     console.log('[INIT] フォームイベント初期化');
@@ -1537,6 +1555,10 @@ async function handleCopyPrevMonth() {
             alert('前月の情報が正常にコピーされました。');
             // 캘린더 섹션 새로고침
             await updateCalendarSection(currentState.calendarYear, currentState.calendarMonth);
+            // 폼 섹션도 업데이트하여 비활성화 상태 해제
+            if (currentState.selectedDate) {
+                updateFormSection(currentState.selectedDate);
+            }
         } else {
             console.error('[COPY] 이전 월 복사 실패:', data.message);
             alert('이전 월 복사에 실패했습니다: ' + data.message);
@@ -2245,7 +2267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCalendarEvents();
     initializeListEvents(); // リストイベントの初期化
     initializeTabSwitching(true); // タブ切り替えの初期化 (状態の復元を含む)
-    setupEmailSelectLogic(); // 受信者メールセレクト+直接入力ロジックの初期化
+    setupEmailSelectLogic(); // 受信者メールセレクト+直接入력ロジックの初期化
+    
+    // 초기 폼 상태는 서버에서 이미 처리되므로 생략
+    // 날짜 변경 시에만 updateMonthlyDataWarning() 호출됨
     setupEmailSendLogic(); // メール送信ロジックの初期化
     setupFileTypeModalEvents(); // ファイル選択モーダルイベントの初期化
     setupPrintPreviewLogic(); // 印刷プレビューボタンの初期化
@@ -2321,6 +2346,10 @@ const MonthlyModalModule = {
                 MonthlyModalModule.close();
                 // カレンダー/월情報 partialを更新
                 updateCalendarSection(currentState.calendarYear, currentState.calendarMonth);
+                // 폼 섹션도 업데이트하여 비활성화 상태 해제
+                if (currentState.selectedDate) {
+                    updateFormSection(currentState.selectedDate);
+                }
             } else {
                 alert(data.message || '登録に失敗しました');
             }
@@ -2410,6 +2439,10 @@ const MonthlyUpdateModalModule = {
             if (data.status === 'success') {
                 MonthlyUpdateModalModule.close();
                 updateCalendarSection(currentState.calendarYear, currentState.calendarMonth);
+                // 폼 섹션도 업데이트하여 비활성화 상태 해제
+                if (currentState.selectedDate) {
+                    updateFormSection(currentState.selectedDate);
+                }
             } else {
                 alert(data.message || '修正に失敗しました');
             }
@@ -2848,14 +2881,14 @@ function setupWorkTypeTooltip() {
     console.log('[TOOLTIP] 勤務区分 툴팁 이벤트 재바인딩 완료');
 }
 
-// 툴팁 이벤트 핸들러들
+// ツールチップイベントハンドラ
 function handleWorktypeTooltipClick(e) {
     e.stopPropagation();
     const worktypeTooltip = document.getElementById('worktype-tooltip');
     const worktypeHelpIcon = document.getElementById('worktype-help-icon');
     
     if (worktypeTooltip && worktypeHelpIcon) {
-        // CSS에서 이미 위치가 설정되어 있으므로 단순히 표시만
+        // CSSですでに位置が設定されているので、単純に表示
         worktypeTooltip.style.display = 'block';
         console.log('[TOOLTIP] 勤務区分 툴팁 표시');
     }
