@@ -431,7 +431,7 @@ function populateFormWithData(dailyData, defaultWorkType) {
         console.log(`[FORM] ${currentDate}の勤務区分オプション制限適用`);
     }
     
-    // 근무구분에 따른 필드 표시/숨김 적용
+    // 근무구분에 따른 필드 표시/숨김 및 버튼 상태 동기화 (저장된 데이터든 새 데이터든 항상 적용)
     const workTypeSelect = form.querySelector('[name="work_type"]');
     if (workTypeSelect) {
         console.log('[FORM] 근무구분 필드 찾음:', workTypeSelect.value);
@@ -441,7 +441,7 @@ function populateFormWithData(dailyData, defaultWorkType) {
         // 근무구분에 따른 폼 상태 동기화 (시간 입력 필드, 通常 버튼 등)
         const startTimeInput = form.querySelector('[name="start_time"]');
         const endTimeInput = form.querySelector('[name="end_time"]');
-        const normalHoursBtn = document.querySelector('.normal-hours-btn');
+        const normalHoursBtn = document.getElementById('normal-hours-btn');
         
         console.log('[FORM] 폼 요소들:', {
             startTimeInput: startTimeInput,
@@ -449,9 +449,11 @@ function populateFormWithData(dailyData, defaultWorkType) {
             normalHoursBtn: normalHoursBtn
         });
         
-        syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
-        
-        console.log(`[FORM] 근무구분에 따른 폼 상태 동기화 완료: ${workTypeSelect.value}`);
+        // ★ 핵심: 저장된 데이터든 새 데이터든 항상 버튼 상태 동기화
+        if (startTimeInput && endTimeInput && normalHoursBtn) {
+            syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
+            console.log(`[FORM] 근무구분에 따른 폼 상태 동기화 완료: ${workTypeSelect.value}`);
+        }
     } else {
         console.warn('[FORM] 근무구분 필드를 찾을 수 없습니다');
     }
@@ -1238,21 +1240,7 @@ function rebindFormEvents() {
     const dailyForm = document.getElementById('daily-entry-form');
     if (dailyForm) {
         dailyForm.addEventListener('submit', handleFormSubmit);
-        
-        // 근무구분 변경 이벤트
-        const workTypeSelect = dailyForm.querySelector('[name="work_type"]');
-        if (workTypeSelect) {
-            workTypeSelect.addEventListener('change', function() {
-                const startTimeInput = dailyForm.querySelector('[name="start_time"]');
-                const endTimeInput = dailyForm.querySelector('[name="end_time"]');
-                const normalHoursBtn = document.getElementById('normal-hours-btn');
-                
-                if (startTimeInput && endTimeInput && normalHoursBtn) {
-                    syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
-                    toggleAltWorkDateField(workTypeSelect.value);
-                }
-            });
-        }
+        // 근무구분 변경 이벤트는 initializeFormEvents에서만 등록 (중복 방지)
     }
     
     // 툴팁 이벤트 재바인딩
@@ -1314,6 +1302,7 @@ function initializeFormEvents() {
     
     // 폼 제출 ##중복주의##
     const dailyForm = document.getElementById('daily-entry-form');
+    console.log('[INIT] dailyForm 찾기:', dailyForm);
     if (dailyForm) {
         dailyForm.addEventListener('submit', handleFormSubmit);
         // 勤務区分 select 변경 시 폼 상태/옵션/필드 동기화
@@ -1321,8 +1310,18 @@ function initializeFormEvents() {
         const startTimeInput = dailyForm.querySelector('[name="start_time"]');
         const endTimeInput = dailyForm.querySelector('[name="end_time"]');
         const normalHoursBtn = document.getElementById('normal-hours-btn');
+        
+        console.log('[INIT] 폼 요소들 찾기:', {
+            workTypeSelect: workTypeSelect,
+            startTimeInput: startTimeInput,
+            endTimeInput: endTimeInput,
+            normalHoursBtn: normalHoursBtn
+        });
+        
         if (workTypeSelect && startTimeInput && endTimeInput && normalHoursBtn) {
+            console.log('[INIT] 근무구분 변경 이벤트 리스너 등록');
             workTypeSelect.addEventListener('change', function() {
+                console.log('[EVENT] 근무구분 변경 이벤트 발생:', workTypeSelect.value);
                 syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
                 // 현재 날짜 기준 옵션 필터링
                 let dateStr = null;
@@ -1352,7 +1351,11 @@ function initializeFormEvents() {
                 filterWorkTypeOptionsByDate(dateStr);
             }
             toggleAltWorkDateField(workTypeSelect.value);
+        } else {
+            console.log('[INIT] 이벤트 등록 실패 - 일부 요소가 없음');
         }
+    } else {
+        console.log('[INIT] dailyForm을 찾을 수 없음');
     }
     
     // 로고 클릭 이벤트
@@ -2744,16 +2747,33 @@ function filterWorkTypeOptionsByDate(dateStr) {
     }
 }
 
-// 勤務区分に応じてフォーム状態를同期 (toggleAltWorkDateField와 같은 방식)
+// 勤務区分に応じてフォーム状態를同기 (toggleAltWorkDateField와 같은 방식)
 function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalHoursBtn) {
-    if (!startTimeInput || !endTimeInput || !normalHoursBtn) return;
+    console.log(`[SYNC] syncFormStateByWorkType 호출 시작`);
+    console.log(`[SYNC] 파라미터:`, {
+        workType: workType,
+        startTimeInput: startTimeInput,
+        endTimeInput: endTimeInput,
+        normalHoursBtn: normalHoursBtn
+    });
+    
+    if (!startTimeInput || !endTimeInput || !normalHoursBtn) {
+        console.log(`[SYNC] 파라미터 누락으로 함수 종료`);
+        return;
+    }
+    
+    console.log(`[SYNC] syncFormStateByWorkType 실행: workType=${workType}`);
     
     // 월정보 존재 여부 확인 (monthly-details-grid 요소로 판단)
     const monthlyDetails = document.querySelector('.monthly-details-grid');
     const hasMonthlyData = monthlyDetails !== null;
     
+    console.log(`[SYNC] 월정보 존재: ${hasMonthlyData}`);
+    
     // 휴가 타입인지 확인 (toggleAltWorkDateField처럼 직접 체크)
     const isHolidayType = workType === '有給' || workType === '代休(休)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇' ;
+    
+    console.log(`[SYNC] 휴가 타입 여부: ${isHolidayType}`);
     
     if (isHolidayType) {
         // 휴가 타입: 시간 입력 필드와 通常 버튼 비활성화
@@ -2762,12 +2782,14 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
         startTimeInput.readOnly = true;
         endTimeInput.readOnly = true;
         normalHoursBtn.disabled = true;
+        console.log(`[SYNC] 휴가 타입 → 通常 버튼 비활성화`);
     } else {
         // 근무 타입: 시간 입력 필드와 通常 버튼 상태 설정
         startTimeInput.readOnly = false;
         endTimeInput.readOnly = false;
         // 월정보가 있을 때만 通常 버튼 활성화
         normalHoursBtn.disabled = !hasMonthlyData;
+        console.log(`[SYNC] 근무 타입 → 通常 버튼 ${hasMonthlyData ? '활성화' : '비활성화'} (월정보 ${hasMonthlyData ? '있음' : '없음'})`);
     }
 }
 
