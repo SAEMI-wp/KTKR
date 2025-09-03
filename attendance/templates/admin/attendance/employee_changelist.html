@@ -1,7 +1,22 @@
 {% extends "admin/change_list.html" %}
 {% load admin_list %}
 {% load static %}
-{% csrf_token %}
+
+{% block title %}従業員 | 勤怠管理システム{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">勤怠管理システム管理者</h1>
+{% endblock %}
+
+{% block usertools %}
+  <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.7em;">
+    <a href="{% url 'attendance:main' %}" style="font-size:0.95em; text-decoration:none; color:inherit;">
+      {{ request.user.display_name }} ({{ request.user.employee_no }})
+    </a>
+    <a href="{% url 'attendance:password_change' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">パスワード変更</a>
+    <a href="{% url 'attendance:admin_logout' %}" class="button" style="padding:0.4em 1em; font-size:0.95em;">ログアウト</a>
+  </div>
+{% endblock %}
 
 {% block object-tools %}
   {{ block.super }}
@@ -13,35 +28,4 @@
 {% block content %}
   <!-- 기존 admin content -->
   {{ block.super }}
-{% endblock %}
-
-{% block filters %}
-  {% if cl.has_filters %}
-    <div id="changelist-filter">
-      <h2>勤務先</h2>
-      {% if cl.has_active_filters %}<h3 id="changelist-filter-clear">
-        <a href="{{ cl.clear_all_filters_qs }}">&#10006; フィルター解除</a>
-      </h3>{% endif %}
-      {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
-    </div>
-  {% endif %}
-{% endblock %}
-
-{% block extrahead %}
-{{ block.super }}
-<!-- 커스텀 CSS 로드 - 절대 경로 사용 -->
-<link rel="stylesheet" type="text/css" href="/static/attendance/css/admin_employee.css">
-<script type="text/javascript">
-console.log('[DEBUG] Django Admin 템플릿 로드됨');
-console.log('[DEBUG] CSS 경로:', '/static/attendance/css/admin_employee.css');
-</script>
-{% endblock %}
-
-{% block extrastyle %}
-{{ block.super }}
-<!-- 커스텀 JavaScript 로드 - 절대 경로 사용 -->
-<script type="text/javascript" src="/static/attendance/js/admin_employee.js"></script>
-<script type="text/javascript">
-console.log('[DEBUG] JS 경로:', '/static/attendance/js/admin_employee.js');
-</script>
 {% endblock %} 
