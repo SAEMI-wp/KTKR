@@ -16,8 +16,22 @@ from ..utils import get_or_create_monthly_structure, update_monthly_from_structu
 from ..cache_utils import invalidate_monthly_cache
 
 
+# AJAX 요청에 대해 적절한 HTTP 상태 코드를 반환하는 커스텀 LoginRequiredMixin
+class AjaxLoginRequiredMixin(LoginRequiredMixin):
+    """AJAX 요청 시 세션 만료 시 401 상태 코드를 반환하는 믹스인"""
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # AJAX 요청인지 확인
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+                return JsonResponse({'error': 'Authentication required'}, status=401)
+            # 일반 요청은 기본 LoginRequiredMixin 동작 (리다이렉트)
+            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
+
+
 # 月別勤怠作成ビュー（ログイン必須）
-class MonthlyAttendanceCreateView(LoginRequiredMixin, CreateView):
+class MonthlyAttendanceCreateView(AjaxLoginRequiredMixin, CreateView):
     model = AttendanceMonthly
     form_class = MonthlyAttendanceForm
     template_name = 'attendance/monthly_form.html'

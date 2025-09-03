@@ -22,6 +22,20 @@ import requests
 calendar.setfirstweekday(calendar.SUNDAY)
 
 
+# AJAX 요청에 대해 적절한 HTTP 상태 코드를 반환하는 커스텀 LoginRequiredMixin
+class AjaxLoginRequiredMixin(LoginRequiredMixin):
+    """AJAX 요청 시 세션 만료 시 401 상태 코드를 반환하는 믹스인"""
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # AJAX 요청인지 확인
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+                return JsonResponse({'error': 'Authentication required'}, status=401)
+            # 일반 요청은 기본 LoginRequiredMixin 동작 (리다이렉트)
+            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
+
+
 def fetch_japanese_holidays(year):
     """
     日本の祝日APIから、指定年の祝日情報を取得します。
@@ -82,7 +96,7 @@ def get_holidays_for_months(year, month):
 
 
 # メインビュー（ログ必須）
-class MainView(LoginRequiredMixin, TemplateView):
+class MainView(AjaxLoginRequiredMixin, TemplateView):
     template_name = 'attendance/main.html'
     login_url = 'attendance:login'
     
@@ -353,21 +367,34 @@ class MainView(LoginRequiredMixin, TemplateView):
             calendars.append(base_calendar)
         
         # DBから休日情報を取得
-        # Calendar 테이블에서 해당하는 calendar_name을 찾아서 ID로 필터링
-        from ..models import Calendar
-        calendar_ids = []
-        for calendar_name in calendars:
-            try:
-                calendar_obj = Calendar.objects.get(calendar_name=calendar_name)
-                calendar_ids.append(calendar_obj.id)
-            except Calendar.DoesNotExist:
-                # Calendar가 없는 경우 기본값 사용
-                pass
-        
-        if calendar_ids:
-            holidays = HolidayCalendar.objects.filter(calendar_code__in=calendar_ids, date__in=month_dates)
-        else:
-            # Calendar가 없는 경우 빈 쿼리셋 반환
+        # Calendar 테이블이存在しない場合は空のクエリセットを返す
+        try:
+            from ..models import Calendar
+            calendar_ids = []
+            for calendar_name in calendars:
+                try:
+                    # 더 안전한 쿼리 실행
+                    calendar_obj = Calendar.objects.using('default').get(calendar_name=calendar_name)
+                    calendar_ids.append(calendar_obj.id)
+                except Calendar.DoesNotExist:
+                    # Calendarがない場合はデフォルト値を使用
+                    pass
+                except Exception as e:
+                    print(f"[WARNING] Calendar 조회 실패 ({calendar_name}): {e}")
+                    continue
+            
+            if calendar_ids:
+                # 더 안전한 쿼리 실행
+                holidays = HolidayCalendar.objects.using('default').filter(
+                    calendar_code__in=calendar_ids, 
+                    date__in=month_dates
+                )
+            else:
+                # Calendarがない場合は空のクエリセットを返す
+                holidays = HolidayCalendar.objects.none()
+        except Exception as e:
+            # Calendar 테이블이 존재しない場合やその他のエラーの場合
+            print(f"[WARNING] Calendar 테이블 접근 실패: {e}")
             holidays = HolidayCalendar.objects.none()
         holidays_db = collections.defaultdict(list)
         api_holiday_set = set()
@@ -379,7 +406,7 @@ class MainView(LoginRequiredMixin, TemplateView):
         return holidays_db, api_holiday_set 
 
 
-# ===================== AJAX용 Partial 뷰들 =====================
+# ===================== AJAX用 Partial ビュー =====================
 
 # カレンダー/リストセクション用 AJAX ビュー
 class CalendarPartialView(MainView):
@@ -424,7 +451,7 @@ class CalendarPartialView(MainView):
 
 
 # 勤怠登録フォームセクション用 AJAX ビュー
-class FormPartialView(LoginRequiredMixin, TemplateView):
+class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
     template_name = 'attendance/form_partial.html'
     login_url = 'attendance:login'
     
@@ -493,7 +520,7 @@ class FormPartialView(LoginRequiredMixin, TemplateView):
 
 # ===================== データ API ビュー =====================
 
-class MonthlyInfoSectionView(LoginRequiredMixin, TemplateView):
+class MonthlyInfoSectionView(AjaxLoginRequiredMixin, TemplateView):
     """月情報セクションのみをレンダリングするAJAXビュー"""
     template_name = 'attendance/monthly_info_section.html'
     login_url = 'attendance:login'
@@ -532,7 +559,7 @@ class MonthlyInfoSectionView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class DailyDataAPIView(LoginRequiredMixin, View):
+class DailyDataAPIView(AjaxLoginRequiredMixin, View):
     """日次データ取得API"""
     login_url = 'attendance:login'
     
@@ -586,7 +613,7 @@ class DailyDataAPIView(LoginRequiredMixin, View):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-class MonthlyDataAPIView(LoginRequiredMixin, View):
+class MonthlyDataAPIView(AjaxLoginRequiredMixin, View):
     """月別データ取得API"""
     login_url = 'attendance:login'
     
