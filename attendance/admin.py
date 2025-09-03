@@ -17,6 +17,67 @@ from django.shortcuts import render
 from .utils import get_group_name_by_code
 import chardet
 
+# 新規社員追加のためのカスタムフォーム
+class EmployeeAddForm(forms.ModelForm):
+    """新規従業員追加のためのカスタムフォーム"""
+    
+    PLACE_WORK_CHOICES = [
+        ('全社', '全社'),
+        ('営業部', '営業部'),
+        ('管理部', '管理部'),
+        ('日立1部', '日立1部'),
+        ('日立2部', '日立2部'),
+        ('東京1部', '東京1部'),
+        ('東京2部', '東京2部'),
+        ('東京3部', '東京3部'),
+        ('中部事業所', '中部事業所'),
+        ('東京事業所', '東京事業所'),
+        ('エンジニアリング技術部', 'エンジニアリング技術部'),
+    ]
+    
+    place_work = forms.ChoiceField(
+        label='勤務先',
+        choices=PLACE_WORK_CHOICES,
+        required=False,
+        help_text='勤務先を選択してください。'
+    )
+    
+    password1 = forms.CharField(
+        label='パスワード',
+        widget=forms.PasswordInput,
+        required=True,
+        help_text='パスワードを入力してください。'
+    )
+    password2 = forms.CharField(
+        label='パスワード確認',
+        widget=forms.PasswordInput,
+        required=True,
+        help_text='確認のため、同じパスワードをもう一度入力してください。'
+    )
+    
+    class Meta:
+        model = Employee
+        fields = ('employee_no', 'first_name', 'last_name', 'email', 'place_work', 'is_active', 'is_superuser', 'groups', 'user_permissions')
+    
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError('パスワードが一致しません。')
+        return password2
+    
+    def save(self, commit=True):
+        employee = super().save(commit=False)
+        employee.set_password(self.cleaned_data['password1'])
+        # 기본값 설정
+        if employee.is_active is None:
+            employee.is_active = True
+        if commit:
+            employee.save()
+            # Many-to-many 관계 저장 (groups, user_permissions)
+            self.save_m2m()
+        return employee
+
 # パスワード変更のためのカスタムフォーム
 class EmployeeChangeForm(forms.ModelForm):
     """従業員情報変更のためのカスタムフォーム"""
@@ -56,8 +117,8 @@ class EmployeeChangeForm(forms.ModelForm):
         return employee
 
 class CustomAdminSite(admin.AdminSite):
-    site_header = '勤怠・給与管理システム管理者'
-    site_title = '勤怠・給与管理システム'
+    site_header = '勤怠管理システム管理者'
+    site_title = '勤怠管理システム'
     index_title = '管理者ダッシュボード'
 
     def has_permission(self, request):
@@ -789,6 +850,10 @@ def get_employee_queryset_by_role(request, queryset):
 @admin.register(Employee, site=custom_admin_site)
 class EmployeeAdmin(admin.ModelAdmin):
     """社員管理用のカスタムAdmin"""
+    site_header = '勤怠管理システム管理者'
+    site_title = '勤怠管理システム'
+    index_title = '管理者ダッシュボード'
+    
     form = EmployeeChangeForm  # カスタムフォームを適用
     
     list_display = (
@@ -813,7 +878,16 @@ class EmployeeAdmin(admin.ModelAdmin):
     add_fieldsets = (
         ('社員情報', {
             'classes': ('wide',),
-            'fields': ('employee_no', 'place_work', 'email', 'password1', 'password2'),
+            'fields': ('employee_no', 'password1', 'password2'),
+        }),
+        ('個人情報', {
+            'fields': ('first_name', 'last_name', 'email'),
+        }),
+        ('勤務情報', {
+            'fields': ('place_work',),
+        }),
+        ('権限', {
+            'fields': ('is_active', 'is_superuser', 'groups', 'user_permissions'),
         }),
     )
     
@@ -930,38 +1004,24 @@ class EmployeeAdmin(admin.ModelAdmin):
         # superuser만 추가 버튼 표시
         return request.user.is_superuser
     
+    def get_form(self, request, obj=None, **kwargs):
+        """사원 추가 시 전용 폼 사용"""
+        if obj is None:  # 새 객체 추가 시
+            return EmployeeAddForm
+        return super().get_form(request, obj, **kwargs)
+    
+    def get_fieldsets(self, request, obj=None):
+        """새 사원 추가 시 add_fieldsets 사용"""
+        if obj is None:  # 새 객체 추가 시
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
+    
     def add_view(self, request, form_url='', extra_context=None):
-        """新しい従業員を追加するビュー - パスワードの暗号化処理"""
-        if not self.has_add_permission(request):
-            return self.response_post_save_add(request, None)
-        
-        if request.method == 'POST':
-            form = self.get_form(request, request.POST)
-            if form.is_valid():
-                employee = form.save(commit=False)
-                
-                # パスワードが入力された場合にのみ暗号化
-                if form.cleaned_data.get('password'):
-                    employee.set_password(form.cleaned_data['password'])
-                
-                employee.save()
-                form.save_m2m()  # Many-to-many 関係を保存
-                
-                self.log_addition(request, employee, [])
-                return self.response_post_save_add(request, employee)
-        else:
-            form = self.get_form(request)
-        
-        context = {
-            'title': '従業員追加',
-            'form': form,
-            'opts': self.model._meta,
-            'has_add_permission': True,
-        }
-        if extra_context:
-            context.update(extra_context)
-        
-        return render(request, 'admin/attendance/employee_add.html', context)
+        """Django 기본 add_view 사용하되 커스텀 폼 적용"""
+        if extra_context is None:
+            extra_context = {}
+        extra_context['csv_upload_url'] = reverse('admin:employee_csv_upload')
+        return super().add_view(request, form_url, extra_context)
 
 @admin.register(AttendanceMonthly, site=custom_admin_site)
 class AttendanceMonthlyAdmin(admin.ModelAdmin):
