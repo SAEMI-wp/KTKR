@@ -111,6 +111,11 @@
             </div>
             <div class="form-group">
                 <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
+                <div class="day-change-checkbox">
+                    <input type="checkbox" id="day_change_checkbox" name="day_change" 
+                           {% if not monthly_data %}disabled{% endif %}>
+                    <label for="day_change_checkbox">日替り</label>
+                </div>
                 <div class="time-input-group">
                     <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
                            value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
@@ -121,11 +126,6 @@
                             {% if not monthly_data %}disabled{% endif %}>
                         現在
                     </button>
-                </div>
-                <div class="day-change-checkbox">
-                    <input type="checkbox" id="day_change_checkbox" name="day_change" 
-                           {% if not monthly_data %}disabled{% endif %}>
-                    <label for="day_change_checkbox">日替り</label>
                 </div>
             </div>
             <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
@@ -152,10 +152,6 @@
     <!-- 警告文ボックス -->
     {% if not monthly_data %}
     <div class="disabled-message" style="display: block;">
-        <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
-    </div>
-    {% else %}
-    <div class="disabled-message" style="display: none;">
         <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
     </div>
     {% endif %}
