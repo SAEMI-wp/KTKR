@@ -610,8 +610,8 @@ async function updateFormSection(selectedDate) {
             // 전체 HTML 교체
             formSection.innerHTML = html;
             
-            // Day Arrow 이벤트만 재바인딩
-            rebindDayArrowEvents();
+            // 모든 폼 이벤트 재바인딩 (통상 버튼 포함)
+            rebindFormEvents();
         }
         
     } catch (error) {
@@ -1257,6 +1257,12 @@ function rebindFormEvents() {
     
     // 툴팁 이벤트 재바인딩
     setupWorkTypeTooltip();
+    
+    // 캘린더에서 날짜 선택 시 근무구분 옵션 필터링 적용
+    if (currentState.selectedDate) {
+        filterWorkTypeOptionsByDate(currentState.selectedDate);
+        console.log(`[FORM] 캘린더 선택 날짜의 근무구분 옵션 필터링: ${currentState.selectedDate}`);
+    }
 }
 
 // フォームイベント初期化
@@ -2738,9 +2744,13 @@ function filterWorkTypeOptionsByDate(dateStr) {
     }
 }
 
-// 勤務区分に応じてフォーム状態を同期 (toggleAltWorkDateField와 같은 방식)
+// 勤務区分に応じてフォーム状態를同期 (toggleAltWorkDateField와 같은 방식)
 function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalHoursBtn) {
     if (!startTimeInput || !endTimeInput || !normalHoursBtn) return;
+    
+    // 월정보 존재 여부 확인 (monthly-details-grid 요소로 판단)
+    const monthlyDetails = document.querySelector('.monthly-details-grid');
+    const hasMonthlyData = monthlyDetails !== null;
     
     // 휴가 타입인지 확인 (toggleAltWorkDateField처럼 직접 체크)
     const isHolidayType = workType === '有給' || workType === '代休(休)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇' ;
@@ -2753,10 +2763,11 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
         endTimeInput.readOnly = true;
         normalHoursBtn.disabled = true;
     } else {
-        // 근무 타입: 시간 입력 필드와 通常 버튼 활성화
+        // 근무 타입: 시간 입력 필드와 通常 버튼 상태 설정
         startTimeInput.readOnly = false;
         endTimeInput.readOnly = false;
-        normalHoursBtn.disabled = false;
+        // 월정보가 있을 때만 通常 버튼 활성화
+        normalHoursBtn.disabled = !hasMonthlyData;
     }
 }
 
