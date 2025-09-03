@@ -501,14 +501,25 @@ class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
         
         # 基本勤務区分の設定 (日次データがない場合)
         if not selected_daily_data:
-            # 曜日別の基本勤務区分の設定
-            day_of_week = selected_date.weekday()  # 0=月曜日, 6=日曜日
-            if day_of_week == 6:  # 日曜日
-                context['default_work_type'] = '休日(法)'
-            elif day_of_week == 5:  # 土曜日
-                context['default_work_type'] = '休日'
-            else:  # 平日
-                context['default_work_type'] = '出勤'
+            # API 公휴일 정보 확인
+            api_holidays = get_holidays_for_months(selected_date.year, selected_date.month)
+            selected_date_str = selected_date.strftime('%Y-%m-%d')
+            is_api_holiday = selected_date_str in api_holidays
+            
+            # 공휴일 우선, 그 다음 요일별 기본 근무구분 설정
+            if is_api_holiday:
+                context['default_work_type'] = '祝日'
+                print(f"DEBUG: FormPartialView - API 공휴일 발견: {selected_date_str} -> 祝日")
+            else:
+                # 曜日別の基本勤務区分の設定
+                day_of_week = selected_date.weekday()  # 0=月曜日, 6=日曜日
+                if day_of_week == 6:  # 日曜日
+                    context['default_work_type'] = '休日(法)'
+                elif day_of_week == 5:  # 土曜日
+                    context['default_work_type'] = '休日'
+                else:  # 平日
+                    context['default_work_type'] = '出勤'
+                print(f"DEBUG: FormPartialView - 요일별 기본 구분: {selected_date_str} -> {context['default_work_type']}")
         else:
             context['default_work_type'] = None
         
