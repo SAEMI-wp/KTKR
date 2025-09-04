@@ -2776,20 +2776,20 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
     console.log(`[SYNC] 휴가 타입 여부: ${isHolidayType}`);
     
     if (isHolidayType) {
-        // 휴가 타입: 시간 입력 필드와 通常 버튼 비활성화
+        // 휴가 타입: 시간 입력 필드만 비활성화 (通常 버튼은 활성화 유지)
         startTimeInput.value = '00:00';
         endTimeInput.value = '00:00';
         startTimeInput.readOnly = true;
         endTimeInput.readOnly = true;
-        normalHoursBtn.disabled = true;
-        console.log(`[SYNC] 휴가 타입 → 通常 버튼 비활성화`);
+        // normalHoursBtn.disabled = true;  // 주석처리
+        console.log(`[SYNC] 휴가 타입 → 시간 입력 필드만 비활성화, 通常 버튼은 활성화 유지`);
     } else {
         // 근무 타입: 시간 입력 필드와 通常 버튼 상태 설정
         startTimeInput.readOnly = false;
         endTimeInput.readOnly = false;
-        // 월정보가 있을 때만 通常 버튼 활성화
-        normalHoursBtn.disabled = !hasMonthlyData;
-        console.log(`[SYNC] 근무 타입 → 通常 버튼 ${hasMonthlyData ? '활성화' : '비활성화'} (월정보 ${hasMonthlyData ? '있음' : '없음'})`);
+        // 통상 버튼은 항상 활성화
+        // normalHoursBtn.disabled = !hasMonthlyData;  // 주석처리
+        console.log(`[SYNC] 근무 타입 → 통상 버튼 항상 활성화`);
     }
 }
 
