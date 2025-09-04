@@ -10,7 +10,7 @@
     <div class="entry-header">
         <h3 id="daily-entry-title">勤怠登録</h3>
         <button id="normal-hours-btn" class="btn-normal" title="通常勤務時間を設定" 
-                {% if not monthly_data %}disabled{% endif %}
+                {# {% if not monthly_data %}disabled{% endif %} #}
                 data-base-calendar="{% if monthly_data %}{{ monthly_data.base_calendar }}{% endif %}">
             <i class="fa-solid fa-clock"></i> 通常
         </button>
