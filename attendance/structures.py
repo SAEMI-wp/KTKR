@@ -1,6 +1,18 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 from datetime import date, time, datetime, timedelta
+
+# 例外勤務区分
+EXCLUDED_WORK_TYPES = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)', '代休(休)']
+LEGAL_HOLIDAY_TYPES = ['休日(法)', '祝日']
+
+@dataclass
+class WorkTimeConfig:
+    """勤務時間設定"""
+    break_minutes: int
+    standard_work_hours: float
+    overtime_start_hour: int = 18
+    late_night_start_hour: int = 22
 
 @dataclass
 class DailyData:
@@ -20,19 +32,59 @@ class DailyData:
     deduction_hours: Optional[float] = None             # 控除
     overtime_hours: Optional[float] = None              # 残業
     late_night_overtime_hours: Optional[float] = None   # 深夜
-    total_hours: Optional[float] = None                 # 合計
+    total_hours: Optional[float] = None                 # 小計
     jk_overtime: float = 0.0                            # 常勤超過時間（計算用）
 
     def calculate_work_hours(self):
         """勤務時間計算"""
+        # 1: 基本有効性検査
+        if not self._is_valid_work_time():
+            self._set_all_hours_to_none()
+            return
+        
+        # 2: 例外勤務区分検査
+        if self._is_excluded_work_type():
+            self.regular_work_hours = None
+            self._calculate_holiday_hours()  # 休日勤務は別途処理
+            return
+        
+        # 3: 順次計算
         self._calculate_regular_work_hours()    #常勤
         self._calculate_deduction_hours()       #控除
         self._calculate_overtime_hours()        #残業
         self._calculate_late_night_hours()      #深夜
-        self._calculate_total_hours()           #合計
+        self._calculate_total_hours()           #小計
+
+    def _is_valid_work_time(self) -> bool:
+        """勤務時間有効性検査"""
+        return (self.start_time is not None and 
+                self.end_time is not None and 
+                self.start_time != self.end_time)
+
+    def _is_excluded_work_type(self) -> bool:
+        """例外勤務区分検査"""
+        return self.work_type in EXCLUDED_WORK_TYPES
+
+    def _set_all_hours_to_none(self):
+        """すべての時間フィールドをNoneに設定"""
+        self.regular_work_hours = None
+        self.deduction_hours = None
+        self.overtime_hours = None
+        self.late_night_overtime_hours = None
+        self.total_hours = None
+
+    def _calculate_holiday_hours(self):
+        """休日勤務時間計算 (別途処理)"""
+        if self.work_type in LEGAL_HOLIDAY_TYPES:
+            # 休日勤務は残業時間と深夜時間のみ計算
+            self._calculate_overtime_hours()
+            self._calculate_late_night_hours()
+            self._calculate_total_hours()
+        else:
+            self._set_all_hours_to_none()
 
     def _get_overlap_minutes(self, period_start, period_end, check_start, check_end):
-        """두 시간대의 겹치는 시간을 분으로 반환"""
+        """2つの時間帯の重複時間を分で返す"""
         overlap_start = max(period_start, check_start)
         overlap_end = min(period_end, check_end)
         if overlap_start < overlap_end:
@@ -40,7 +92,7 @@ class DailyData:
         return 0.0
 
     def _get_work_value_by_time(self, time_obj: time) -> float:
-        """時間による作業値計算（新しいロジック）"""
+        """時間による作業値計算"""
         hour = time_obj.hour
         minute = time_obj.minute
         
@@ -335,8 +387,20 @@ class DailyData:
         hour = time_obj.hour
         minute = time_obj.minute
         
-        # 18:30以前 → 0
-        if hour < 18 or (hour == 18 and minute < 30):
+        # 6:30~9:00 → 30分ずつ増加
+        if hour == 6 and minute >= 30:
+            return 4.0  # 6:30~7:00
+        elif hour == 7 and minute < 30:
+            return 4.5  # 7:00~7:30
+        elif hour == 7 and minute >= 30:
+            return 5.0  # 7:30~8:00
+        elif hour == 8 and minute < 30:
+            return 5.5  # 8:00~8:30
+        elif hour == 8 and minute >= 30:
+            return 6.0  # 8:30~9:00
+            
+        # 9:00~18:30 → 0
+        elif hour >= 9 and (hour < 18 or (hour == 18 and minute < 30)):
             return 0.0
         
         # 18:30~19:00 → 0.5
@@ -368,22 +432,6 @@ class DailyData:
         # 22:00~6:30 → 3.5
         elif hour >= 22 or hour < 6 or (hour == 6 and minute < 30):
             return 3.5
-            
-        # 6:30~9:00 → 30分ずつ増加
-        elif hour == 6 and minute >= 30:
-            return 4.0  # 6:30~7:00
-        elif hour == 7 and minute < 30:
-            return 4.5  # 7:00~7:30
-        elif hour == 7 and minute >= 30:
-            return 5.0  # 7:30~8:00
-        elif hour == 8 and minute < 30:
-            return 5.5  # 8:00~8:30
-        elif hour == 8 and minute >= 30:
-            return 6.0  # 8:30~9:00
-            
-        # 9:00~18:30 → 0
-        elif hour >= 9 and (hour < 18 or (hour == 18 and minute < 30)):
-            return 0.0
             
         # 0:00~5:59 → 22:00~6:30 구간과 동일하게 3.5
         elif hour >= 0 and hour < 6:
@@ -465,132 +513,147 @@ class DailyData:
             return 0.0
 
     def _calculate_regular_work_hours(self):
-        """常勤時間計算"""
-        # 1. 出勤時間と退勤時間が両方存在するか確認
-        if not self.start_time or not self.end_time or self.start_time == self.end_time:
-            self.regular_work_hours = None
-            return
+        """常勤時間計算（개선된 버전）"""
+        # 유효성 검사는 이미 상위에서 처리됨
         
-        # 2. work_typeが計算対象外のものか確認
-        exclude_types = ['休日(法)', '祝日', '振替(法)', '休日', '振替(休)', '代休(休)']
-        if self.work_type in exclude_types:
-            self.regular_work_hours = None
-            return
-
-        # 3. 計算用変数設定
-        start_value: float = 0.0
-        end_value: float = 0.0
-        jyokin_work: float = 0.0
-        
-        # 4. start_value計算
+        # 계산용 변수 설정
         start_value = self._get_work_value_by_time(self.start_time)
         
-        # 5. end_value計算
-        end_value = self._get_work_value_by_time(self.end_time)
+        # 날짜 변경이 있는 경우 end_value는 0으로 처리
+        if self.start_time > self.end_time:
+            end_value = 0.0
+        else:
+            end_value = self._get_work_value_by_time(self.end_time)
         
-        # 6. jyokin_work計算
         jyokin_work = start_value - end_value
         
-        # 7. regular_work_hours設定（standard_work_hoursとjyokin_workの小さい方）
+        # regular_work_hours 설정（standard_work_hoursとjyokin_workの小さい方）
         self.regular_work_hours = round(min(jyokin_work, self.standard_work_hours), 2)
 
     def _calculate_deduction_hours(self):
         """控除時間計算"""
-        # 1. regular_work_hoursがnullの場合、nullを返す
+        # regular_work_hours가 null인 경우 처리
         if self.regular_work_hours is None:
             self.deduction_hours = None
+            self.jk_overtime = 0.0
             return
         
-        # 2. 計算用変数設定
+        # 계산용 변수 설정
         start_value = self._get_work_value_by_time(self.start_time)
-        end_value = self._get_work_value_by_time(self.end_time)
+        
+        # 날짜 변경이 있는 경우 end_value는 0으로 처리
+        if self.start_time > self.end_time:
+            end_value = 0.0
+        else:
+            end_value = self._get_work_value_by_time(self.end_time)
+        
         jyokin_work = start_value - end_value
         
-        # 3. 有給(半)の場合特別処理
+        # 有給(半)の場合特別処理
         if self.work_type == "有給(半)":
-            # standard_work_hours - regular_work_hours - 4
             deduction = self.standard_work_hours - self.regular_work_hours - 4
         else:
-            # standard_work_hours - jyokin_work
             deduction = self.standard_work_hours - jyokin_work
         
-        # 4. 結果が負の場合は0、正の場合はそのまま設定
+        # 결과 처리
         if deduction < 0:
             self.deduction_hours = 0.0
-            # 5. jk_overtime計算用変数（後でovertime_hoursに加算）
-            jk_overtime = abs(deduction)
-            # この値は後でovertime_hours計算時に使用される
-            self.jk_overtime = jk_overtime
+            self.jk_overtime = abs(deduction)  # 잔업시간에 추가될 값
         else:
             self.deduction_hours = round(deduction, 2)
             self.jk_overtime = 0.0
 
     def _calculate_overtime_hours(self):
-        """残業時間計算"""
-        # 1. start_timeまたはend_timeがNULL、またはstart_timeとend_timeが同じ場合、NULLを返す
-        if not self.start_time or not self.end_time or self.start_time == self.end_time:
-            self.overtime_hours = None
-            return
+        """残業時間計算（개선된 버전）"""
+        # 유효성 검사는 이미 상위에서 처리됨
         
-        # 2. 実行条件チェック: 退勤時間が18:00以降または出勤時間が9:00以前
+        # 실행 조건 체크: 퇴근시간이 18:00 이후 또는 출근시간이 9:00 이전
         if not (self.end_time.hour >= 18 or self.end_time.hour < 9):
             self.overtime_hours = self.jk_overtime
             return
         
-        # 3. 計算用変数設定
-        start_value = 0.0
-        end_value = 0.0
-        
-        # 4. start_value計算
-        if self.start_time.hour < 18 or (self.start_time.hour == 18 and self.start_time.minute < 30):
-            start_value = 0.0
+        # 날짜 변경이 있는 경우 특별 처리
+        if self.start_time > self.end_time:
+            # 날짜 변경: 18:30부터 22:00까지 + 22:00부터 end_time까지
+            overtime_value = self._calculate_overtime_with_date_change()
         else:
-            start_value = self._get_overtime_value_by_time(self.start_time)
+            # 일반적인 경우
+            start_value = 0.0
+            end_value = 0.0
+            
+            # start_value 계산 (18:30 이후만)
+            if self.start_time.hour >= 18 and (self.start_time.hour > 18 or self.start_time.minute >= 30):
+                start_value = self._get_overtime_value_by_time(self.start_time)
+            
+            # end_value 계산
+            end_value = self._get_overtime_value_by_time(self.end_time)
+            
+            # 잔업시간 계산
+            overtime_value = end_value - start_value
         
-        # 5. end_value計算
-        end_value = self._get_overtime_value_by_time(self.end_time)
+        # jk_overtime 추가
+        overtime_value += self.jk_overtime
         
-        # 6. 残業時間計算
-        overtime_value = end_value - start_value + self.jk_overtime
-        
-        # 7. break_minutes=45かつ退勤時間が18:00超過時は0.5加算
-        if self.break_minutes == 45 and self.start_time.hour < 18 and (self.end_time.hour > 18 or (self.end_time.hour == 18 and self.end_time.minute > 0) or self.end_time.hour < self.start_time.hour):
+        # break_minutes=45 특별 처리
+        if self._should_add_45min_break_bonus():
             overtime_value += 0.5
         
         self.overtime_hours = round(max(0.0, overtime_value), 2)
+
+    def _calculate_overtime_with_date_change(self) -> float:
+        """날짜 변경이 있는 경우의 잔업시간 계산"""
+        # 날짜 변경이 있는 경우: 22:00부터 end_time까지만 잔업시간
+        # (18:30~22:00은 이미 상근시간에 포함됨)
+        
+        if self.end_time.hour >= 22:
+            # 22:00 이후 종료
+            overtime_value = self._get_overtime_value_by_time(self.end_time) - 3.0
+        elif self.end_time.hour < 6 or (self.end_time.hour == 6 and self.end_time.minute < 30):
+            # 22:00~6:30 구간 (3.5 고정)
+            overtime_value = 3.5
+        else:
+            # 6:30~9:00 구간
+            overtime_value = self._get_overtime_value_by_time(self.end_time)
+        
+        return overtime_value
+
+    def _should_add_45min_break_bonus(self) -> bool:
+        """45분 휴게 보너스 적용 여부 확인"""
+        return (self.break_minutes == 45 and 
+                self.start_time.hour < 18 and 
+                (self.end_time.hour > 18 or 
+                 (self.end_time.hour == 18 and self.end_time.minute > 0) or 
+                 self.end_time.hour < self.start_time.hour))
         
     def _calculate_late_night_hours(self):
-        """深夜時間計算"""
-        # 1. start_timeまたはend_timeがNULL、またはstart_timeとend_timeが同じ場合、NULLを返す
-        if not self.start_time or not self.end_time or self.start_time == self.end_time:
-            self.late_night_overtime_hours = None
-            return
+        """深夜時間計算（개선된 버전）"""
+        # 유효성 검사는 이미 상위에서 처리됨
         
-        # 2. 実行条件チェック: 退勤時間が22:30以降または出勤時間>退勤時間（日付変更）
-        date_changed = self.start_time > self.end_time
-        late_end_time = (self.end_time.hour > 22) or (self.end_time.hour == 22 and self.end_time.minute >= 30)
-        
-        if not (late_end_time or date_changed):
+        # 실행 조건 체크: 퇴근시간이 22:30 이후 또는 날짜 변경
+        if not self._should_calculate_late_night():
             self.late_night_overtime_hours = 0.0
             return
         
-        # 3. 計算用変数設定
+        # 계산용 변수 설정
         start_value = 0.0
         end_value = 0.0
         
-        # 4. start_value計算
-        if self.start_time.hour < 23:
-            start_value = 0.0
-        else:
+        # start_value 계산 (23:00 이후만)
+        if self.start_time.hour >= 23:
             start_value = self._get_late_night_value_by_time(self.start_time)
         
-        # 5. end_value計算
+        # end_value 계산
         end_value = self._get_late_night_value_by_time(self.end_time)
         
-        # 6. 深夜時間計算
+        # 심야시간 계산
         late_night_value = end_value - start_value
-        
         self.late_night_overtime_hours = round(max(0.0, late_night_value), 2)
+
+    def _should_calculate_late_night(self) -> bool:
+        """심야시간 계산 여부 확인"""
+        date_changed = self.start_time > self.end_time
+        late_end_time = (self.end_time.hour > 22) or (self.end_time.hour == 22 and self.end_time.minute >= 30)
+        return late_end_time or date_changed
 
     def _calculate_total_hours(self):
         """소계 계산 (수정 없음)"""
@@ -653,7 +716,7 @@ class MonthlyData:
         total = 0.0
         # 休日(法)、祝日は除外
         for daily in self.daily_list:
-            if daily.overtime_hours is not None and daily.work_type not in ['休日(法)', '祝日']:
+            if daily.overtime_hours is not None and daily.work_type not in LEGAL_HOLIDAY_TYPES:
                 total += daily.overtime_hours
         return round(total, 2)
 
@@ -663,7 +726,7 @@ class MonthlyData:
         total = 0.0
         # 休日(法)、祝日は除外
         for daily in self.daily_list:
-            if daily.late_night_overtime_hours is not None and daily.work_type not in ['休日(法)', '祝日']:
+            if daily.late_night_overtime_hours is not None and daily.work_type not in LEGAL_HOLIDAY_TYPES:
                 total += daily.late_night_overtime_hours
         return round(total, 2)
 
@@ -671,10 +734,9 @@ class MonthlyData:
     def total_holiday_work_hours(self) -> float:
         """휴일 근무시간 합계: 법정 휴일(休日(法)、祝日)에 일한 잔업시간의 합"""
         total = 0.0
-        legal_holiday_types = ['休日(法)', '祝日']
         
         for daily in self.daily_list:
-            if (daily.work_type in legal_holiday_types and 
+            if (daily.work_type in LEGAL_HOLIDAY_TYPES and 
                 daily.overtime_hours is not None):
                 total += daily.overtime_hours
         
@@ -684,10 +746,9 @@ class MonthlyData:
     def holiday_work_hours_night(self) -> float:
         """휴일 심야근무시간 합계: 법정 휴일에 심야근무한 시간의 합"""
         total = 0.0
-        legal_holiday_types = ['休日(法)', '祝日']
         
         for daily in self.daily_list:
-            if (daily.work_type in legal_holiday_types and 
+            if (daily.work_type in LEGAL_HOLIDAY_TYPES and 
                 daily.late_night_overtime_hours is not None):
                 total += daily.late_night_overtime_hours
         
