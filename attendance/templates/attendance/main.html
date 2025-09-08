@@ -95,12 +95,12 @@
                     
                     <!-- ===================== メール送信セクション ===================== -->
                     <div id="mail-section">
-                        <section class="email-section">
-                            <h3>メール送信</h3>
+                        <section class="email-section" style="opacity: 0.5; pointer-events: none;">
+                            <h3>メール送信 <span style="color: #999; font-size: 0.8em;">(一時非活性化)</span></h3>
                             <form id="email-send-form" class="email-form" autocomplete="off" method="post">
                                 {% csrf_token %}
                                 <label for="email-host-user">発信者メール</label>
-                                <input type="email" id="email-host-user" name="email_host_user" class="form-control" placeholder="your@gmail.com">
+                                <input type="email" id="email-host-user" name="email_host_user" class="form-control" placeholder="your@gmail.com" disabled>
                                 <label for="email-host-password">アプリのパスワード
                                     <span class="app-password-help-icon" id="app-password-help-icon" tabindex="0" title="アプリパスワードの収得方法">
                                         <i class="fa-solid fa-circle-question"></i>
@@ -117,14 +117,14 @@
                                         <a href="https://support.google.com/accounts/answer/185833?hl=ja" class="tooltip-link" target="_blank" rel="noopener noreferrer">詳しい手順はこちら</a>
                                     </div>
                                 </div>
-                                <input type="password" id="email-host-password" name="email_host_password" class="form-control" placeholder="abcd efgh ijkl mnop">
+                                <input type="password" id="email-host-password" name="email_host_password" class="form-control" placeholder="abcd efgh ijkl mnop" disabled>
                                 <label for="email-to-select">受信者メール</label>
-                                <select id="email-to-select" class="form-control">
+                                <select id="email-to-select" class="form-control" disabled>
                                     <option value="" disabled selected>選択してください</option>
                                     <option value="__manual__">直接入力</option>
                                 </select>
-                                <input type="email" id="email-to" name="email" class="form-control" placeholder="@techave.jp" readonly style="display:none;">
-                                <button type="submit" id="email-send-btn" class="btn-primary">送信</button>
+                                <input type="email" id="email-to" name="email" class="form-control" placeholder="@techave.jp" readonly style="display:none;" disabled>
+                                <button type="submit" id="email-send-btn" class="btn-primary" disabled>送信</button>
                             </form>
                             <div id="email-status-message" class="email-status-message"></div>
                             <div id="file-type-modal" class="modal-overlay">
@@ -136,8 +136,8 @@
                                     <div class="modal-body file-type-modal-body">
                                         <p>どちらのファイルを添付して送信しますか？</p>
                                         <div class="file-type-buttons">
-                                            <button type="button" id="send-pdf-btn" class="btn-primary"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                                            <button type="button" id="send-excel-btn" class="btn-primary"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                            <button type="button" id="send-pdf-btn" class="btn-primary" disabled><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                            <button type="button" id="send-excel-btn" class="btn-primary" disabled><i class="fa-solid fa-file-excel"></i> Excel</button>
                                         </div>
                                     </div>
                                 </div>

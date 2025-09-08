@@ -111,11 +111,11 @@
             </div>
             <div class="form-group">
                 <label for="{{ daily_form.end_time.id_for_label }}">作業終了時刻</label>
-                <div class="day-change-checkbox">
+<!--                <div class="day-change-checkbox">
                     <input type="checkbox" id="day_change_checkbox" name="day_change" 
                            {% if not monthly_data %}disabled{% endif %}>
                     <label for="day_change_checkbox">日替り</label>
-                </div>
+                </div>-->
                 <div class="time-input-group">
                     <input type="time" name="end_time" id="{{ daily_form.end_time.id_for_label }}"
                            value="{% if selected_daily_data and selected_daily_data.end_time %}{{ selected_daily_data.end_time|time:'H:i' }}{% endif %}"
