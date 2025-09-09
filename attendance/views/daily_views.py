@@ -95,24 +95,28 @@ class DailyDataUpdateView(View):
             work_type = data.get('work_type')
             start_time_str = data.get('start_time')
             end_time_str = data.get('end_time')
-            alternative_work_date_str = data.get('alternative_work_date')
+            alternatuve_work_date1_str = data.get('alternatuve_work_date1')
+            alternatuve_work_date2_str = data.get('alternatuve_work_date2')
+            alternatuve_work_date3_str = data.get('alternatuve_work_date3')
             
             if not work_type:
                 return JsonResponse({'status': 'error', 'message': '勤務区分を選択してください'})
             
             # 휴일/휴가 타입이 아닌 경우에만 시간 필수
-            if work_type not in ['休日(法)', '休日', '祝日', '有給', '代休(休)', '振替(休)', '欠勤', '特別休暇']:
+            if work_type not in ['休日(法)', '休日', '祝日', '年休', '代休(休)', '振替(休)', '欠勤', '特別休暇']:
                 if not start_time_str:
                     return JsonResponse({'status': 'error', 'message': '作業開始時刻を入力してください'})
                 
                 if not end_time_str:
                     return JsonResponse({'status': 'error', 'message': '作業終了時刻を入力してください'})
             
-            print(f"Time strings: start={start_time_str}, end={end_time_str}, alt={alternative_work_date_str}")
+            print(f"Time strings: start={start_time_str}, end={end_time_str}, alt1={alternatuve_work_date1_str}, alt2={alternatuve_work_date2_str}, alt3={alternatuve_work_date3_str}")
             
             start_time = None
             end_time = None
-            alternative_work_date = None
+            alternatuve_work_date1 = None
+            alternatuve_work_date2 = None
+            alternatuve_work_date3 = None
             
             if start_time_str:
                 try:
@@ -130,12 +134,26 @@ class DailyDataUpdateView(View):
                     print(f"End time parsing error: {e}")
                     pass
             
-            if alternative_work_date_str:
+            if alternatuve_work_date1_str:
                 try:
-                    alternative_work_date = datetime.strptime(alternative_work_date_str, '%Y-%m-%d').date()
-                    print(f"Parsed alternative_work_date: {alternative_work_date}")
+                    alternatuve_work_date1 = datetime.strptime(alternatuve_work_date1_str, '%Y-%m-%d').date()
+                    print(f"Parsed alternatuve_work_date1: {alternatuve_work_date1}")
                 except ValueError as e:
-                    print(f"Alternative work date parsing error: {e}")
+                    print(f"Alternative work date 1 parsing error: {e}")
+                    
+            if alternatuve_work_date2_str:
+                try:
+                    alternatuve_work_date2 = datetime.strptime(alternatuve_work_date2_str, '%Y-%m-%d').date()
+                    print(f"Parsed alternatuve_work_date2: {alternatuve_work_date2}")
+                except ValueError as e:
+                    print(f"Alternative work date 2 parsing error: {e}")
+                    
+            if alternatuve_work_date3_str:
+                try:
+                    alternatuve_work_date3 = datetime.strptime(alternatuve_work_date3_str, '%Y-%m-%d').date()
+                    print(f"Parsed alternatuve_work_date3: {alternatuve_work_date3}")
+                except ValueError as e:
+                    print(f"Alternative work date 3 parsing error: {e}")
                     pass
             
             # 기존 일별 데이터 찾기 또는 새로 생성
@@ -154,7 +172,9 @@ class DailyDataUpdateView(View):
                 existing_daily.work_type = work_type
                 existing_daily.start_time = start_time
                 existing_daily.end_time = end_time
-                existing_daily.alternative_work_date = alternative_work_date
+                existing_daily.alternatuve_work_date1 = alternatuve_work_date1
+                existing_daily.alternatuve_work_date2 = alternatuve_work_date2
+                existing_daily.alternatuve_work_date3 = alternatuve_work_date3
                 existing_daily.notes = data.get('notes', '')
                 # 시간 계산 실행
                 existing_daily.calculate_work_hours()
@@ -167,7 +187,9 @@ class DailyDataUpdateView(View):
                     work_type=data.get('work_type', '出勤'),
                     start_time=start_time,
                     end_time=end_time,
-                    alternative_work_date=alternative_work_date,
+                    alternatuve_work_date1=alternatuve_work_date1,
+                    alternatuve_work_date2=alternatuve_work_date2,
+                    alternatuve_work_date3=alternatuve_work_date3,
                     notes=data.get('notes', ''),
                     break_minutes=monthly_data.break_minutes,
                     standard_work_hours=monthly_data.standard_work_hours
@@ -234,7 +256,9 @@ class DailyDataGetView(View):
                     'work_type': daily_data.work_type,
                     'start_time': daily_data.start_time.strftime('%H:%M') if daily_data.start_time else '',
                     'end_time': daily_data.end_time.strftime('%H:%M') if daily_data.end_time else '',
-                    'alternative_work_date': daily_data.alternative_work_date.strftime('%Y-%m-%d') if daily_data.alternative_work_date else '',
+                    'alternatuve_work_date1': daily_data.alternatuve_work_date1.strftime('%Y-%m-%d') if daily_data.alternatuve_work_date1 else '',
+                    'alternatuve_work_date2': daily_data.alternatuve_work_date2.strftime('%Y-%m-%d') if daily_data.alternatuve_work_date2 else '',
+                    'alternatuve_work_date3': daily_data.alternatuve_work_date3.strftime('%Y-%m-%d') if daily_data.alternatuve_work_date3 else '',
                     'notes': daily_data.notes or ''
                 }
                 return JsonResponse({'status': 'success', 'record': record})

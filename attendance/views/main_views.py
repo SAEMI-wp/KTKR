@@ -602,7 +602,9 @@ class DailyDataAPIView(AjaxLoginRequiredMixin, View):
                     'work_type': daily_record.work_type,
                     'start_time': daily_record.start_time.strftime('%H:%M') if daily_record.start_time else '',
                     'end_time': daily_record.end_time.strftime('%H:%M') if daily_record.end_time else '',
-                    'alternative_work_date': daily_record.alternative_work_date.strftime('%Y-%m-%d') if daily_record.alternative_work_date else '',
+                    'alternatuve_work_date1': daily_record.alternatuve_work_date1.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date1 else '',
+                    'alternatuve_work_date2': daily_record.alternatuve_work_date2.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date2 else '',
+                    'alternatuve_work_date3': daily_record.alternatuve_work_date3.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date3 else '',
                     'notes': daily_record.notes or '',
                     'date': date_str
                 }
