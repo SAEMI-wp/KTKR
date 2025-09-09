@@ -642,12 +642,12 @@ class CustomAdminSite(admin.AdminSite):
                 calendar_name = form.cleaned_data['calendar_name']
                 start_time = form.cleaned_data['start_time']
                 end_time = form.cleaned_data['end_time']
-                work_hours = form.cleaned_data['work_hours']
-                lunch_time = form.cleaned_data['lunch_time']
-                etc = form.cleaned_data['etc']
+                standard_work_hours = form.cleaned_data['standard_work_hours']
+                break_minutes = form.cleaned_data['break_minutes']
+                notes = form.cleaned_data['notes']
                 
                 # Calendar 생성/수정 처리
-                if calendar_name and start_time and end_time and work_hours is not None and lunch_time is not None:
+                if calendar_name and start_time and end_time and standard_work_hours is not None and break_minutes is not None:
                     # Calendar ID가 전달되었는지 확인 (수정 모드)
                     calendar_id = request.POST.get('edit_calendar_id')
                     
@@ -658,9 +658,9 @@ class CustomAdminSite(admin.AdminSite):
                             existing_calendar.calendar_name = calendar_name
                             existing_calendar.start_time = start_time
                             existing_calendar.end_time = end_time
-                            existing_calendar.work_hours = work_hours
-                            existing_calendar.lunch_time = lunch_time
-                            existing_calendar.etc = etc or ''
+                            existing_calendar.standard_work_hours = standard_work_hours
+                            existing_calendar.break_minutes = break_minutes
+                            existing_calendar.notes = notes or ''
                             existing_calendar.save()
                             messages.success(request, f'カレンダー「{calendar_name}」を更新しました。')
                         except Calendar.DoesNotExist:
@@ -677,9 +677,9 @@ class CustomAdminSite(admin.AdminSite):
                             calendar_name=calendar_name,
                             start_time=start_time,
                             end_time=end_time,
-                            work_hours=work_hours,
-                            lunch_time=lunch_time,
-                            etc=etc or ''
+                            standard_work_hours=standard_work_hours,
+                            break_minutes=break_minutes,
+                            notes=notes or ''
                         )
                         calendar.save()
                         messages.success(request, f'カレンダー「{calendar_name}」を作成しました。')
@@ -1135,21 +1135,21 @@ class CalendarManagementForm(forms.Form):
         widget=forms.TimeInput(attrs={'type': 'time'}),
         help_text='勤務終了時刻'
     )
-    work_hours = forms.FloatField(
-        label='稼働時間(時間)',
+    standard_work_hours = forms.FloatField(
+        label='基準時間(時間)',
         required=False,
         min_value=0,
         max_value=24,
-        help_text='1日の勤務時間（時間単位）'
+        help_text='1日の基準勤務時間（時間単位）'
     )
-    lunch_time = forms.IntegerField(
+    break_minutes = forms.IntegerField(
         label='昼休み(分)',
         required=False,
         min_value=0,
         max_value=180,
         help_text='昼休み時間（分単位）'
     )
-    etc = forms.CharField(
+    notes = forms.CharField(
         label='備考',
         max_length=200,
         required=False,

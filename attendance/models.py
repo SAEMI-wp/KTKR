@@ -84,9 +84,7 @@ class AttendanceMonthly(models.Model):
     year = models.CharField(verbose_name='年', max_length=4)
     month = models.CharField(verbose_name='月', max_length=2)
     project_name = models.CharField(verbose_name='PJ名', max_length=100)
-    base_calendar = models.CharField(verbose_name='基準カレンダー', max_length=20)
-    break_minutes = models.PositiveIntegerField(verbose_name='昼休み区分 (分間)')
-    standard_work_hours = models.FloatField(verbose_name='基準時間 (Hr)')
+    base_calendar = models.ForeignKey('Calendar', on_delete=models.CASCADE, db_column='base_calendar', verbose_name='基準カレンダー')
     is_confirmed = models.BooleanField(default=False, verbose_name='承認済み')
     is_required = models.BooleanField(default=False, verbose_name='承認申請中')
 
@@ -108,10 +106,9 @@ class AttendanceDaily(models.Model):
     """
     WORK_TYPE_CHOICES = [
         ('出勤', '出勤'),
-        ('有給', '有給'),
-        ('有給(半)', '有給(半)'),
-        ('代休(勤)', '代休(勤)'),
-        ('代休(休)', '代休(休)'),
+        ('年休', '年休'),
+        ('年休(半)', '年休(半)'),
+        ('代休', '代休'),
         ('振替(勤)', '振替(勤)'),
         ('振替(休)', '振替(休)'),
         ('特別休暇', '特別休暇'),
@@ -125,13 +122,15 @@ class AttendanceDaily(models.Model):
     daily_id = models.BigAutoField(primary_key=True, verbose_name='日付番号')
     monthly_attendance = models.ForeignKey(AttendanceMonthly, on_delete=models.CASCADE, verbose_name='個別月日程番号')
     date = models.DateField(verbose_name='日付')
-    work_type = models.CharField(verbose_name='勤務区分', max_length=20, choices=WORK_TYPE_CHOICES, null=True, blank=True)
-    alternative_work_date = models.DateField(verbose_name='代休/振替の勤務日', null=True, blank=True)
-    start_time = models.TimeField(verbose_name='作業開始時刻', null=True, blank=True)
-    end_time = models.TimeField(verbose_name='作業終了時刻', null=True, blank=True)
+    work_type = models.CharField(verbose_name='勤務区分', max_length=20, choices=WORK_TYPE_CHOICES, null=False, blank=False, default='出勤')
+    alternatuve_work_date1 = models.DateField(verbose_name='代休/振替の勤務日1', null=True, blank=True)
+    alternatuve_work_date2 = models.DateField(verbose_name='代休/振替の勤務日2', null=True, blank=True)
+    alternatuve_work_date3 = models.DateField(verbose_name='代休/振替の勤務日3', null=True, blank=True)
+    start_time = models.TimeField(verbose_name='作業開始時刻', null=False, blank=False, default='09:00:00')
+    end_time = models.TimeField(verbose_name='作業終了時刻', null=False, blank=False, default='18:00:00')
     notes = models.TextField(verbose_name='実施作業内容/備考', null=True, blank=True)
-    is_confirmed = models.BooleanField(verbose_name='確認', default=False)
-    is_required = models.BooleanField(default=False, verbose_name='承認申請中')
+    is_confirmed = models.BooleanField(verbose_name='確認', default=False, null=False)
+    is_required = models.BooleanField(default=False, verbose_name='承認申請中', null=False)
     day_changed = models.BooleanField(verbose_name='日付変更', default=False, null=False)
     
     class Meta:
@@ -155,14 +154,13 @@ class Calendar(models.Model):
     calendar_name = models.CharField(
         verbose_name='現場', 
         max_length=20, 
-        null=False, 
-        unique=True
+        null=False
     )
-    start_time = models.TimeField(verbose_name='開始時刻', null=False)
-    end_time = models.TimeField(verbose_name='終了時刻', null=False)
-    work_hours = models.FloatField(verbose_name='稼働時間(Hr)', null=False)
-    lunch_time = models.PositiveSmallIntegerField(verbose_name='昼休み(分)', null=False)
-    etc = models.TextField(verbose_name='備考', blank=True)
+    start_time = models.TimeField(verbose_name='開始時刻', null=False, default='09:00:00')
+    end_time = models.TimeField(verbose_name='終了時刻', null=False, default='18:00:00')
+    standard_work_hours = models.FloatField(verbose_name='基準時間(Hr)', null=False, default=8.0)
+    break_minutes = models.SmallIntegerField(verbose_name='昼休み(分)', null=False, default=60)
+    notes = models.TextField(verbose_name='備考', null=True, blank=True)
 
     class Meta:
         verbose_name = 'カレンダー'
@@ -203,6 +201,7 @@ class PaySlip(models.Model):
         return f"{self.employee} {self.year}年{self.month}月 給与明細書"
 
 class HolidayCalendar(models.Model):
+    id = models.AutoField(primary_key=True)
     calendar_code = models.ForeignKey(
         Calendar, 
         on_delete=models.CASCADE, 
@@ -211,10 +210,10 @@ class HolidayCalendar(models.Model):
     )
     date = models.DateField('日付')
     category = models.CharField('区分', max_length=20)
+    notes = models.CharField('説明', max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = 'holiday_calendar'
-        unique_together = ('calendar_code', 'date', 'category')
         verbose_name = '休日カレンダー'
         verbose_name_plural = '休日カレンダー一覧'
 

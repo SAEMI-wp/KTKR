@@ -4,18 +4,14 @@ from .models import AttendanceMonthly, AttendanceDaily, Employee
 class MonthlyAttendanceForm(forms.ModelForm):
     class Meta:
         model = AttendanceMonthly
-        fields = ['project_name', 'base_calendar', 'break_minutes', 'standard_work_hours']
+        fields = ['project_name', 'base_calendar']
         widgets = {
             'project_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: ○○プロジェクト'}),
-            'base_calendar': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: カレンダーA'}),
-            'break_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'standard_work_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 0.1}),
+            'base_calendar': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'project_name': 'PJ名',
             'base_calendar': '基準カレンダー',
-            'break_minutes': '昼休み区分 (分間)',
-            'standard_work_hours': '基準時間 (Hr)',
         }
 
 class DailyAttendanceForm(forms.ModelForm):
@@ -31,10 +27,12 @@ class DailyAttendanceForm(forms.ModelForm):
     
     class Meta:
         model = AttendanceDaily
-        fields = ['work_type', 'alternative_work_date', 'start_time', 'end_time', 'notes']
+        fields = ['work_type', 'alternatuve_work_date1', 'alternatuve_work_date2', 'alternatuve_work_date3', 'start_time', 'end_time', 'notes']
         widgets = {
             'work_type': forms.Select(attrs={'class': 'form-control', 'required': True}),
-            'alternative_work_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternatuve_work_date1': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternatuve_work_date2': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternatuve_work_date3': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': True}),
             'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': True}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
