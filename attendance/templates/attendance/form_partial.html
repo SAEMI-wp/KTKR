@@ -56,10 +56,10 @@
                                 <strong>出勤</strong>: 休暇や欠勤ではない、通常の勤務。
                             </div>
                             <div class="worktype-item">
-                                <strong>有給</strong>: 有給休暇を取得すること。
+                                <strong>年休</strong>: 年次有給休暇を取得すること。
                             </div>
                             <div class="worktype-item">
-                                <strong>有給(半)</strong>: 半日有給休暇を取得すること。
+                                <strong>年休(半)</strong>: 半日年次有給休暇を取得すること。
                             </div>
                             <div class="worktype-item">
                                 <strong>代休(勤)</strong>: 休日出勤し、代わりに休みを取得する権利が発生すること。
@@ -130,10 +130,29 @@
             </div>
             <!-- 代休/振替の勤務日は特定勤務区分の時のみ表示 -->
             <div class="form-group" id="alt-work-date-group">
-                <label for="{{ daily_form.alternative_work_date.id_for_label }}">代休/振替の勤務日 <span class="required-mark" id="alt-work-date-required" style="display: none;">*</span></label>
-                <input type="date" name="alternative_work_date" id="{{ daily_form.alternative_work_date.id_for_label }}"
-                       value="{% if selected_daily_data and selected_daily_data.alternative_work_date %}{{ selected_daily_data.alternative_work_date|date:'Y-m-d' }}{% endif %}"
-                       {% if not monthly_data %}disabled{% endif %}>
+                <label for="{{ daily_form.alternatuve_work_date1.id_for_label }}">代休/振替の勤務日 <span class="required-mark" id="alt-work-date-required" style="display: none;">*</span></label>
+                <div class="alternative-work-dates">
+                    <input type="date" name="alternatuve_work_date1" id="{{ daily_form.alternatuve_work_date1.id_for_label }}"
+                           value="{% if selected_daily_data and selected_daily_data.alternatuve_work_date1 %}{{ selected_daily_data.alternatuve_work_date1|date:'Y-m-d' }}{% endif %}"
+                           {% if not monthly_data %}disabled{% endif %}
+                           class="alt-work-date-input">
+                    
+                    <div id="additional-alt-dates" style="display: none;">
+                        <input type="date" name="alternatuve_work_date2" id="{{ daily_form.alternatuve_work_date2.id_for_label }}"
+                               value="{% if selected_daily_data and selected_daily_data.alternatuve_work_date2 %}{{ selected_daily_data.alternatuve_work_date2|date:'Y-m-d' }}{% endif %}"
+                               {% if not monthly_data %}disabled{% endif %}
+                               class="alt-work-date-input">
+                        <input type="date" name="alternatuve_work_date3" id="{{ daily_form.alternatuve_work_date3.id_for_label }}"
+                               value="{% if selected_daily_data and selected_daily_data.alternatuve_work_date3 %}{{ selected_daily_data.alternatuve_work_date3|date:'Y-m-d' }}{% endif %}"
+                               {% if not monthly_data %}disabled{% endif %}
+                               class="alt-work-date-input">
+                    </div>
+                    
+                    <button type="button" id="toggle-additional-dates" class="btn-toggle-dates" 
+                            {% if not monthly_data %}disabled{% endif %}>
+                        <i class="fa-solid fa-plus"></i> 追加
+                    </button>
+                </div>
             </div>
             <div class="form-group-full">
                 <label for="{{ daily_form.notes.id_for_label }}">実施作業内容/備考</label>
