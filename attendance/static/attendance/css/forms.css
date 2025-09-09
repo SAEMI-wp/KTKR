@@ -7,7 +7,51 @@
  * - 날짜 입력 그룹
  * - 폼 비활성화 스타일
  * - 비활성화 메시지
+ * - 대체 근무일 추가 버튼
  */
+
+/* ===================== 代休/振替の勤務日関連 ===================== */
+.alternative-work-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.alt-work-date-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-toggle-dates {
+    align-self: flex-start;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+.btn-toggle-dates:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+.btn-toggle-dates:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+#additional-alt-dates {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
 .form-warning { display: none; }
 /* Daily Entry Form */
@@ -21,6 +65,33 @@
     color: #e74c3c;
     font-weight: bold;
     margin-left: 2px;
+}
+
+/* 日替りチェックボックスのスタイル */
+.day-change-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 8px;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.day-change-checkbox input[type="checkbox"] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.day-change-checkbox label {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+    font-weight: normal;
+    white-space: nowrap;
 }
 
 /* フォーム警告メッセージのスタイル改善 */
@@ -353,92 +424,4 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-/* 시간 입력 필드 스타일링 */
-.time-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 5px;
-}
-
-.time-input {
-    width: 120px !important; /* time 입력 필드 너비 설정 */
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: inherit;
-}
-
-.time-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.current-time-btn {
-    padding: 8px 12px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-    transition: background-color 0.2s ease;
-}
-
-.current-time-btn:hover {
-    background-color: #0056b3;
-}
-
-.current-time-btn:active {
-    background-color: #004085;
-}
-
-.current-time-btn:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-/* time 입력 필드의 화살표 버튼 스타일링 */
-.time-input::-webkit-calendar-picker-indicator {
-    background-color: transparent;
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 2px;
-    transition: background-color 0.2s ease;
-}
-
-.time-input::-webkit-calendar-picker-indicator:hover {
-    background-color: #f0f0f0;
-}
-
-/* Firefox용 스타일 */
-.time-input::-moz-calendar-picker-indicator {
-    background-color: transparent;
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 2px;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-    .time-input-group {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-    
-    .time-input {
-        width: 100% !important;
-        max-width: 200px;
-    }
-    
-    .current-time-btn {
-        align-self: flex-start;
-    }
 }
