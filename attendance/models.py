@@ -80,11 +80,13 @@ class AttendanceMonthly(models.Model):
     月別勤怠モデル
     """
     monthly_id = models.BigAutoField(primary_key=True, verbose_name='個別月日程番号')
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='社員番号')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, db_column='employee_no', verbose_name='社員番号')
     year = models.CharField(verbose_name='年', max_length=4)
     month = models.CharField(verbose_name='月', max_length=2)
     project_name = models.CharField(verbose_name='PJ名', max_length=100)
-    base_calendar = models.ForeignKey('Calendar', on_delete=models.CASCADE, db_column='base_calendar', verbose_name='基準カレンダー')
+    base_calendar = models.CharField(verbose_name='基準カレンダー', max_length=20)
+    break_minutes = models.PositiveIntegerField(verbose_name='昼休み(分)', default=60)
+    standard_work_hours = models.FloatField(verbose_name='基準時間(Hr)', default=8.0)
     is_confirmed = models.BooleanField(default=False, verbose_name='承認済み')
     is_required = models.BooleanField(default=False, verbose_name='承認申請中')
 

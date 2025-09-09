@@ -20,7 +20,9 @@ class DailyData:
     work_type: Optional[str]
     start_time: Optional[time]                          # 開始時間
     end_time: Optional[time]                            # 終了時間
-    alternative_work_date: Optional[date] = None        # 代休/振替
+    alternatuve_work_date1: Optional[date] = None       # 代休/振替の勤務日1
+    alternatuve_work_date2: Optional[date] = None       # 代休/振替の勤務日2
+    alternatuve_work_date3: Optional[date] = None       # 代休/振替の勤務日3
     notes: Optional[str] = None                         # 備考
     is_required: bool = False                           # 必須
     is_confirmed: bool = False                          # 確認

@@ -3,6 +3,7 @@ from datetime import date, time
 from .models import Employee, AttendanceMonthly, AttendanceDaily
 from .structures import DailyData, MonthlyData
 import os
+import urllib.parse
 
 def convert_daily_to_structure(daily_model: AttendanceDaily, 
                               break_minutes: int = 60,
@@ -13,7 +14,9 @@ def convert_daily_to_structure(daily_model: AttendanceDaily,
         work_type=daily_model.work_type,
         start_time=daily_model.start_time,
         end_time=daily_model.end_time,
-        alternative_work_date=daily_model.alternative_work_date,
+        alternatuve_work_date1=daily_model.alternatuve_work_date1,
+        alternatuve_work_date2=daily_model.alternatuve_work_date2,
+        alternatuve_work_date3=daily_model.alternatuve_work_date3,
         notes=daily_model.notes,
         is_required=daily_model.is_required,
         is_confirmed=daily_model.is_confirmed,
@@ -165,7 +168,6 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
 
     # 첨부파일 처리
     if attachment and attachment_filename:
-        import urllib.parse  # 日本語ファイル名のエンコード用
         part = MIMEBase('application', 'octet-stream')
         part.set_payload(attachment)
         encoders.encode_base64(part)
@@ -207,16 +209,6 @@ def send_mail_dynamic(user, password, to_email, subject, body, attachment=None, 
             error_msg = """
 모든 SMTP 포트 연결 실패 - Railway에서 Gmail SMTP가 차단되었을 수 있습니다.
 
-해결방법:
-1. SendGrid 사용: https://sendgrid.com (무료 100통/일)
-2. Mailgun 사용: https://www.mailgun.com (무료 5,000통/월)
-3. Railway Variables에 다음 설정:
-   EMAIL_HOST=smtp.sendgrid.net
-   EMAIL_PORT=587
-   EMAIL_HOST_USER=apikey
-   EMAIL_HOST_PASSWORD=your-sendgrid-api-key
-
-또는 로컬 환경에서 테스트해보세요.
             """.strip()
             raise Exception(error_msg)
         
