@@ -61,7 +61,7 @@
                         <tr>
                             {% for day in week %}
                                 {% if day.date %}
-                                <td class="{% if day.date.month != calendar_date.month %}other-month{% endif %}{% if day.record %} has-record{% endif %}{% if day.date == today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" data-default-work-type="{{ day.default_work_type|default_if_none:'' }}" data-has-record="{% if day.record %}1{% else %}0{% endif %}" {% if day.record %}data-work-type="{{ day.record.work_type }}" data-start-time="{{ day.record.start_time|time:'H:i'|default:'' }}" data-end-time="{{ day.record.end_time|time:'H:i'|default:'' }}" data-alternative-work-date1="{{ day.record.alternatuve_work_date1|date:'Y-m-d'|default:'' }}" data-alternative-work-date2="{{ day.record.alternatuve_work_date2|date:'Y-m-d'|default:'' }}" data-alternative-work-date3="{{ day.record.alternatuve_work_date3|date:'Y-m-d'|default:'' }}" data-notes="{{ day.record.notes|default:'' }}"{% endif %}>
+                                <td class="{% if day.date.month != calendar_date.month %}other-month{% endif %}{% if day.record %} has-record{% endif %}{% if day.date == today %} today{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" data-default-work-type="{{ day.default_work_type|default_if_none:'' }}" data-has-record="{% if day.record %}1{% else %}0{% endif %}" {% if day.record %}data-work-type="{{ day.record.work_type }}" data-start-time="{{ day.record.start_time|time:'H:i'|default:'' }}" data-end-time="{{ day.record.end_time|time:'H:i'|default:'' }}" data-alternative-work-date1="{{ day.record.alternative_work_date1|date:'Y-m-d'|default:'' }}" data-alternative-work-date2="{{ day.record.alternative_work_date2|date:'Y-m-d'|default:'' }}" data-alternative-work-date3="{{ day.record.alternative_work_date3|date:'Y-m-d'|default:'' }}" data-notes="{{ day.record.notes|default:'' }}"{% endif %}>
                                 {% else %}
                                 <td class="empty-cell">
                                 {% endif %}
@@ -85,8 +85,8 @@
                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                 {% elif day.record.work_type == '代休(休)' or day.record.work_type == '振替(休)' %}
                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
-                                                    {% if day.record.alternatuve_work_date1 %}
-                                                        <div class="alternative_work_date">({{ day.record.alternatuve_work_date1|date:"Y.m.d" }})</div>
+                                    {% if day.record.alternative_work_date1 %}
+                                        <div class="alternative_work_date">({{ day.record.alternative_work_date1|date:"Y.m.d" }})</div>
                                                     {% endif %}
                                                 {% elif day.record.work_type == '代休(勤)' or day.record.work_type == '振替(勤)' %}
                                                     {% if day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
@@ -163,9 +163,9 @@
                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.start_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.end_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
                                 <td>{% if day.record %}
-                                    {% if day.record.alternatuve_work_date1 %}{{ day.record.alternatuve_work_date1|date:"n/j" }}{% endif %}
-                                    {% if day.record.alternatuve_work_date2 %}<br>{{ day.record.alternatuve_work_date2|date:"n/j" }}{% endif %}
-                                    {% if day.record.alternatuve_work_date3 %}<br>{{ day.record.alternatuve_work_date3|date:"n/j" }}{% endif %}
+                                    {% if day.record.alternative_work_date1 %}{{ day.record.alternative_work_date1|date:"n/j" }}{% endif %}
+                                    {% if day.record.alternative_work_date2 %}<br>{{ day.record.alternative_work_date2|date:"n/j" }}{% endif %}
+                                    {% if day.record.alternative_work_date3 %}<br>{{ day.record.alternative_work_date3|date:"n/j" }}{% endif %}
                                 {% else %}&nbsp;{% endif %}</td>
                                 <td class="notes-cell">
                                     {% if day.record %}
