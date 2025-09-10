@@ -321,9 +321,9 @@ function getDailyDataFromCell(element) {
             work_type: workType,
             start_time: cells[3].textContent.trim() || '',
             end_time: cells[4].textContent.trim() || '',
-            alternatuve_work_date1: cells[5].textContent.trim().split('\n')[0] || '',
-            alternatuve_work_date2: cells[5].textContent.trim().split('\n')[1] || '',
-            alternatuve_work_date3: cells[5].textContent.trim().split('\n')[2] || '',
+            alternative_work_date1: cells[5].textContent.trim().split('\n')[0] || '',
+            alternative_work_date2: cells[5].textContent.trim().split('\n')[1] || '',
+            alternative_work_date3: cells[5].textContent.trim().split('\n')[2] || '',
             notes: notesText
         };
         
@@ -336,9 +336,9 @@ function getDailyDataFromCell(element) {
         work_type: element.dataset.workType || '',
         start_time: element.dataset.startTime || '',
         end_time: element.dataset.endTime || '',
-        alternatuve_work_date1: element.dataset.alternativeWorkDate1 || '',
-        alternatuve_work_date2: element.dataset.alternativeWorkDate2 || '',
-        alternatuve_work_date3: element.dataset.alternativeWorkDate3 || '',
+        alternative_work_date1: element.dataset.alternativeWorkDate1 || '',
+        alternative_work_date2: element.dataset.alternativeWorkDate2 || '',
+        alternative_work_date3: element.dataset.alternativeWorkDate3 || '',
         notes: element.dataset.notes || ''
     };
 }
@@ -397,17 +397,17 @@ function populateFormWithData(dailyData, defaultWorkType) {
         const workTypeSelect = form.querySelector('[name="work_type"]');
         const startTimeInput = form.querySelector('[name="start_time"]');
         const endTimeInput = form.querySelector('[name="end_time"]');
-        const altDateInput1 = form.querySelector('[name="alternatuve_work_date1"]');
-        const altDateInput2 = form.querySelector('[name="alternatuve_work_date2"]');
-        const altDateInput3 = form.querySelector('[name="alternatuve_work_date3"]');
+        const altDateInput1 = form.querySelector('[name="alternative_work_date1"]');
+        const altDateInput2 = form.querySelector('[name="alternative_work_date2"]');
+        const altDateInput3 = form.querySelector('[name="alternative_work_date3"]');
         const notesInput = form.querySelector('[name="notes"]');
         
         if (workTypeSelect) workTypeSelect.value = dailyData.work_type || '';
         if (startTimeInput) startTimeInput.value = dailyData.start_time || '';
         if (endTimeInput) endTimeInput.value = dailyData.end_time || '';
-        if (altDateInput1) altDateInput1.value = dailyData.alternatuve_work_date1 || '';
-        if (altDateInput2) altDateInput2.value = dailyData.alternatuve_work_date2 || '';
-        if (altDateInput3) altDateInput3.value = dailyData.alternatuve_work_date3 || '';
+        if (altDateInput1) altDateInput1.value = dailyData.alternative_work_date1 || '';
+        if (altDateInput2) altDateInput2.value = dailyData.alternative_work_date2 || '';
+        if (altDateInput3) altDateInput3.value = dailyData.alternative_work_date3 || '';
         if (notesInput) notesInput.value = dailyData.notes || '';
         
         console.log('[FORM] 기존 데이터로 폼 채움');
@@ -422,9 +422,9 @@ function populateFormWithData(dailyData, defaultWorkType) {
         // 다른 필드는 초기화
         const startTimeInput = form.querySelector('[name="start_time"]');
         const endTimeInput = form.querySelector('[name="end_time"]');
-        const altDateInput1 = form.querySelector('[name="alternatuve_work_date1"]');
-        const altDateInput2 = form.querySelector('[name="alternatuve_work_date2"]');
-        const altDateInput3 = form.querySelector('[name="alternatuve_work_date3"]');
+        const altDateInput1 = form.querySelector('[name="alternative_work_date1"]');
+        const altDateInput2 = form.querySelector('[name="alternative_work_date2"]');
+        const altDateInput3 = form.querySelector('[name="alternative_work_date3"]');
         const notesInput = form.querySelector('[name="notes"]');
         
         if (startTimeInput) startTimeInput.value = '';
@@ -1009,12 +1009,12 @@ async function handleFormSubmit(event) {
     
     // 2. 代休/振替の勤務日バリデーション
     const workType = formData.get('work_type');
-    const alternatuveWorkDate1 = formData.get('alternatuve_work_date1');
-    const alternatuveWorkDate2 = formData.get('alternatuve_work_date2');
-    const alternatuveWorkDate3 = formData.get('alternatuve_work_date3');
+    const alternativeWorkDate1 = formData.get('alternative_work_date1');
+    const alternativeWorkDate2 = formData.get('alternative_work_date2');
+    const alternativeWorkDate3 = formData.get('alternative_work_date3');
     const showTypes = ['代休(勤)', '振替(勤)', '代休(休)', '振替(休)'];
     
-    if (showTypes.includes(workType) && !alternatuveWorkDate1) {
+    if (showTypes.includes(workType) && !alternativeWorkDate1) {
         showFormWarning('代休/振替の勤務日を入力してください。');
         const altInput = document.getElementById('alt-work-date-group')?.querySelector('input[type="date"]');
         if (altInput) {
