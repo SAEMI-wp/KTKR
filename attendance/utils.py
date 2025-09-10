@@ -137,7 +137,13 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         if monthly_data.base_calendar:
             try:
                 from .models import Calendar
-                calendar_obj = Calendar.objects.get(calendar_name=monthly_data.base_calendar)
+                # calendar_name이 아닌 calendar_id로 찾기
+                if isinstance(monthly_data.base_calendar, str):
+                    # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
+                    calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
+                else:
+                    # 숫자인 경우 id로 찾기
+                    calendar_obj = Calendar.objects.get(id=monthly_data.base_calendar)
                 monthly_model.base_calendar = calendar_obj
             except Calendar.DoesNotExist:
                 # 기본 Calendar 사용
@@ -147,12 +153,27 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         monthly_model.save()
     else:
         # 새 데이터 생성
+        # base_calendar 처리
+        calendar_obj = None
+        if monthly_data.base_calendar:
+            try:
+                from .models import Calendar
+                if isinstance(monthly_data.base_calendar, str):
+                    # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
+                    calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
+                else:
+                    # 숫자인 경우 id로 찾기
+                    calendar_obj = Calendar.objects.get(id=monthly_data.base_calendar)
+            except Calendar.DoesNotExist:
+                # 기본 Calendar 사용
+                calendar_obj = Calendar.objects.first()
+        
         monthly_model = AttendanceMonthly.objects.create(
             employee=employee,
             year=monthly_data.year,
             month=monthly_data.month,
             project_name=monthly_data.project_name,
-            base_calendar=calendar_obj if 'calendar_obj' in locals() and calendar_obj else None
+            base_calendar=calendar_obj
         )
     
     # 일별 데이터도 함께 저장
