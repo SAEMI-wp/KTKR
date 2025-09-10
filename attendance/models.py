@@ -45,8 +45,9 @@ class Employee(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=30, verbose_name='姓')
     # その他の情報
     place_work = models.CharField(verbose_name='勤務先', max_length=30, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, unique=True)
     is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False, verbose_name='スーパーユーザー')
     
     USERNAME_FIELD = 'employee_no'
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -75,6 +76,30 @@ class Employee(AbstractBaseUser, PermissionsMixin):
     def is_staff(self):
         return self.has_perm('attendance.can_access_admin')
 
+class Calendar(models.Model):
+    """
+    カレンダーモデル
+    """
+    id = models.AutoField(primary_key=True, verbose_name='ID')
+    calendar_name = models.CharField(
+        verbose_name='現場', 
+        max_length=20, 
+        null=False
+    )
+    start_time = models.TimeField(verbose_name='開始時刻', null=False, default='09:00:00')
+    end_time = models.TimeField(verbose_name='終了時刻', null=False, default='18:00:00')
+    standard_work_hours = models.FloatField(verbose_name='基準時間(Hr)', null=False, default=8.0)
+    break_minutes = models.SmallIntegerField(verbose_name='昼休み(分)', null=False, default=60)
+    notes = models.TextField(verbose_name='備考', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'カレンダー'
+        verbose_name_plural = 'カレンダー'
+        db_table = 'calendar'
+
+    def __str__(self):
+        return f"{self.calendar_name} - {self.start_time}~{self.end_time}"
+
 class AttendanceMonthly(models.Model):
     """
     月別勤怠モデル
@@ -84,9 +109,7 @@ class AttendanceMonthly(models.Model):
     year = models.CharField(verbose_name='年', max_length=4)
     month = models.CharField(verbose_name='月', max_length=2)
     project_name = models.CharField(verbose_name='PJ名', max_length=100)
-    base_calendar = models.CharField(verbose_name='基準カレンダー', max_length=20)
-    break_minutes = models.PositiveIntegerField(verbose_name='昼休み(分)', default=60)
-    standard_work_hours = models.FloatField(verbose_name='基準時間(Hr)', default=8.0)
+    base_calendar = models.ForeignKey(Calendar, on_delete=models.CASCADE, db_column='base_calendar', verbose_name='基準カレンダー')
     is_confirmed = models.BooleanField(default=False, verbose_name='承認済み')
     is_required = models.BooleanField(default=False, verbose_name='承認申請中')
 
@@ -94,7 +117,6 @@ class AttendanceMonthly(models.Model):
         verbose_name = '月別勤怠'
         verbose_name_plural = '月別勤怠'
         db_table = 'attendance_monthly'
-        # 社員、年、月でユニークにする
         constraints = [
             models.UniqueConstraint(fields=['employee', 'year', 'month'], name='unique_monthly_attendance')
         ]
@@ -122,7 +144,7 @@ class AttendanceDaily(models.Model):
     ]
 
     daily_id = models.BigAutoField(primary_key=True, verbose_name='日付番号')
-    monthly_attendance = models.ForeignKey(AttendanceMonthly, on_delete=models.CASCADE, verbose_name='個別月日程番号')
+    monthly_attendance = models.ForeignKey(AttendanceMonthly, on_delete=models.CASCADE, db_column='monthly_id', verbose_name='個別月日程番号')
     date = models.DateField(verbose_name='日付')
     work_type = models.CharField(verbose_name='勤務区分', max_length=20, choices=WORK_TYPE_CHOICES, null=False, blank=False, default='出勤')
     alternatuve_work_date1 = models.DateField(verbose_name='代休/振替の勤務日1', null=True, blank=True)
@@ -147,30 +169,6 @@ class AttendanceDaily(models.Model):
 
     def __str__(self):
         return f"{int(self.monthly_attendance.employee.employee_no):06d} - {self.date}"
-
-class Calendar(models.Model):
-    """
-    カレンダーモデル
-    """
-    id = models.AutoField(primary_key=True, verbose_name='ID')
-    calendar_name = models.CharField(
-        verbose_name='現場', 
-        max_length=20, 
-        null=False
-    )
-    start_time = models.TimeField(verbose_name='開始時刻', null=False, default='09:00:00')
-    end_time = models.TimeField(verbose_name='終了時刻', null=False, default='18:00:00')
-    standard_work_hours = models.FloatField(verbose_name='基準時間(Hr)', null=False, default=8.0)
-    break_minutes = models.SmallIntegerField(verbose_name='昼休み(分)', null=False, default=60)
-    notes = models.TextField(verbose_name='備考', null=True, blank=True)
-
-    class Meta:
-        verbose_name = 'カレンダー'
-        verbose_name_plural = 'カレンダー'
-        db_table = 'calendar'
-
-    def __str__(self):
-        return f"{self.calendar_name} - {self.start_time}~{self.end_time}"
 
 class PaidLeave(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name='社員')
