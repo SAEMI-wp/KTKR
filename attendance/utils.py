@@ -45,9 +45,9 @@ def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyDat
         year=monthly_model.year,
         month=monthly_model.month,
         project_name=monthly_model.project_name,
-        base_calendar=monthly_model.base_calendar.calendar_name if monthly_model.base_calendar else None,
-        break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar else 60,
-        standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar else 8.0,
+        base_calendar=monthly_model.base_calendar.calendar_name if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'calendar_name') else (str(monthly_model.base_calendar) if monthly_model.base_calendar else None),
+        break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'break_minutes') else 60,
+        standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'standard_work_hours') else 8.0,
         daily_list=daily_list
     )
 
