@@ -694,7 +694,7 @@ class CustomAdminSite(admin.AdminSite):
                         calendar_name = calendar_to_delete.calendar_name
                         
                         # 해당 Calendar를 사용하는 직원이 있는지 확인
-                        if AttendanceMonthly.objects.filter(base_calendar=calendar_name).exists():
+                        if AttendanceMonthly.objects.filter(base_calendar__calendar_name=calendar_name).exists():
                              messages.error(request, f'カレンダー「{calendar_name}」は使用中のため削除できません。')
                         else:
                             # 관련된 HolidayCalendar도 삭제
@@ -792,7 +792,7 @@ class CustomAdminSite(admin.AdminSite):
             try:
                 holiday_count = cal.holidaycalendar_set.count()
                 # base_calendar 필드를 통해 간접적으로 직원 수 계산
-                employee_count = AttendanceMonthly.objects.filter(base_calendar=cal.calendar_name).count()
+                employee_count = AttendanceMonthly.objects.filter(base_calendar=cal).count()
                 
                 # 각 Calendar의 HolidayCalendar 목록도 가져오기
                 holidays = cal.holidaycalendar_set.all().order_by('date')

@@ -14,9 +14,9 @@ def convert_daily_to_structure(daily_model: AttendanceDaily,
         work_type=daily_model.work_type,
         start_time=daily_model.start_time,
         end_time=daily_model.end_time,
-        alternatuve_work_date1=daily_model.alternatuve_work_date1,
-        alternatuve_work_date2=daily_model.alternatuve_work_date2,
-        alternatuve_work_date3=daily_model.alternatuve_work_date3,
+        alternative_work_date1=daily_model.alternative_work_date1,
+        alternative_work_date2=daily_model.alternative_work_date2,
+        alternative_work_date3=daily_model.alternative_work_date3,
         notes=daily_model.notes,
         is_required=daily_model.is_required,
         is_confirmed=daily_model.is_confirmed,
@@ -35,8 +35,8 @@ def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyDat
     for daily_model in daily_models:
         daily_data = convert_daily_to_structure(
             daily_model,
-            break_minutes=monthly_model.break_minutes,
-            standard_work_hours=monthly_model.standard_work_hours
+            break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar else 60,
+            standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar else 8.0
         )
         daily_list.append(daily_data)
     
@@ -45,9 +45,9 @@ def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyDat
         year=monthly_model.year,
         month=monthly_model.month,
         project_name=monthly_model.project_name,
-        base_calendar=monthly_model.base_calendar,
-        break_minutes=monthly_model.break_minutes,
-        standard_work_hours=monthly_model.standard_work_hours,
+        base_calendar=monthly_model.base_calendar.calendar_name if monthly_model.base_calendar else None,
+        break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar else 60,
+        standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar else 8.0,
         daily_list=daily_list
     )
 
@@ -97,7 +97,9 @@ def save_daily_from_structure(daily_data: DailyData, monthly_model: AttendanceMo
         existing_daily.work_type = daily_data.work_type
         existing_daily.start_time = daily_data.start_time
         existing_daily.end_time = daily_data.end_time
-        existing_daily.alternative_work_date = daily_data.alternative_work_date
+        existing_daily.alternative_work_date1 = daily_data.alternative_work_date1
+        existing_daily.alternative_work_date2 = daily_data.alternative_work_date2
+        existing_daily.alternative_work_date3 = daily_data.alternative_work_date3
         existing_daily.notes = daily_data.notes
         existing_daily.is_confirmed = daily_data.is_confirmed
         existing_daily.is_required = daily_data.is_required
@@ -111,7 +113,9 @@ def save_daily_from_structure(daily_data: DailyData, monthly_model: AttendanceMo
             work_type=daily_data.work_type,
             start_time=daily_data.start_time,
             end_time=daily_data.end_time,
-            alternative_work_date=daily_data.alternative_work_date,
+            alternative_work_date1=daily_data.alternative_work_date1,
+            alternative_work_date2=daily_data.alternative_work_date2,
+            alternative_work_date3=daily_data.alternative_work_date3,
             notes=daily_data.notes,
             is_confirmed=daily_data.is_confirmed,
             is_required=daily_data.is_required,
@@ -129,9 +133,17 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
     if monthly_model:
         # 기존 데이터 업데이트
         monthly_model.project_name = monthly_data.project_name
-        monthly_model.base_calendar = monthly_data.base_calendar
-        monthly_model.break_minutes = monthly_data.break_minutes
-        monthly_model.standard_work_hours = monthly_data.standard_work_hours
+        # base_calendar는 Calendar 객체로 설정해야 함
+        if monthly_data.base_calendar:
+            try:
+                from .models import Calendar
+                calendar_obj = Calendar.objects.get(calendar_name=monthly_data.base_calendar)
+                monthly_model.base_calendar = calendar_obj
+            except Calendar.DoesNotExist:
+                # 기본 Calendar 사용
+                calendar_obj = Calendar.objects.first()
+                if calendar_obj:
+                    monthly_model.base_calendar = calendar_obj
         monthly_model.save()
     else:
         # 새 데이터 생성
@@ -140,9 +152,7 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
             year=monthly_data.year,
             month=monthly_data.month,
             project_name=monthly_data.project_name,
-            base_calendar=monthly_data.base_calendar,
-            break_minutes=monthly_data.break_minutes,
-            standard_work_hours=monthly_data.standard_work_hours
+            base_calendar=calendar_obj if 'calendar_obj' in locals() and calendar_obj else None
         )
     
     # 일별 데이터도 함께 저장

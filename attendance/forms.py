@@ -1,5 +1,5 @@
 from django import forms
-from .models import AttendanceMonthly, AttendanceDaily, Employee
+from .models import AttendanceMonthly, AttendanceDaily, Employee, Calendar
 
 class MonthlyAttendanceForm(forms.ModelForm):
     class Meta:
@@ -27,12 +27,12 @@ class DailyAttendanceForm(forms.ModelForm):
     
     class Meta:
         model = AttendanceDaily
-        fields = ['work_type', 'alternatuve_work_date1', 'alternatuve_work_date2', 'alternatuve_work_date3', 'start_time', 'end_time', 'notes']
+        fields = ['work_type', 'alternative_work_date1', 'alternative_work_date2', 'alternative_work_date3', 'start_time', 'end_time', 'notes']
         widgets = {
             'work_type': forms.Select(attrs={'class': 'form-control', 'required': True}),
-            'alternatuve_work_date1': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'alternatuve_work_date2': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'alternatuve_work_date3': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternative_work_date1': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternative_work_date2': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'alternative_work_date3': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': True}),
             'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'required': True}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

@@ -20,9 +20,9 @@ class DailyData:
     work_type: Optional[str]
     start_time: Optional[time]                          # 開始時間
     end_time: Optional[time]                            # 終了時間
-    alternatuve_work_date1: Optional[date] = None       # 代休/振替の勤務日1
-    alternatuve_work_date2: Optional[date] = None       # 代休/振替の勤務日2
-    alternatuve_work_date3: Optional[date] = None       # 代休/振替の勤務日3
+    alternative_work_date1: Optional[date] = None       # 代休/振替の勤務日1
+    alternative_work_date2: Optional[date] = None       # 代休/振替の勤務日2
+    alternative_work_date3: Optional[date] = None       # 代休/振替の勤務日3
     notes: Optional[str] = None                         # 備考
     is_required: bool = False                           # 必須
     is_confirmed: bool = False                          # 確認
@@ -822,10 +822,10 @@ class MonthlyData:
         count = 0
         for d in self.daily_list:
             if d.work_type == "代休(勤)":
-                if d.alternative_work_date:
-                    if (d.date.year != d.alternative_work_date.year) or (d.date.month != d.alternative_work_date.month):
+                if d.alternative_work_date1:
+                    if (d.date.year != d.alternative_work_date1.year) or (d.date.month != d.alternative_work_date1.month):
                         count += 1
                 else:
-                    # alternative_work_dateがない時もカウント
+                    # alternative_work_date1がない時もカウント
                     count += 1
         return round(float(count), 1)
