@@ -71,8 +71,8 @@ def copy_prev_month(request):
         month=month,
         project_name=prev_obj.project_name,
         base_calendar=prev_obj.base_calendar,
-        break_minutes=prev_obj.break_minutes,
-        standard_work_hours=prev_obj.standard_work_hours,
+        break_minutes=prev_obj.base_calendar.break_minutes if prev_obj.base_calendar else 60,
+        standard_work_hours=prev_obj.base_calendar.standard_work_hours if prev_obj.base_calendar else 8.0,
         is_confirmed=False,
         is_required=False,
     )
@@ -112,40 +112,3 @@ def email_candidates(request):
         for c in candidates
     ]
     return JsonResponse({"candidates": data})
-
-
-# TTL 기반 캐시 사용으로 인해 수동 캐시 초기화 API 제거
-# @require_POST
-# @login_required
-# def clear_cache(request):
-#     import json
-#     from ..cache_utils import clear_all_monthly_cache, clear_user_monthly_cache
-#     
-#     # JSON 요청 처리
-#     if request.headers.get('Content-Type') == 'application/json':
-#         data = json.loads(request.body)
-#         cache_type = data.get('type', 'all')  # 'all' 또는 'user'
-#         employee_id = data.get('employee_id')
-#     else:
-#         cache_type = request.POST.get('type', 'all')
-#         employee_id = request.POST.get('employee_id')
-#     
-#     try:
-#         if cache_type == 'user' and employee_id:
-#             # 특정 사용자 캐시만 초기화
-#             clear_user_monthly_cache(employee_id)
-#             message = f"사용자 {employee_id}의 캐시가 초기화되었습니다."
-#         else:
-#             # 전체 캐시 초기화
-#             clear_all_monthly_cache()
-#             message = "모든 월별 데이터 캐시가 초기화되었습니다."
-#         
-#         return JsonResponse({
-#             'status': 'success',
-#             'message': message
-#         })
-#     except Exception as e:
-#         return JsonResponse({
-#             'status': 'error',
-#             'message': f'캐시 초기화 중 오류가 발생했습니다: {str(e)}'
-#         }, status=500) 

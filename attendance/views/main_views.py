@@ -233,7 +233,7 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
                     print(f"DEBUG: Week {week_idx}, Day {day_idx}: {day['date']} (data-date will be: {day['date'].strftime('%Y-%m-%d')})")
 
         # holidays_db: 3개월분(전월, 당월, 다음월) 휴일 정보를 DB에서 가져와서 context에 추가
-        base_calendar = monthly_data.base_calendar if monthly_data else None
+        base_calendar = monthly_data.base_calendar.calendar_name if monthly_data and monthly_data.base_calendar else None
         holidays_db, api_holiday_set = self._get_holiday_data(calendar_date, base_calendar)
         
         # API公休日情報をパースしてセット化
@@ -602,9 +602,9 @@ class DailyDataAPIView(AjaxLoginRequiredMixin, View):
                     'work_type': daily_record.work_type,
                     'start_time': daily_record.start_time.strftime('%H:%M') if daily_record.start_time else '',
                     'end_time': daily_record.end_time.strftime('%H:%M') if daily_record.end_time else '',
-                    'alternatuve_work_date1': daily_record.alternatuve_work_date1.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date1 else '',
-                    'alternatuve_work_date2': daily_record.alternatuve_work_date2.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date2 else '',
-                    'alternatuve_work_date3': daily_record.alternatuve_work_date3.strftime('%Y-%m-%d') if daily_record.alternatuve_work_date3 else '',
+                    'alternative_work_date1': daily_record.alternative_work_date1.strftime('%Y-%m-%d') if daily_record.alternative_work_date1 else '',
+                    'alternative_work_date2': daily_record.alternative_work_date2.strftime('%Y-%m-%d') if daily_record.alternative_work_date2 else '',
+                    'alternative_work_date3': daily_record.alternative_work_date3.strftime('%Y-%m-%d') if daily_record.alternative_work_date3 else '',
                     'notes': daily_record.notes or '',
                     'date': date_str
                 }
@@ -659,9 +659,9 @@ class MonthlyDataAPIView(AjaxLoginRequiredMixin, View):
                 
                 data = {
                     'project_name': monthly_record.project_name,
-                    'base_calendar': monthly_record.base_calendar,
-                    'break_minutes': monthly_record.break_minutes,
-                    'standard_work_hours': float(monthly_record.standard_work_hours),
+                    'base_calendar': monthly_record.base_calendar.calendar_name if monthly_record.base_calendar else None,
+                    'break_minutes': monthly_record.base_calendar.break_minutes if monthly_record.base_calendar else None,
+                    'standard_work_hours': float(monthly_record.base_calendar.standard_work_hours) if monthly_record.base_calendar else None,
                     'work_days': monthly_record.work_days,
                     'paid_leave_days': monthly_record.paid_leave_days,
                     'total_regular_work_hours': float(monthly_record.total_regular_work_hours),

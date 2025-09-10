@@ -178,18 +178,15 @@ class MonthlyAttendanceUpdateView(View):
             year = request.POST.get('year')
             month = request.POST.get('month')
             project_name = request.POST.get('project_name')
-            base_calendar = request.POST.get('base_calendar')
-            break_minutes = request.POST.get('break_minutes')
-            standard_work_hours = request.POST.get('standard_work_hours')
+            base_calendar_id = request.POST.get('base_calendar')
+            # break_minutes와 standard_work_hours는 이제 Calendar 모델에서 가져옴
             
             # 디버깅용 로그
             print(f"[MONTHLY_UPDATE] 서버에서 받은 데이터:")
             print(f"  year: {year}")
             print(f"  month: {month}")
             print(f"  project_name: {project_name}")
-            print(f"  base_calendar: {base_calendar}")
-            print(f"  break_minutes: {break_minutes} (type: {type(break_minutes)})")
-            print(f"  standard_work_hours: {standard_work_hours} (type: {type(standard_work_hours)})")
+            print(f"  base_calendar_id: {base_calendar_id}")
             # 必要に応じて他のフィールドも取得
 
             # 必須チェック
@@ -207,11 +204,13 @@ class MonthlyAttendanceUpdateView(View):
 
             # 値を更新
             monthly_data.project_name = project_name or monthly_data.project_name
-            monthly_data.base_calendar = base_calendar or monthly_data.base_calendar
-            if break_minutes and break_minutes.strip():
-                monthly_data.break_minutes = int(break_minutes)
-            if standard_work_hours and standard_work_hours.strip():
-                monthly_data.standard_work_hours = float(standard_work_hours)
+            if base_calendar_id:
+                try:
+                    from .models import Calendar
+                    calendar_obj = Calendar.objects.get(id=base_calendar_id)
+                    monthly_data.base_calendar = calendar_obj
+                except Calendar.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': '指定されたカレンダーが見つかりません'})
 
             # DB保存
             update_monthly_from_structure(monthly_data, request.user)
@@ -260,9 +259,10 @@ class MonthlyBulkInfoView(View):
                 result[key] = {
                     'exist': True,
                     'project_name': getattr(monthly_data, 'project_name', None),
-                    'base_calendar': getattr(monthly_data, 'base_calendar', None),
-                    'break_minutes': getattr(monthly_data, 'break_minutes', None),
-                    'standard_work_hours': getattr(monthly_data, 'standard_work_hours', None),
+                    'base_calendar': monthly_data.base_calendar.id if monthly_data.base_calendar else None,
+                    'base_calendar_name': monthly_data.base_calendar.calendar_name if monthly_data.base_calendar else None,
+                    'break_minutes': monthly_data.base_calendar.break_minutes if monthly_data.base_calendar else None,
+                    'standard_work_hours': float(monthly_data.base_calendar.standard_work_hours) if monthly_data.base_calendar else None,
                 }
             else:
                 result[key] = {'exist': False}
