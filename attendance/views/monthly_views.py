@@ -221,7 +221,7 @@ class MonthlyAttendanceUpdateView(View):
             monthly_data.project_name = project_name or monthly_data.project_name
             if base_calendar_id:
                 try:
-                    from .models import Calendar
+                    from ..models import Calendar
                     calendar_obj = Calendar.objects.get(id=base_calendar_id)
                     monthly_data.base_calendar = calendar_obj.calendar_name  # 문자열로 저장
                     print(f"[MONTHLY_UPDATE] Calendar 설정: {calendar_obj.calendar_name} (ID: {base_calendar_id})")
