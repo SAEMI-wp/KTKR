@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import date, time
-from .models import Employee, AttendanceMonthly, AttendanceDaily
+from .models import Employee, AttendanceMonthly, AttendanceDaily, Calendar
 from .structures import DailyData, MonthlyData
 import os
 import urllib.parse
@@ -136,7 +136,6 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         # base_calendar는 Calendar 객체로 설정해야 함
         if monthly_data.base_calendar:
             try:
-                from .models import Calendar
                 # calendar_name이 아닌 calendar_id로 찾기
                 if isinstance(monthly_data.base_calendar, str):
                     # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
@@ -157,7 +156,6 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         calendar_obj = None
         if monthly_data.base_calendar:
             try:
-                from .models import Calendar
                 if isinstance(monthly_data.base_calendar, str):
                     # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
                     calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
