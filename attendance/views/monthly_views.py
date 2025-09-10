@@ -260,9 +260,9 @@ class MonthlyBulkInfoView(View):
                     'exist': True,
                     'project_name': getattr(monthly_data, 'project_name', None),
                     'base_calendar': monthly_data.base_calendar.id if monthly_data.base_calendar else None,
-                    'base_calendar_name': monthly_data.base_calendar.calendar_name if monthly_data.base_calendar else None,
-                    'break_minutes': monthly_data.base_calendar.break_minutes if monthly_data.base_calendar else None,
-                    'standard_work_hours': float(monthly_data.base_calendar.standard_work_hours) if monthly_data.base_calendar else None,
+                    'base_calendar_name': monthly_data.base_calendar.calendar_name if monthly_data.base_calendar and hasattr(monthly_data.base_calendar, 'calendar_name') else (str(monthly_data.base_calendar) if monthly_data.base_calendar else None),
+                    'break_minutes': monthly_data.base_calendar.break_minutes if monthly_data.base_calendar and hasattr(monthly_data.base_calendar, 'break_minutes') else None,
+                    'standard_work_hours': float(monthly_data.base_calendar.standard_work_hours) if monthly_data.base_calendar and hasattr(monthly_data.base_calendar, 'standard_work_hours') else None,
                 }
             else:
                 result[key] = {'exist': False}

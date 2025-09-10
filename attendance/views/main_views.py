@@ -233,7 +233,13 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
                     print(f"DEBUG: Week {week_idx}, Day {day_idx}: {day['date']} (data-date will be: {day['date'].strftime('%Y-%m-%d')})")
 
         # holidays_db: 3개월분(전월, 당월, 다음월) 휴일 정보를 DB에서 가져와서 context에 추가
-        base_calendar = monthly_data.base_calendar.calendar_name if monthly_data and monthly_data.base_calendar else None
+        base_calendar = None
+        if monthly_data and monthly_data.base_calendar:
+            if hasattr(monthly_data.base_calendar, 'calendar_name'):
+                base_calendar = monthly_data.base_calendar.calendar_name
+            else:
+                # base_calendar가 문자열인 경우 (이전 데이터)
+                base_calendar = str(monthly_data.base_calendar)
         holidays_db, api_holiday_set = self._get_holiday_data(calendar_date, base_calendar)
         
         # API公休日情報をパースしてセット化
@@ -659,9 +665,9 @@ class MonthlyDataAPIView(AjaxLoginRequiredMixin, View):
                 
                 data = {
                     'project_name': monthly_record.project_name,
-                    'base_calendar': monthly_record.base_calendar.calendar_name if monthly_record.base_calendar else None,
-                    'break_minutes': monthly_record.base_calendar.break_minutes if monthly_record.base_calendar else None,
-                    'standard_work_hours': float(monthly_record.base_calendar.standard_work_hours) if monthly_record.base_calendar else None,
+                    'base_calendar': monthly_record.base_calendar.calendar_name if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'calendar_name') else (str(monthly_record.base_calendar) if monthly_record.base_calendar else None),
+                    'break_minutes': monthly_record.base_calendar.break_minutes if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'break_minutes') else None,
+                    'standard_work_hours': float(monthly_record.base_calendar.standard_work_hours) if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'standard_work_hours') else None,
                     'work_days': monthly_record.work_days,
                     'paid_leave_days': monthly_record.paid_leave_days,
                     'total_regular_work_hours': float(monthly_record.total_regular_work_hours),
