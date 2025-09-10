@@ -248,7 +248,14 @@ class DailyDataUpdateView(View):
                 message = '新規登録しました'
             
             # DB에 저장
-            update_monthly_from_structure(monthly_data, request.user)
+            try:
+                update_monthly_from_structure(monthly_data, request.user)
+                print(f"DB 저장 성공: {message}")
+            except Exception as e:
+                print(f"DB 저장 실패: {e}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({'status': 'error', 'message': f'DB 저장 중 오류가 발생했습니다: {str(e)}'})
             
             # 캐시 무효화 (해당 월의 캐시 삭제)
             invalidate_monthly_cache(
