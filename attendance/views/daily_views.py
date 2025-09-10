@@ -117,7 +117,7 @@ class DailyDataUpdateView(View):
                 return JsonResponse({'status': 'error', 'message': '勤務区分を選択してください'})
             
             # 휴일/휴가 타입이 아닌 경우에만 시간 필수
-            if work_type not in ['休日(法)', '休日', '祝日', '年休', '代休(休)', '振替(休)', '欠勤', '特別休暇']:
+            if work_type not in ['休日(法)', '休日', '祝日', '年休', '年休(半)', '代休', '振替(休)', '振替(勤)', '欠勤', '特別休暇']:
                 print(f"시간 필수 근무구분: {work_type}")
                 if not start_time_str:
                     print("Error: start_time이 없습니다")
@@ -137,8 +137,8 @@ class DailyDataUpdateView(View):
             print(f"Alternative dates: alt1={alternative_work_date1_str}, alt2={alternative_work_date2_str}, alt3={alternative_work_date3_str}")
             print(f"=========================")
             
-            start_time = None
-            end_time = None
+            start_time = '00:00:00'
+            end_time = '00:00:00'
             alternative_work_date1 = None
             alternative_work_date2 = None
             alternative_work_date3 = None
