@@ -51,16 +51,35 @@ function formatDate(date) {
 }
 
 function parseDate(dateStr) {
+    console.log(`[PARSE] 날짜 파싱 시작: ${dateStr}`);
+    
     // 日本語形式 (2025年8月1日) 処理
     const japaneseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (japaneseMatch) {
         const [, year, month, day] = japaneseMatch;
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const result = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        console.log(`[PARSE] 일본어 형식 파싱 결과: ${result}`);
+        return result;
     }
     
-    // `元のYYYY-MM-DD形式 処理
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    // YYYY-MM-DD形式 処理
+    if (dateStr.includes('-')) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const result = new Date(year, month - 1, day);
+        console.log(`[PARSE] YYYY-MM-DD 형식 파싱 결과: ${result}`);
+        return result;
+    }
+    
+    // YYYY/MM/DD形式 処理
+    if (dateStr.includes('/')) {
+        const [year, month, day] = dateStr.split('/').map(Number);
+        const result = new Date(year, month - 1, day);
+        console.log(`[PARSE] YYYY/MM/DD 형식 파싱 결과: ${result}`);
+        return result;
+    }
+    
+    console.error(`[PARSE] 지원하지 않는 날짜 형식: ${dateStr}`);
+    return new Date(); // 기본값 반환
 }
 
 function getTodayDate() {
@@ -1012,7 +1031,7 @@ async function handleFormSubmit(event) {
     const alternativeWorkDate1 = formData.get('alternative_work_date1');
     const alternativeWorkDate2 = formData.get('alternative_work_date2');
     const alternativeWorkDate3 = formData.get('alternative_work_date3');
-    const showTypes = ['代休(勤)', '振替(勤)', '代休(休)', '振替(休)'];
+    const showTypes = ['代休', '振替(勤)', '振替(休)', '休日', '休日(法)', '祝日'];
     
     if (showTypes.includes(workType) && !alternativeWorkDate1) {
         showFormWarning('代休/振替の勤務日を入力してください。');
@@ -1026,7 +1045,7 @@ async function handleFormSubmit(event) {
     // 3. 勤務時間のチェック (出勤, 退勤, 代休, 代休退勤の場合)
     const startTime = formData.get('start_time');
     const endTime = formData.get('end_time');
-    const workTypesRequiringTime = ['出勤', '代休(勤)', '振替(勤)'];
+    const workTypesRequiringTime = ['出勤', '代休', '振替(勤)'];
     
     if (workTypesRequiringTime.includes(workType)) {
         if (!startTime || !endTime) {
@@ -1125,14 +1144,22 @@ async function submitDailyData(formData) {
         }
         
         // 現在の選択日付から年、月、日を抽出
+        console.log(`[FORM] currentState.selectedDate: ${currentState.selectedDate}`);
         if (currentState.selectedDate) {
             const dateParts = currentState.selectedDate.split('-');
             jsonData.year = dateParts[0];
             jsonData.month = dateParts[1];
             jsonData.day = dateParts[2];
+            console.log(`[FORM] 날짜 정보 추출: year=${jsonData.year}, month=${jsonData.month}, day=${jsonData.day}`);
+        } else {
+            console.error('[FORM] currentState.selectedDate가 설정되지 않았습니다!');
+            return;
         }
         
         console.log('[FORM] 전송할 데이터:', jsonData);
+        console.log('[FORM] alternative_work_date1:', jsonData.alternative_work_date1);
+        console.log('[FORM] alternative_work_date2:', jsonData.alternative_work_date2);
+        console.log('[FORM] alternative_work_date3:', jsonData.alternative_work_date3);
         
         const response = await fetchWithCsrf('/attendance/daily/update/', {
             method: 'POST',
@@ -1259,6 +1286,9 @@ function rebindFormEvents() {
     
     // 툴팁 이벤트 재바인딩
     setupWorkTypeTooltip();
+    
+    // 추가 버튼 이벤트 재바인딩
+    initializeAdditionalDatesToggle();
     
     // 캘린더에서 날짜 선택 시 근무구분 옵션 필터링 적용
     if (currentState.selectedDate) {
@@ -2281,21 +2311,32 @@ function setupFileTypeModalEvents() {
 
 // ===================== 代休/振替の勤務日追加ボタン機能 =====================
 function initializeAdditionalDatesToggle() {
+    console.log('[DEBUG] initializeAdditionalDatesToggle 시작');
     const toggleBtn = document.getElementById('toggle-additional-dates');
     const additionalDates = document.getElementById('additional-alt-dates');
     
+    console.log('[DEBUG] toggleBtn:', toggleBtn);
+    console.log('[DEBUG] additionalDates:', additionalDates);
+    
     if (toggleBtn && additionalDates) {
+        console.log('[DEBUG] 이벤트 리스너 추가');
         toggleBtn.addEventListener('click', function() {
+            console.log('[DEBUG] 추가 버튼 클릭됨');
             const isVisible = additionalDates.style.display !== 'none';
+            console.log('[DEBUG] 현재 표시 상태:', isVisible);
             
             if (isVisible) {
                 additionalDates.style.display = 'none';
                 toggleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 追加';
+                console.log('[DEBUG] 숨김 처리');
             } else {
                 additionalDates.style.display = 'block';
                 toggleBtn.innerHTML = '<i class="fa-solid fa-minus"></i> 閉じる';
+                console.log('[DEBUG] 표시 처리');
             }
         });
+    } else {
+        console.log('[DEBUG] 요소를 찾을 수 없음 - toggleBtn:', !!toggleBtn, 'additionalDates:', !!additionalDates);
     }
 }
 
@@ -2430,20 +2471,53 @@ const MonthlyUpdateModalModule = {
     open: function() {
         const modal = document.getElementById('monthly-update-modal');
         if (modal) modal.classList.add('show');
+        
         // ====== 월정보 상세 패널에서 값 추출 ======
-        // PJ名
         const projectNameInput = document.getElementById('update-project-name');
         const baseCalendarInput = document.getElementById('update-base-calendar');
         const lunchBreakInput = document.getElementById('update-lunch-break');
         const standardTimeInput = document.getElementById('update-standard-time');
+        
         // 상세정보 패널에서 strong 태그들 추출
         const detailStrongs = document.querySelectorAll('.monthly-details-grid .detail-item strong');
         if (detailStrongs.length >= 4) {
             if (projectNameInput) projectNameInput.value = detailStrongs[0].textContent.trim();
-            if (baseCalendarInput) baseCalendarInput.value = detailStrongs[1].textContent.trim();
+            
+            // base_calendar는 calendar_name으로 표시되지만, 실제로는 ID를 찾아서 설정해야 함
+            const calendarName = detailStrongs[1].textContent.trim();
+            console.log(`[MONTHLY_UPDATE] 찾는 Calendar 이름: "${calendarName}"`);
+            
+            if (baseCalendarInput) {
+                // calendar_name으로 해당하는 option을 찾아서 value(ID)를 설정
+                const options = baseCalendarInput.querySelectorAll('option');
+                let foundCalendarId = null;
+                
+                console.log(`[MONTHLY_UPDATE] 사용 가능한 Calendar 옵션들:`);
+                for (let option of options) {
+                    console.log(`  - "${option.textContent.trim()}" (ID: ${option.value})`);
+                    if (option.textContent.trim() === calendarName) {
+                        foundCalendarId = option.value;
+                        break;
+                    }
+                }
+                
+                if (foundCalendarId) {
+                    baseCalendarInput.value = foundCalendarId;
+                    console.log(`[MONTHLY_UPDATE] Calendar 설정: ${calendarName} (ID: ${foundCalendarId})`);
+                } else {
+                    console.warn(`[MONTHLY_UPDATE] Calendar를 찾을 수 없음: "${calendarName}"`);
+                    // 첫 번째 옵션을 기본값으로 설정
+                    if (options.length > 0) {
+                        baseCalendarInput.value = options[0].value;
+                        console.log(`[MONTHLY_UPDATE] 기본값으로 설정: ${options[0].textContent.trim()} (ID: ${options[0].value})`);
+                    }
+                }
+            }
+            
             if (lunchBreakInput) lunchBreakInput.value = detailStrongs[2].textContent.replace(/[^0-9.]/g, '');
             if (standardTimeInput) standardTimeInput.value = detailStrongs[3].textContent.replace(/[^0-9.]/g, '');
         }
+        
         // 필드 연동 로직도 여기서 호출
         bindMonthlyUpdateModalFieldLogic();
     },
@@ -2528,21 +2602,30 @@ function bindMonthlyUpdateModalFieldLogic() {
     const standardTime = document.getElementById('update-standard-time');
     if (baseCalendar && lunchBreak && standardTime) {
         baseCalendar.addEventListener('change', function() {
-            if (baseCalendar.value === 'H大甕') {
-                lunchBreak.value = '45';
-                standardTime.value = '7.75';
-            } else {
-                lunchBreak.value = '60';
-                standardTime.value = '8.00';
+            const selectedOption = $(baseCalendar).find('option:selected');
+            const breakMinutes = selectedOption.data('break-minutes');
+            const standardHours = selectedOption.data('standard-hours');
+            
+            if (breakMinutes !== undefined) {
+                lunchBreak.value = breakMinutes;
             }
+            if (standardHours !== undefined) {
+                standardTime.value = standardHours;
+            }
+            
+            console.log(`[MONTHLY_UPDATE] Calendar 변경: ${selectedOption.text()} -> break: ${breakMinutes}, standard: ${standardHours}`);
         });
-        // 初期ロード時にも値を同期
-        if (baseCalendar.value === 'H大甕') {
-            lunchBreak.value = '45';
-            standardTime.value = '7.75';
-        } else {
-            lunchBreak.value = '60';
-            standardTime.value = '8.00';
+        
+        // 초기 로드 시에도 값 동기화
+        const selectedOption = $(baseCalendar).find('option:selected');
+        const breakMinutes = selectedOption.data('break-minutes');
+        const standardHours = selectedOption.data('standard-hours');
+        
+        if (breakMinutes !== undefined) {
+            lunchBreak.value = breakMinutes;
+        }
+        if (standardHours !== undefined) {
+            standardTime.value = standardHours;
         }
         // 昼休み区分은 readonly 유지 (기준카레더에 따라 자동 설정되므로)
         ['input', 'change', 'keydown'].forEach(evt => {
@@ -2559,12 +2642,48 @@ function bindMonthlyUpdateModalFieldLogic() {
 
 // 基準カレンダー 변경 시 점심시간/기준시간 자동 세팅
 $(document).on('change', '#create-base-calendar', function() {
-    if ($(this).val() === 'H大甕') {
-        $('#create-lunch-break').val('45');
-        $('#create-standard-time').val('7.75');
-    } else {
-        $('#create-lunch-break').val('60');
-        $('#create-standard-time').val('8.00');
+    const selectedOption = $(this).find('option:selected');
+    const breakMinutes = selectedOption.data('break-minutes');
+    const standardHours = selectedOption.data('standard-hours');
+    
+    if (breakMinutes !== undefined) {
+        $('#create-lunch-break').val(breakMinutes);
+    }
+    if (standardHours !== undefined) {
+        $('#create-standard-time').val(standardHours);
+    }
+    
+    console.log(`[MONTHLY_CREATE] Calendar 변경: ${selectedOption.text()} -> break: ${breakMinutes}, standard: ${standardHours}`);
+});
+
+// 등록 모달 열릴 때 초기값 설정
+$(document).on('click', '#create-monthly-btn', function() {
+    // Calendar ID 1이 선택된 상태에서 초기값 설정
+    const selectedOption = $('#create-base-calendar option:selected');
+    const breakMinutes = selectedOption.data('break-minutes');
+    const standardHours = selectedOption.data('standard-hours');
+    
+    if (breakMinutes !== undefined) {
+        $('#create-lunch-break').val(breakMinutes);
+    }
+    if (standardHours !== undefined) {
+        $('#create-standard-time').val(standardHours);
+    }
+    
+    console.log(`[MONTHLY_CREATE] 초기값 설정: ${selectedOption.text()} -> break: ${breakMinutes}, standard: ${standardHours}`);
+});
+
+// 修正モ달の基準カレンダー 변경 시 점심시간/기준시간 자동 세팅
+$(document).on('change', '#update-base-calendar', function() {
+    const selectedOption = $(this).find('option:selected');
+    const breakMinutes = selectedOption.data('break-minutes');
+    const standardHours = selectedOption.data('standard-hours');
+    
+    if (breakMinutes !== undefined) {
+        $('#update-lunch-break').val(breakMinutes);
+    }
+    if (standardHours !== undefined) {
+        $('#update-standard-time').val(standardHours);
     }
 });
 
