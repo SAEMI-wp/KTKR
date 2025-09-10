@@ -1031,7 +1031,7 @@ async function handleFormSubmit(event) {
     const alternativeWorkDate1 = formData.get('alternative_work_date1');
     const alternativeWorkDate2 = formData.get('alternative_work_date2');
     const alternativeWorkDate3 = formData.get('alternative_work_date3');
-    const showTypes = ['代休', '振替(勤)', '振替(休)', '休日', '休日(法)', '祝日'];
+    const showTypes = ['年休', '年休(半)', '代休', '振替(勤)', '振替(休)', '休日', '休日(法)', '祝日'];
     
     if (showTypes.includes(workType) && !alternativeWorkDate1) {
         showFormWarning('代休/振替の勤務日を入力してください。');
@@ -2828,7 +2828,7 @@ if (worktypeHelpIcon && worktypeTooltip) {
 // ===================== 勤務区分・休日ユーティリティ =====================
 // 指定勤務区分が休日/休暇/欠勤等か判定
 function isDayOff(workType) {
-    return workType === '年休' || workType === '代休(休)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇';
+    return workType === '年休' || workType === '年休(半)' || workType === '代休' || workType === '振替(休)' || workType === '振替(勤)' || workType === '欠勤' || workType === '特別休暇';
 }
 
 // 日付(YYYY-MM-DD)から休日種別('休日','休日(法)','祝日')を取得
@@ -2888,7 +2888,7 @@ function filterWorkTypeOptionsByDate(dateStr) {
     if (holidayType) {
         Array.from(workTypeSelect.options).forEach(option => {
             const value = option.value;
-            const shouldShow = value === holidayType || value === '代休(勤)' || value === '振替(勤)' || value === '';
+            const shouldShow = value === holidayType || value === '代休' || value === '振替(勤)' || value === '';
             option.style.display = shouldShow ? '' : 'none';
         });
     } else {
@@ -2896,7 +2896,7 @@ function filterWorkTypeOptionsByDate(dateStr) {
             const value = option.value;
             // 평일에도 休日은 선택 가능하도록 수정 (休日(法), 祝日은 여전히 숨김)
             const isRestrictedHolidayType = value === '休日(法)' || value === '祝日';
-            const isDaiQ = value === '代休(勤)' || value === '振替(勤)';
+            const isDaiQ = value === '代休' || value === '振替(勤)';
             const shouldShow = !isRestrictedHolidayType && !isDaiQ && value !== '';
             option.style.display = shouldShow ? '' : 'none';
         });
@@ -2927,7 +2927,7 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
     console.log(`[SYNC] 월정보 존재: ${hasMonthlyData}`);
     
     // 휴가 타입인지 확인 (toggleAltWorkDateField처럼 직접 체크)
-    const isHolidayType = workType === '年休' || workType === '代休(休)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇' ;
+    const isHolidayType = workType === '年休' || workType === '年休(半)' || workType === '代休' || workType === '振替(休)' || workType === '振替(勤)' || workType === '欠勤' || workType === '特別休暇' ;
     
     console.log(`[SYNC] 휴가 타입 여부: ${isHolidayType}`);
     
@@ -2957,7 +2957,7 @@ function toggleAltWorkDateField(workType) {
     
     if (!altGroup || !altInput) return;
     
-    const showTypes = ['代休(勤)', '振替(勤)', '代休(休)', '振替(休)'];
+    const showTypes = ['代休', '振替(勤)', '振替(休)'];
     if (showTypes.includes(workType)) {
         altGroup.style.display = '';
         altInput.required = true;
