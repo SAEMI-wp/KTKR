@@ -69,16 +69,23 @@ class DailyDataUpdateView(View):
                 return JsonResponse({'status': 'error', 'message': '年月情報が不足しています'})
             
             print(f"Processing date: {year}-{month}-{day}")
+            print(f"Raw day value: {day} (type: {type(day)})")
             
             try:
                 day_int = parse_day_value(day)
+                print(f"Parsed day_int: {day_int} (type: {type(day_int)})")
                 target_date = date(int(year), int(month), day_int)
-                print(f"Target date: {target_date}")
+                print(f"Target date: {target_date} (type: {type(target_date)})")
             except ValueError as e:
                 print(f"Date parsing error: {e}")
                 return JsonResponse({'status': 'error', 'message': '無効な日付です'})
             
             # 구조체 기반으로 월별 데이터 가져오기
+            print(f"=== 월별 데이터 조회 시작 ===")
+            print(f"Employee: {request.user}")
+            print(f"Year: {str(target_date.year)}")
+            print(f"Month: {str(target_date.month)}")
+            
             monthly_data = get_or_create_monthly_structure(
                 employee=request.user,
                 year=str(target_date.year),
@@ -86,8 +93,9 @@ class DailyDataUpdateView(View):
             )
             
             print(f"Monthly data found: {monthly_data is not None}")
-            
-            if not monthly_data:
+            if monthly_data:
+                print(f"Monthly data details: employee_id={monthly_data.employee_id}, year={monthly_data.year}, month={monthly_data.month}")
+            else:
                 print("Error: No monthly data found")
                 return JsonResponse({'status': 'error', 'message': '該当する月別勤怠情報が見つかりません'})
             
@@ -99,18 +107,35 @@ class DailyDataUpdateView(View):
             alternative_work_date2_str = data.get('alternative_work_date2')
             alternative_work_date3_str = data.get('alternative_work_date3')
             
+            print(f"=== 필수 필드 검증 시작 ===")
+            print(f"work_type: '{work_type}' (type: {type(work_type)})")
+            print(f"start_time_str: '{start_time_str}' (type: {type(start_time_str)})")
+            print(f"end_time_str: '{end_time_str}' (type: {type(end_time_str)})")
+            
             if not work_type:
+                print("Error: work_type이 없습니다")
                 return JsonResponse({'status': 'error', 'message': '勤務区分を選択してください'})
             
             # 휴일/휴가 타입이 아닌 경우에만 시간 필수
             if work_type not in ['休日(法)', '休日', '祝日', '年休', '代休(休)', '振替(休)', '欠勤', '特別休暇']:
+                print(f"시간 필수 근무구분: {work_type}")
                 if not start_time_str:
+                    print("Error: start_time이 없습니다")
                     return JsonResponse({'status': 'error', 'message': '作業開始時刻を入力してください'})
                 
                 if not end_time_str:
+                    print("Error: end_time이 없습니다")
                     return JsonResponse({'status': 'error', 'message': '作業終了時刻を入力してください'})
+            else:
+                print(f"시간 불필요 근무구분: {work_type}")
             
-            print(f"Time strings: start={start_time_str}, end={end_time_str}, alt1={alternative_work_date1_str}, alt2={alternative_work_date2_str}, alt3={alternative_work_date3_str}")
+            print(f"=== 필수 필드 검증 완료 ===")
+            
+            print(f"=== 폼 데이터 디버깅 ===")
+            print(f"전체 POST 데이터: {dict(data)}")
+            print(f"Time strings: start={start_time_str}, end={end_time_str}")
+            print(f"Alternative dates: alt1={alternative_work_date1_str}, alt2={alternative_work_date2_str}, alt3={alternative_work_date3_str}")
+            print(f"=========================")
             
             start_time = None
             end_time = None
@@ -178,10 +203,27 @@ class DailyDataUpdateView(View):
                 existing_daily.notes = data.get('notes', '')
                 # 시간 계산 실행
                 existing_daily.calculate_work_hours()
-                print("Daily data updated")
+                print(f"=== 기존 데이터 업데이트 ===")
+                print(f"alternative_work_date1: {existing_daily.alternative_work_date1}")
+                print(f"alternative_work_date2: {existing_daily.alternative_work_date2}")
+                print(f"alternative_work_date3: {existing_daily.alternative_work_date3}")
+                print(f"=========================")
                 message = '更新しました'
             else:
                 # 새 데이터 생성
+                # base_calendar가 문자열인 경우 처리
+                break_minutes = 60  # 기본값
+                standard_work_hours = 8.0  # 기본값
+                
+                if monthly_data.base_calendar:
+                    if hasattr(monthly_data.base_calendar, 'break_minutes'):
+                        # Calendar 객체인 경우
+                        break_minutes = monthly_data.base_calendar.break_minutes
+                        standard_work_hours = monthly_data.base_calendar.standard_work_hours
+                    else:
+                        # 문자열인 경우 기본값 사용
+                        print(f"Warning: base_calendar가 문자열입니다: {monthly_data.base_calendar}")
+                
                 new_daily = DailyData(
                     date=target_date,
                     work_type=data.get('work_type', '出勤'),
@@ -191,9 +233,14 @@ class DailyDataUpdateView(View):
                     alternative_work_date2=alternative_work_date2,
                     alternative_work_date3=alternative_work_date3,
                     notes=data.get('notes', ''),
-                    break_minutes=monthly_data.base_calendar.break_minutes if monthly_data.base_calendar else 60,
-                    standard_work_hours=monthly_data.base_calendar.standard_work_hours if monthly_data.base_calendar else 8.0
+                    break_minutes=break_minutes,
+                    standard_work_hours=standard_work_hours
                 )
+                print(f"=== 새 데이터 생성 ===")
+                print(f"alternative_work_date1: {new_daily.alternative_work_date1}")
+                print(f"alternative_work_date2: {new_daily.alternative_work_date2}")
+                print(f"alternative_work_date3: {new_daily.alternative_work_date3}")
+                print(f"===================")
                 # 시간 계산 실행
                 new_daily.calculate_work_hours()
                 monthly_data.daily_list.append(new_daily)

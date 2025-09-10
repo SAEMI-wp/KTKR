@@ -147,6 +147,10 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
         # 初期選択された日付は常に今日の日付 (要件)
         context['selected_date'] = today
         
+        # Calendar 데이터 추가
+        from ..models import Calendar
+        context['calendars'] = Calendar.objects.all().order_by('id')
+        
         # タブ状態管理: 0=カレンダー, 1=リスト (デフォルト: 0)
         show_list_view = self.request.GET.get('show_list', '0') == '1'
         context['show_list_view'] = show_list_view

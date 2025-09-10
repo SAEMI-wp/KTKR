@@ -54,6 +54,21 @@ class MonthlyAttendanceCreateView(AjaxLoginRequiredMixin, CreateView):
             form.instance.month = str(month).zfill(2)
             print(f"Set year: {form.instance.year}, month: {form.instance.month}")
         
+        # Calendar ID 처리
+        base_calendar_id = self.request.POST.get('base_calendar')
+        if base_calendar_id:
+            from ..models import Calendar
+            try:
+                calendar_obj = Calendar.objects.get(id=base_calendar_id)
+                form.instance.base_calendar = calendar_obj
+                print(f"Set base_calendar: {calendar_obj.calendar_name} (ID: {base_calendar_id})")
+            except Calendar.DoesNotExist:
+                print(f"Warning: Calendar with ID {base_calendar_id} not found")
+                # 기본 Calendar 사용
+                calendar_obj = Calendar.objects.first()
+                if calendar_obj:
+                    form.instance.base_calendar = calendar_obj
+        
         try:
             result = super().form_valid(form)
             print(f"Monthly attendance created successfully: {form.instance}")
@@ -208,8 +223,10 @@ class MonthlyAttendanceUpdateView(View):
                 try:
                     from .models import Calendar
                     calendar_obj = Calendar.objects.get(id=base_calendar_id)
-                    monthly_data.base_calendar = calendar_obj
+                    monthly_data.base_calendar = calendar_obj.calendar_name  # 문자열로 저장
+                    print(f"[MONTHLY_UPDATE] Calendar 설정: {calendar_obj.calendar_name} (ID: {base_calendar_id})")
                 except Calendar.DoesNotExist:
+                    print(f"[MONTHLY_UPDATE] Calendar를 찾을 수 없음: ID {base_calendar_id}")
                     return JsonResponse({'status': 'error', 'message': '指定されたカレンダーが見つかりません'})
 
             # DB保存

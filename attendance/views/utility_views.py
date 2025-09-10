@@ -70,9 +70,7 @@ def copy_prev_month(request):
         year=year,
         month=month,
         project_name=prev_obj.project_name,
-        base_calendar=prev_obj.base_calendar,
-        break_minutes=prev_obj.base_calendar.break_minutes if prev_obj.base_calendar else 60,
-        standard_work_hours=prev_obj.base_calendar.standard_work_hours if prev_obj.base_calendar else 8.0,
+        base_calendar=prev_obj.base_calendar,  # Calendar 객체 참조
         is_confirmed=False,
         is_required=False,
     )
