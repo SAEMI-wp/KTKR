@@ -197,8 +197,9 @@
                         <div class="form-group">
                             <label for="create-base-calendar">基準カレンダー</label>
                             <select id="create-base-calendar" name="base_calendar" class="form-control" required>
-                                <option value="基準">基準</option>
-                                <option value="H大甕">H大甕</option>
+                                {% for calendar in calendars %}
+                                <option value="{{ calendar.id }}" data-break-minutes="{{ calendar.break_minutes }}" data-standard-hours="{{ calendar.standard_work_hours }}" {% if calendar.id == 1 %}selected{% endif %}>{{ calendar.calendar_name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="form-group">
@@ -232,8 +233,9 @@
                         <div class="form-group">
                             <label for="update-base-calendar">基準カレンダー</label>
                             <select id="update-base-calendar" name="base_calendar" class="form-control" required>
-                                <option value="基準">基準</option>
-                                <option value="H大甕">H大甕</option>
+                                {% for calendar in calendars %}
+                                <option value="{{ calendar.id }}" data-break-minutes="{{ calendar.break_minutes }}" data-standard-hours="{{ calendar.standard_work_hours }}">{{ calendar.calendar_name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="form-group">
@@ -242,7 +244,7 @@
                         </div>
                         <div class="form-group">
                             <label for="update-standard-time">基準時間 (Hr)</label>
-                            <input type="number" id="update-standard-time" name="standard_work_hours" class="form-control" min="0" step="0.01" value="{{ monthly_data.standard_work_hours|default:'8.00' }}" required>
+                            <input type="number" id="update-standard-time" name="standard_work_hours" class="form-control" min="0" step="0.01" value="{{ monthly_data.standard_work_hours|default:'8.00' }}" required readonly>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn-submit">修正する</button>

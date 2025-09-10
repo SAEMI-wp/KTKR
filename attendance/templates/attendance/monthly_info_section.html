@@ -13,7 +13,7 @@
     <div id="monthly-info-content">
         <div class="monthly-details-grid">
             <div class="detail-item"><span>PJ名:</span> <strong>{{ monthly_data.project_name }}</strong></div>
-            <div class="detail-item"><span>基準カレンダー:</span> <strong>{{ monthly_data.base_calendar }}</strong></div>
+            <div class="detail-item"><span>基準カレンダー:</span> <strong>{{ monthly_data.base_calendar.calendar_name|default:monthly_data.base_calendar }}</strong></div>
             <div class="detail-item"><span>昼休み区分:</span> <strong>{{ monthly_data.break_minutes }}分</strong></div>
             <div class="detail-item"><span>基準時間:</span> <strong>{{ monthly_data.standard_work_hours }}時間</strong></div>
             <div class="detail-item"><span>出勤日:</span> <strong>{{ monthly_data.work_days }}日</strong></div>
