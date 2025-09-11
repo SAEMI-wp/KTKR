@@ -12,18 +12,53 @@
     </div>
     <div id="monthly-info-content">
         <div class="monthly-details-grid">
-            <div class="detail-item"><span>PJ名:</span> <strong>{{ monthly_data.project_name }}</strong></div>
-            <div class="detail-item"><span>基準カレンダー:</span> <strong>{{ monthly_data.base_calendar.calendar_name|default:monthly_data.base_calendar }}</strong></div>
-            <div class="detail-item"><span>昼休み区分:</span> <strong>{{ monthly_data.break_minutes }}分</strong></div>
-            <div class="detail-item"><span>基準時間:</span> <strong>{{ monthly_data.standard_work_hours }}時間</strong></div>
-            <div class="detail-item"><span>出勤日:</span> <strong>{{ monthly_data.work_days }}日</strong></div>
-            <div class="detail-item"><span>年次有給:</span> <strong>{{ monthly_data.paid_leave_days }}日</strong></div>
-            <div class="detail-item"><span>常勤:</span> <strong>{{ monthly_data.total_regular_work_hours|floatformat:2 }}h</strong></div>
-            <div class="detail-item"><span>控除:</span> <strong>{{ monthly_data.total_deduction_hours|floatformat:2 }}h</strong></div>
-            <div class="detail-item"><span>残業:</span> <strong>{{ monthly_data.total_overtime_hours|floatformat:2 }}h</strong></div>
-            <div class="detail-item"><span>深夜:</span> <strong>{{ monthly_data.total_late_night_overtime_hours|floatformat:2 }}h</strong></div>
-            <div class="detail-item"><span>休日:</span> <strong>{{ monthly_data.total_holiday_work_hours|floatformat:2 }}h</strong></div>
-            <div class="detail-item"><span>休日深夜:</span> <strong>{{ monthly_data.holiday_work_hours_night|floatformat:2 }}h</strong></div>
+            <!-- 1행: PJ名 (전체 너비) -->
+            <div class="monthly-info-item full-width" id="project-name-item">
+                <span class="label">PJ名:</span> 
+                <strong class="value">{{ monthly_data.project_name }}</strong>
+            </div>
+            
+            <!-- 2행: 기준 정보 -->
+            <div class="monthly-info-item">
+                <span class="label">基準カレンダー:</span> 
+                <strong class="value">{{ monthly_data.base_calendar.calendar_name|default:monthly_data.base_calendar }}</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">基準時間:</span> 
+                <strong class="value">{{ monthly_data.standard_work_hours }}時間</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">昼休み時間:</span> 
+                <strong class="value">{{ monthly_data.break_minutes }}分</strong>
+            </div>
+            
+            <!-- 3행: 근무일/휴가 정보 -->
+            <div class="monthly-info-item">
+                <span class="label">出勤日:</span> 
+                <strong class="value">{{ monthly_data.work_days }}日</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">年次有給/特別有給(日):</span> 
+                <strong class="value">{{ monthly_data.paid_leave_days }}日 / {{ monthly_data.special_paid_leave_days }}日</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">無給日:</span> 
+                <strong class="value">0日</strong>
+            </div>
+            
+            <!-- 4행: 근무시간 정보 -->
+            <div class="monthly-info-item">
+                <span class="label">常勤/控除(Hr):</span> 
+                <strong class="value">{{ monthly_data.total_regular_work_hours|floatformat:2 }}h / {{ monthly_data.total_deduction_hours|floatformat:2 }}h</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">残業:</span> 
+                <strong class="value">{{ monthly_data.total_overtime_hours|floatformat:2 }}h</strong>
+            </div>
+            <div class="monthly-info-item">
+                <span class="label">深夜:</span> 
+                <strong class="value">{{ monthly_data.total_late_night_overtime_hours|floatformat:2 }}h</strong>
+            </div>
         </div>
     </div>
 </section>
