@@ -10,7 +10,6 @@
  * - 대체 근무일 추가 버튼
  */
 
-/* ===================== 代休/振替の勤務日関連 ===================== */
 .alternative-work-dates {
     display: flex;
     flex-direction: column;
@@ -58,6 +57,7 @@
 .attendance-entry .form-group, .attendance-entry .form-group-full {
     display: flex;
     flex-direction: column;
+    position: relative; /* 툴팁 위치 기준점 설정 */
 }
 
 /* 必須マークのスタイル */
