@@ -20,18 +20,18 @@ function setCurrentTimeForStartTime(startTimeInputId, endTimeInputId) {
     startInput.dispatchEvent(new Event('change', { bubbles: true }));
     
     // 通常 ボタンと同じロジックで終了時刻を設定
-    // 月別データの基準カレンダーを確認 (通常 ボタンから取得したロジック)
+    // 서버에서 전달된 시간 데이터 사용
     const normalHoursBtn = document.getElementById('normal-hours-btn');
     let endTime;
     
-    if (normalHoursBtn && normalHoursBtn.dataset.baseCalendar === 'H大甕') {
-        // H大甕 캘린더: 고정 종료시간 17:10
-        endTime = '17:10';
-        console.log(`[DEBUG] H大甕 캘린더: 시작시간 ${currentTime} -> 종료시간 고정: ${endTime}`);
+    if (normalHoursBtn && normalHoursBtn.dataset.endTime) {
+        // 서버에서 전달된 종료시간 사용
+        endTime = normalHoursBtn.dataset.endTime;
+        console.log(`[DEBUG] 서버 데이터 사용: 시작시간 ${currentTime} -> 종료시간: ${endTime}`);
     } else {
-        // 기준 캘린더: 고정 종료시간 18:00
+        // 기본값 (서버 데이터가 없는 경우)
         endTime = '18:00';
-        console.log(`[DEBUG] 기준 캘린더: 시작시간 ${currentTime} -> 종료시간 고정: ${endTime}`);
+        console.log(`[DEBUG] 기본값 사용: 시작시간 ${currentTime} -> 종료시간: ${endTime}`);
     }
     
     // 종료시간 설정

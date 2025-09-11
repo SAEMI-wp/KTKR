@@ -53,6 +53,15 @@ function formatDate(date) {
 function parseDate(dateStr) {
     console.log(`[PARSE] 날짜 파싱 시작: ${dateStr}`);
     
+    // 日本語形式 (2025年8月1日) 処理
+    const japaneseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (japaneseMatch) {
+        const [, year, month, day] = japaneseMatch;
+        const result = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        console.log(`[PARSE] 일본어 형식 파싱 결과: ${result}`);
+        return result;
+    }
+    
     // YYYY-MM-DD形式 処理
     if (dateStr.includes('-')) {
         const [year, month, day] = dateStr.split('-').map(Number);
@@ -222,9 +231,9 @@ async function handleMonthlyInfoToggle() {
         return;
     }
     
-    // AJAXで全カレンダーセクション再読み込み (사용자 의도를 서버에 전달)
+    // AJAXで全カレンダーセクション再読み込み (サーバーで正しい状態でレンダリング)
     console.log(`[TOGGLE] トグル状態変更: ${isGreen ? 'green' : 'red'} → ${isGreen ? 'red' : 'green'}`);
-    await updateCalendarSection(year, month, null, newToggleState);
+    await updateCalendarSection(year, month);
 }
 
 // ===================== 状態 初期化 =====================
@@ -247,8 +256,13 @@ function initializeState() {
         
         if (dayDisplayEl) {
             const displayText = dayDisplayEl.textContent.trim();
-            // YYYY/MM/DD形式の処理
-            if (displayText.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
+            // 日本語形式 (2025年8月1日) 処理
+            const japaneseMatch = displayText.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (japaneseMatch) {
+                const [, year, month, day] = japaneseMatch;
+                currentState.selectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            } else if (displayText.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
+                // YYYY/MM/DD形式の処理
                 const [year, month, day] = displayText.split('/').map(Number);
                 currentState.selectedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             }
@@ -386,18 +400,18 @@ function getDefaultWorkType(dateString) {
  * フォームにデータを入力し、祝日の場合勤務区分オプションを制限
  */
 function populateFormWithData(dailyData, defaultWorkType) {
-    console.log('[FORM] フォームデータ入力:', dailyData, defaultWorkType);
+    console.log('[FORM] 폼 데이터 채우기:', dailyData, defaultWorkType);
             
     const form = document.getElementById('daily-entry-form');
     if (!form) {
-        console.warn('[FORM] フォームを見つけられません');
+        console.warn('[FORM] 폼을 찾을 수 없습니다');
         return;
     }
     
-    // 現在選択された日付を取得
+    // 현재 선택된 날짜 가져오기
     const currentDate = currentState.selectedDate;
     
-    // 既存のデータがある場合はそのデータで入力
+    // 기존 데이터가 있으면 해당 데이터로 채우기
     if (dailyData) {
         const workTypeSelect = form.querySelector('[name="work_type"]');
         const startTimeInput = form.querySelector('[name="start_time"]');
@@ -408,23 +422,23 @@ function populateFormWithData(dailyData, defaultWorkType) {
         const notesInput = form.querySelector('[name="notes"]');
         
         if (workTypeSelect) workTypeSelect.value = dailyData.work_type || '';
-        if (startTimeInput) startTimeInput.value = dailyData.start_time || '00:00:00';
-        if (endTimeInput) endTimeInput.value = dailyData.end_time || '00:00:00';
+        if (startTimeInput) startTimeInput.value = dailyData.start_time || '';
+        if (endTimeInput) endTimeInput.value = dailyData.end_time || '';
         if (altDateInput1) altDateInput1.value = dailyData.alternative_work_date1 || '';
         if (altDateInput2) altDateInput2.value = dailyData.alternative_work_date2 || '';
         if (altDateInput3) altDateInput3.value = dailyData.alternative_work_date3 || '';
         if (notesInput) notesInput.value = dailyData.notes || '';
         
-        console.log('[FORM] 既存データでフォーム入力');
+        console.log('[FORM] 기존 데이터로 폼 채움');
     } else {
-        // 新規データの場合は基本値を設定
+        // 새 데이터인 경우 기본값 설정
         const workTypeSelect = form.querySelector('[name="work_type"]');
         if (workTypeSelect && defaultWorkType) {
             workTypeSelect.value = defaultWorkType;
-            console.log(`[FORM] 基本勤務区分設定: ${defaultWorkType}`);
+            console.log(`[FORM] 기본 근무구분 설정: ${defaultWorkType}`);
         }
         
-        // 他のフィールドは初期化
+        // 다른 필드는 초기화
         const startTimeInput = form.querySelector('[name="start_time"]');
         const endTimeInput = form.querySelector('[name="end_time"]');
         const altDateInput1 = form.querySelector('[name="alternative_work_date1"]');
@@ -432,28 +446,30 @@ function populateFormWithData(dailyData, defaultWorkType) {
         const altDateInput3 = form.querySelector('[name="alternative_work_date3"]');
         const notesInput = form.querySelector('[name="notes"]');
         
-        if (startTimeInput) startTimeInput.value = '00:00:00';
-        if (endTimeInput) endTimeInput.value = '00:00:00';
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
         if (altDateInput1) altDateInput1.value = '';
         if (altDateInput2) altDateInput2.value = '';
         if (altDateInput3) altDateInput3.value = '';
         if (notesInput) notesInput.value = '';
         
-        console.log('[FORM] 新規データでフォーム初期化');
+        console.log('[FORM] 새 데이터로 폼 초기화');
     }
     
-    // 休日、休日(法)、祝日の場合、勤務区分オプションを制限
+    // 祝日の場合、勤務区分オプションを制限
     if (currentDate) {
         filterWorkTypeOptionsByDate(currentDate);
         console.log(`[FORM] ${currentDate}の勤務区分オプション制限適用`);
     }
     
-    // 勤務区分に応じてフォーム状態を同時化 (保存されたデータでも新規データでも常に適用)
+    // 근무구분에 따른 필드 표시/숨김 및 버튼 상태 동기화 (저장된 데이터든 새 데이터든 항상 적용)
     const workTypeSelect = form.querySelector('[name="work_type"]');
-    if (workTypeSelect) {        
+    if (workTypeSelect) {
+        console.log('[FORM] 근무구분 필드 찾음:', workTypeSelect.value);
+        
         toggleAltWorkDateField(workTypeSelect.value);
         
-        // 勤務区分に応じてフォーム状態を同時化 (時間入力フィールド, 通常ボタンなど)
+        // 근무구분에 따른 폼 상태 동기화 (시간 입력 필드, 通常 버튼 등)
         const startTimeInput = form.querySelector('[name="start_time"]');
         const endTimeInput = form.querySelector('[name="end_time"]');
         const normalHoursBtn = document.getElementById('normal-hours-btn');
@@ -486,16 +502,16 @@ function showMonthlyDataWarning() {
     console.log('[FORM] 월별 데이터 경고 표시');
 }
 
-// 月情報がある場合は警告を非表示にし、月情報がない場合は警告を表示する
+// 월별 데이터 경고 상태 업데이트 (새로 추가)
 async function updateMonthlyDataWarning(selectedDate) {
     if (!selectedDate) {
-        console.warn('[FORM] 選択された日付がないため、警告状態の更新をスキップします');
+        console.warn('[FORM] 선택된 날짜가 없어서 경고 상태 업데이트를 건너뜁니다');
         return;
     }
     
     try {
         const hasMonthlyData = await checkMonthlyDataForSelectedDate(selectedDate);
-        console.log(`[FORM] 警告状態の更新: ${selectedDate} -> 月情報 ${hasMonthlyData ? 'あり' : 'なし'}`);
+        console.log(`[FORM] 경고 상태 업데이트: ${selectedDate} -> 월정보 ${hasMonthlyData ? '있음' : '없음'}`);
         
         if (hasMonthlyData) {
             hideMonthlyDataWarning();
@@ -503,8 +519,8 @@ async function updateMonthlyDataWarning(selectedDate) {
             showMonthlyDataWarning();
         }
     } catch (error) {
-        console.error('[FORM] 警告状態の更新に失敗しました:', error);
-        // エラーが発生した場合は警告を表示
+        console.error('[FORM] 경고 상태 업데이트 실패:', error);
+        // 오류 발생 시 경고 표시
         showMonthlyDataWarning();
     }
 }
@@ -570,7 +586,18 @@ function updateDateDisplay(dateString) {
         dayInputHiddenEl.value = day;
         
         // 상태 업데이트 (YYYY-MM-DD 형식으로 통일)
-        currentState.selectedDate = dateString;
+        if (dateString.includes('年') && dateString.includes('月')) {
+            const match = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (match) {
+                const [, year, month, day] = match;
+                currentState.selectedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                console.log(`[DISPLAY] selectedDate 형식 변환: ${dateString} -> ${currentState.selectedDate}`);
+            } else {
+                currentState.selectedDate = dateString;
+            }
+        } else {
+            currentState.selectedDate = dateString;
+        }
         
         console.log(`[FORM] 날짜 표시 업데이트 완료: ${dayDisplayEl.textContent}`);
     } catch (error) {
@@ -578,7 +605,7 @@ function updateDateDisplay(dateString) {
     }
 }
 
-// フォームセクション更新
+// フォーム섹션 업데이트
 async function updateFormSection(selectedDate) {
     console.log(`[FORM] フォーム更新 for: ${selectedDate}`);
     
@@ -590,28 +617,18 @@ async function updateFormSection(selectedDate) {
         
         const html = await response.text();
         
-        // 一時的なdivを作成してHTMLを解析
+        // 임시 div를 만들어서 HTML 파싱
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
-        // 全体form sectionを置き換えてサーバーの非活性化状態を反映
+        // 전체 form section을 교체하여 서버의 비활성화 상태 반영
         const formSection = document.getElementById('form-section');
         if (formSection) {
-            // 全体HTMLを置き換え
+            // 전체 HTML 교체
             formSection.innerHTML = html;
             
-            // すべてのフォームイベントを再バインド
+            // 모든 폼 이벤트 재바인딩 (통상 버튼 포함)
             rebindFormEvents();
-            
-            // フォームの状態同期化
-            const form = document.getElementById('daily-entry-form');
-            if (form) {
-                const workTypeSelect = form.querySelector('[name="work_type"]');
-                if (workTypeSelect) {
-                    console.log(`[FORM] フォームロード後の勤務区分状態の同期化: ${workTypeSelect.value}`);
-                    toggleAltWorkDateField(workTypeSelect.value);
-                }
-            }
         }
         
     } catch (error) {
@@ -630,15 +647,10 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
             showListParam = isListTabActive ? '1' : '0';
         }
         if (toggleState === null) {
-            // toggleState가 null이면 서버가 월정보 유무에 따라 결정하도록 함
-            toggleState = null;
+            toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
         }
         
-        // URL 구성 - toggleState가 null이면 파라미터에서 제외
-        let url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}`;
-        if (toggleState !== null) {
-            url += `&toggle_state=${toggleState}`;
-        }
+        const url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}&toggle_state=${toggleState}`;
         
         const response = await fetchWithCsrf(url);
         if (!response.ok) {
@@ -670,15 +682,10 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
             showListParam = isListTabActive ? '1' : '0';
         }
         if (toggleState === null) {
-            // 서버가 월정보 유무에 따라 결정하도록 함 (localStorage 체크 안함)
-            toggleState = null;
+            toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
         }
         
-        // URL 구성 - toggleState가 null이면 파라미터에서 제외
-        let url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}`;
-        if (toggleState !== null) {
-            url += `&toggle_state=${toggleState}`;
-        }
+        const url = `/attendance/calendar_partial/?year=${year}&month=${month}&show_list=${showListParam}&toggle_state=${toggleState}`;
         
         // AJAXリクエスト
         const response = await fetchWithCsrf(url);
@@ -725,26 +732,19 @@ async function updateCalendarSection(year, month, showListParam = null, toggleSt
             
             console.log('[CALENDAR] 기본 구조 렌더링 완료');
             
-            // 2단계: 서버에서 렌더링된 토글 버튼 상태 확인하여 월정보 로딩
-            const toggleBtn = document.getElementById('monthly-info-toggle-btn');
-            if (toggleBtn && toggleBtn.classList.contains('red')) {
-                // 서버에서 red 버튼으로 렌더링됨 = 월정보가 없거나 사용자가 열어둔 상태
-                console.log('[CALENDAR] 서버에서 red 버튼으로 렌더링됨 - 월정보 로딩 시작');
+            // 2단계: 토글 상태가 '1'이면 월정보 로딩 (서버에서 이미 버튼 상태 처리됨)
+            const savedState = localStorage.getItem('monthlyInfoOpen');
+            if (savedState === '1') {
+                // 서버에서 이미 red 버튼으로 렌더링되었으므로 월정보만 로딩
                 loadMonthlyInfoSection(year, month).then(hasMonthlyData => {
                     if (hasMonthlyData) {
-                        console.log('[CALENDAR] 월정보 로딩 완료 (데이터 있음) - localStorage에 상태 저장');
-                        // 월정보가 있으면 사용자 상태를 localStorage에 저장
-                        localStorage.setItem('monthlyInfoOpen', '1');
+                        console.log('[CALENDAR] 월 이동 시 월정보 상태 복원 완료 (red 버튼)');
                     } else {
-                        console.log('[CALENDAR] 월정보 로딩 완료 (데이터 없음) - 사용자가 닫을 수 있도록 상태 저장');
-                        // 월정보가 없어도 사용자가 닫을 수 있도록 상태 저장
-                        localStorage.setItem('monthlyInfoOpen', '1');
+                        console.log('[CALENDAR] 월 이동 시 월정보가 없음');
                     }
                 });
             } else {
-                console.log('[CALENDAR] 서버에서 green 버튼으로 렌더링됨 - 월정보 로딩 안함');
-                // 월정보가 있고 사용자가 닫아둔 상태
-                localStorage.setItem('monthlyInfoOpen', '0');
+                console.log('[CALENDAR] 월 이동 시 초기 상태: green 버튼');
             }
             
             const calendarTab = tempDiv.querySelector('#calendar-tab');
@@ -872,11 +872,11 @@ function handleCalendarCellClick(event) {
             const day = parseInt(dateNumber.textContent);
             date = `${currentState.calendarYear}-${String(currentState.calendarMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 } else {
-            return; //クリック不可能なセル
+            return; // 클릭 불가
         }
     }
     
-    console.log(`[CELL] カレンダーセルクリック: ${date}`);
+    console.log(`[CELL] セルクリック: ${date}`);
     
     // 選択された日付の状態を即時更新
     currentState.selectedDate = date;
@@ -895,16 +895,16 @@ function handleCalendarCellClick(event) {
 
 // Day Arrowボタンの処理
 function handleDayArrowClick(direction) {
-    console.log(`[DAY_ARROW] 開始: ${direction}, 現在の選択日: ${currentState.selectedDate}`);
+    console.log(`[DAY_ARROW] 시작: ${direction}, 현재 선택일: ${currentState.selectedDate}`);
     
     if (!currentState.selectedDate) {
-        console.warn('[DAY_ARROW] 選択された日付がありません。');
+        console.warn('[DAY_ARROW] 선택된 날짜가 없습니다');
         return;
     }
     
     const selectedDate = parseDate(currentState.selectedDate);
     if (isNaN(selectedDate.getTime())) {
-        console.error('[DAY_ARROW] 日付解析失敗:', currentState.selectedDate);
+        console.error('[DAY_ARROW] 날짜 파싱 실패:', currentState.selectedDate);
         return;
     }
     
@@ -983,8 +983,7 @@ function handleMonthNavigation(direction) {
     // 현재 탭 상태 확인하여 show_list 파라미터 유지
     const isListTabActive = localStorage.getItem('selectedTab') === 'list';
     const showListParam = isListTabActive ? '1' : '0';
-    // toggleState는 null로 전달하여 서버가 월정보 유무에 따라 결정하도록 함
-    const toggleState = null;
+    const toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
     
     // AJAX로 partial 갱신
     updateCalendarSection(newYear, newMonth, showListParam, toggleState);
@@ -1202,8 +1201,8 @@ async function handleTabSwitch(event) {
         return;
     }
     
-    // toggleState는 null로 전달하여 서버가 월정보 유무에 따라 결정하도록 함
-    const toggleState = null;
+    // トグル状態も同時に渡す
+    const toggleState = localStorage.getItem('monthlyInfoOpen') || '0';
     const showListParam = isList ? '1' : '0';
     
     console.log(`[TAB] 탭 전환: ${isList ? 'list' : 'calendar'}`);
@@ -1229,11 +1228,11 @@ function rebindDayArrowEvents() {
     console.log('[FORM] Day Arrow 이벤트 재바인딩 완료');
 }
 
-// フォームイベント再バインド
+// 폼 이벤트 재바인딩 (전체 HTML 교체 후)
 function rebindFormEvents() {
-    console.log('[FORM] イベント再バインド');
+    console.log('[FORM] 이벤트 재바인딩');
     
-    // Day Arrow ボタン
+    // Day Arrow 버튼
     const dayArrowLeft = document.getElementById('day-arrow-left');
     const dayArrowRight = document.getElementById('day-arrow-right');
     
@@ -1244,89 +1243,41 @@ function rebindFormEvents() {
         dayArrowRight.addEventListener('click', () => handleDayArrowClick('next'));
     }
     
-    // 폼 제출 이벤트 및 근무구분 변경 이벤트
+    // 통상 버튼 이벤트
+    const normalHoursBtn = document.getElementById('normal-hours-btn');
+    if (normalHoursBtn) {
+        normalHoursBtn.addEventListener('click', () => {
+            const startTimeInput = document.querySelector('[name="start_time"]');
+            const endTimeInput = document.querySelector('[name="end_time"]');
+            const baseCalendar = normalHoursBtn.dataset.baseCalendar;
+            
+            if (baseCalendar === 'H大甕') {
+                if (startTimeInput) startTimeInput.value = '08:40';
+                if (endTimeInput) endTimeInput.value = '17:10';
+            } else {
+                if (startTimeInput) startTimeInput.value = '09:00';
+                if (endTimeInput) endTimeInput.value = '18:00';
+            }
+        });
+    }
+    
+    // 폼 제출 이벤트
     const dailyForm = document.getElementById('daily-entry-form');
     if (dailyForm) {
         dailyForm.addEventListener('submit', handleFormSubmit);
-        
-        // 폼 요소들 한 번에 찾기 (중복 제거)
-        const workTypeSelect = dailyForm.querySelector('[name="work_type"]');
-        const startTimeInput = dailyForm.querySelector('[name="start_time"]');
-        const endTimeInput = dailyForm.querySelector('[name="end_time"]');
-        const normalHoursBtn = document.getElementById('normal-hours-btn');
-        
-        // 통상 버튼 이벤트
-        if (normalHoursBtn) {
-            normalHoursBtn.addEventListener('click', () => {
-                console.log('[DEBUG] 통상 버튼 클릭됨');
-                console.log('[DEBUG] normalHoursBtn.dataset:', normalHoursBtn.dataset);
-                
-                // 서버에서 전달된 시간 데이터 사용
-                const startTime = normalHoursBtn.dataset.startTime;
-                const endTime = normalHoursBtn.dataset.endTime;
-                
-                console.log('[DEBUG] startTime:', startTime, 'endTime:', endTime);
-                console.log('[DEBUG] startTimeInput:', startTimeInput, 'endTimeInput:', endTimeInput);
-                
-                if (startTime && endTime) {
-                    if (startTimeInput) {
-                        startTimeInput.value = startTime;
-                        console.log('[DEBUG] startTimeInput.value 설정됨:', startTimeInput.value);
-                    }
-                    if (endTimeInput) {
-                        endTimeInput.value = endTime;
-                        console.log('[DEBUG] endTimeInput.value 설정됨:', endTimeInput.value);
-                    }
-                    console.log(`[DEBUG] Normal hours set: ${startTime} - ${endTime}`);
-                } else {
-                    console.warn('[DEBUG] Normal hours data not available');
-                    console.warn('[DEBUG] startTime:', startTime, 'endTime:', endTime);
-                }
-            });
-        }
-        
-        // 근무구분 변경 이벤트
-        if (workTypeSelect && startTimeInput && endTimeInput && normalHoursBtn) {
-            console.log('[REBIND] 근무구분 변경 이벤트 재바인딩');
-            
-            // 기존 이벤트 리스너 제거 (중복 방지)
-            workTypeSelect.removeEventListener('change', workTypeSelect._changeHandler);
-            
-            // 새 이벤트 핸들러 생성 및 등록
-            workTypeSelect._changeHandler = function() {
-                console.log('[EVENT] 근무구분 변경 이벤트 발생:', workTypeSelect.value);
-                syncFormStateByWorkType(workTypeSelect.value, startTimeInput, endTimeInput, normalHoursBtn);
-                
-                // 현재 날짜 기준 옵션 필터링
-                let dateStr = null;
-                const dayInputHidden = document.getElementById('day-input-hidden');
-                if (dayInputHidden) {
-                    const y = currentState.calendarYear;
-                    const m = String(currentState.calendarMonth).padStart(2, '0');
-                    const d = String(dayInputHidden.value).padStart(2, '0');
-                    dateStr = `${y}-${m}-${d}`;
-                }
-                if (dateStr) {
-                    filterWorkTypeOptionsByDate(dateStr);
-                }
-                
-                // 대체근무일 필드 토글
-                toggleAltWorkDateField(workTypeSelect.value);
-            };
-            
-            workTypeSelect.addEventListener('change', workTypeSelect._changeHandler);
-        }
+        // 근무구분 변경 이벤트는 initializeFormEvents에서만 등록 (중복 방지)
     }
     
-    // ツールチップイベント再バインド
+    // 툴팁 이벤트 재바인딩
     setupWorkTypeTooltip();
     
     // 추가 버튼 이벤트 재바인딩
     initializeAdditionalDatesToggle();
     
-    // カレンダーで日付選択時の勤務区分オプションフィルタリング適用
+    // 캘린더에서 날짜 선택 시 근무구분 옵션 필터링 적용
     if (currentState.selectedDate) {
         filterWorkTypeOptionsByDate(currentState.selectedDate);
+        console.log(`[FORM] 캘린더 선택 날짜의 근무구분 옵션 필터링: ${currentState.selectedDate}`);
     }
 }
 
@@ -1349,32 +1300,30 @@ function initializeFormEvents() {
     const normalHoursBtn = document.getElementById('normal-hours-btn');
     if (normalHoursBtn) {
         normalHoursBtn.addEventListener('click', () => {
-            console.log('[DEBUG] 통상 버튼 클릭됨 (initializeFormEvents)');
-            console.log('[DEBUG] normalHoursBtn.dataset:', normalHoursBtn.dataset);
-            
             const startTimeInput = document.querySelector('[name="start_time"]');
             const endTimeInput = document.querySelector('[name="end_time"]');
             
-            // 서버에서 전달된 시간 데이터 사용
-            const startTime = normalHoursBtn.dataset.startTime;
-            const endTime = normalHoursBtn.dataset.endTime;
+            // 월별 데이터의 기준 캘린더 확인
+            const baseCalendar = normalHoursBtn.dataset.baseCalendar;
             
-            console.log('[DEBUG] startTime:', startTime, 'endTime:', endTime);
-            console.log('[DEBUG] startTimeInput:', startTimeInput, 'endTimeInput:', endTimeInput);
-            
-            if (startTime && endTime) {
+            if (baseCalendar === 'H大甕') {
+                // H大甕 캘린더: 8:40 - 17:10
                 if (startTimeInput) {
-                    startTimeInput.value = startTime;
-                    console.log('[DEBUG] startTimeInput.value 설정됨:', startTimeInput.value);
+                    startTimeInput.value = '08:40';
                 }
                 if (endTimeInput) {
-                    endTimeInput.value = endTime;
-                    console.log('[DEBUG] endTimeInput.value 설정됨:', endTimeInput.value);
+                    endTimeInput.value = '17:10';
                 }
-                console.log(`[DEBUG] Normal hours set: ${startTime} - ${endTime}`);
+                console.log('Normal hours set (H大甕): 08:40 - 17:10');
             } else {
-                console.warn('[DEBUG] Normal hours data not available');
-                console.warn('[DEBUG] startTime:', startTime, 'endTime:', endTime);
+                // 기준 캘린더: 9:00 - 18:00
+                if (startTimeInput) {
+                    startTimeInput.value = '09:00';
+                }
+                if (endTimeInput) {
+                    endTimeInput.value = '18:00';
+                }
+                console.log('Normal hours set (基準): 09:00 - 18:00');
             }
         });
     }
@@ -1598,22 +1547,13 @@ function initializeCalendarEvents() {
         monthlyInfoToggleBtn.addEventListener('click', handleMonthlyInfoToggle);
         console.log('[INIT] 월정보 토글 버튼 이벤트 등록 완료');
     }
-    
-    // 로그아웃 버튼 이벤트 핸들러
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            // localStorage에서 토글 상태 삭제
-            localStorage.removeItem('monthlyInfoOpen');
-            localStorage.removeItem('selectedTab');
-        });
-    }
 
     // 이전 월 복사 버튼 이벤트 핸들러
     const copyPrevMonthBtn = document.getElementById('copy-prev-month-btn');
     if (copyPrevMonthBtn) {
         copyPrevMonthBtn.removeEventListener('click', handleCopyPrevMonth);
         copyPrevMonthBtn.addEventListener('click', handleCopyPrevMonth);
+        console.log('[INIT] 이전 월 복사 버튼 이벤트 등록 완료');
     }
 
 
@@ -2932,14 +2872,15 @@ function filterWorkTypeOptionsByDate(dateStr) {
     if (holidayType) {
         Array.from(workTypeSelect.options).forEach(option => {
             const value = option.value;
-            const shouldShow = value === holidayType || value === '振替(勤)' || value === '';
+            const shouldShow = value === holidayType || value === '代休' || value === '振替(勤)' || value === '';
             option.style.display = shouldShow ? '' : 'none';
         });
     } else {
         Array.from(workTypeSelect.options).forEach(option => {
             const value = option.value;
-            const isRestrictedHolidayType = value === '休日(法)' || value === '祝日' || value === '振替(勤)';
-            const isDaiQ = value === value === '振替(勤)';
+            // 평일에도 休日은 선택 가능하도록 수정 (休日(法), 祝日은 여전히 숨김)
+            const isRestrictedHolidayType = value === '休日(法)' || value === '祝日';
+            const isDaiQ = value === '代休' || value === '振替(勤)';
             const shouldShow = !isRestrictedHolidayType && !isDaiQ && value !== '';
             option.style.display = shouldShow ? '' : 'none';
         });
@@ -2994,50 +2935,21 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
 
 // 代休/振替の勤務日フィール드表示制御
 function toggleAltWorkDateField(workType) {
-    console.log(`[TOGGLE] toggleAltWorkDateField 호출: workType=${workType}`);
-    
     const altGroup = document.getElementById('alt-work-date-group');
     const altInput = altGroup?.querySelector('input[type="date"]');
     const requiredMark = document.getElementById('alt-work-date-required');
     
-    console.log(`[TOGGLE] 요소 찾기 결과:`, {
-        altGroup: altGroup,
-        altInput: altInput,
-        requiredMark: requiredMark
-    });
+    if (!altGroup || !altInput) return;
     
-    if (!altGroup || !altInput) {
-        console.warn('[TOGGLE] alt-work-date-group 또는 input 요소를 찾을 수 없습니다');
-        return;
-    }
-    
-    const showTypes = ['振替(勤)', '振替(休)', '休日', '休日(法)', '祝日', '代休'];
-    const requiredTypes = ['振替(勤)', '振替(休)', '代休']; // 필수 입력이 필요한 근무구분들
-    
-    console.log(`[TOGGLE] showTypes:`, showTypes);
-    console.log(`[TOGGLE] requiredTypes:`, requiredTypes);
-    console.log(`[TOGGLE] workType이 showTypes에 포함되는가:`, showTypes.includes(workType));
-    
+    const showTypes = ['代休', '振替(勤)', '振替(休)'];
     if (showTypes.includes(workType)) {
-        // 표시
         altGroup.style.display = '';
-        
-        // 필수 입력 여부 설정
-        if (requiredTypes.includes(workType)) {
-            altInput.required = true;
-            if (requiredMark) requiredMark.style.display = 'inline';
-            console.log(`[TOGGLE] 대체근무일 필드 표시 (필수): ${workType}`);
-        } else {
-            altInput.required = false;
-            if (requiredMark) requiredMark.style.display = 'none';
-            console.log(`[TOGGLE] 대체근무일 필드 표시 (선택): ${workType}`);
-        }
+        altInput.required = true;
+        if (requiredMark) requiredMark.style.display = 'inline';
     } else {
-        // 숨김
         altGroup.style.display = 'none';
         altInput.required = false;
         if (requiredMark) requiredMark.style.display = 'none';
-        console.log(`[TOGGLE] 대체근무일 필드 숨김: ${workType}`);
     }
 }
 
@@ -3114,52 +3026,32 @@ function restoreInitialState() {
     }, 100);
 }
 
-// 勤務区分のツールチップ設定関数
+// 勤務区分 툴팁 설정 함수 (AJAX 로드 후 재바인딩용)
 function setupWorkTypeTooltip() {
     const worktypeHelpIcon = document.getElementById('worktype-help-icon');
     const worktypeTooltip = document.getElementById('worktype-tooltip');
     
     if (!worktypeHelpIcon || !worktypeTooltip) {
-        console.warn('[TOOLTIP] ツールチップ要素が見つかりません');
+        console.warn('[TOOLTIP] 툴팁 요소를 찾을 수 없습니다');
         return;
     }
     
-    // 既存のイベントリスナーを削除 (重複防止)
+    // 기존 이벤트 리스너 제거 (중복 방지)
     worktypeHelpIcon.removeEventListener('click', handleWorktypeTooltipClick);
     worktypeHelpIcon.removeEventListener('focus', handleWorktypeTooltipFocus);
     
-    // 新しいイベントリスナーを追加
+    // 새 이벤트 리스너 추가
     worktypeHelpIcon.addEventListener('click', handleWorktypeTooltipClick);
     worktypeHelpIcon.addEventListener('focus', handleWorktypeTooltipFocus);
     
-    // 閉じるボタンイベント
+    // 닫기 버튼 이벤트
     const worktypeTooltipCloseBtn = document.getElementById('worktype-tooltip-close');
     if (worktypeTooltipCloseBtn) {
         worktypeTooltipCloseBtn.removeEventListener('click', handleWorktypeTooltipClose);
         worktypeTooltipCloseBtn.addEventListener('click', handleWorktypeTooltipClose);
     }
-}
-
-// 툴팁 위치 계산 함수 (화면 경계 체크만)
-function positionTooltip(triggerElement, tooltipElement) {
-    const triggerRect = triggerElement.getBoundingClientRect();
-    const tooltipRect = tooltipElement.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
     
-    // CSS로 기본 위치는 설정되어 있음 (top: 50%, left: 100%)
-    // 화면 오른쪽을 벗어나는 경우만 왼쪽으로 이동
-    if (triggerRect.right + tooltipRect.width + 8 > viewportWidth) {
-        tooltipElement.style.left = 'auto';
-        tooltipElement.style.right = '100%';
-        tooltipElement.style.marginLeft = '0';
-        tooltipElement.style.marginRight = '8px';
-    } else {
-        // 기본 위치로 리셋
-        tooltipElement.style.left = '100%';
-        tooltipElement.style.right = 'auto';
-        tooltipElement.style.marginLeft = '8px';
-        tooltipElement.style.marginRight = '0';
-    }
+    console.log('[TOOLTIP] 勤務区分 툴팁 이벤트 재바인딩 완료');
 }
 
 // ツールチップイベントハンドラ
@@ -3169,20 +3061,17 @@ function handleWorktypeTooltipClick(e) {
     const worktypeHelpIcon = document.getElementById('worktype-help-icon');
     
     if (worktypeTooltip && worktypeHelpIcon) {
-        // 툴팁 위치를 동적으로 계산
-        positionTooltip(worktypeHelpIcon, worktypeTooltip);
+        // CSSですでに位置が設定されているので、単純に表示
         worktypeTooltip.style.display = 'block';
+        console.log('[TOOLTIP] 勤務区分 툴팁 표시');
     }
 }
 
 function handleWorktypeTooltipFocus(e) {
     const worktypeTooltip = document.getElementById('worktype-tooltip');
-    const worktypeHelpIcon = document.getElementById('worktype-help-icon');
-    
-    if (worktypeTooltip && worktypeHelpIcon) {
-        // 툴팁 위치를 동적으로 계산
-        positionTooltip(worktypeHelpIcon, worktypeTooltip);
+    if (worktypeTooltip) {
         worktypeTooltip.style.display = 'block';
+        console.log('[TOOLTIP] 勤務区分 툴팁 표시 (포커스)');
     }
 }
 
@@ -3190,6 +3079,7 @@ function handleWorktypeTooltipClose(e) {
     const worktypeTooltip = document.getElementById('worktype-tooltip');
     if (worktypeTooltip) {
         worktypeTooltip.style.display = 'none';
+        console.log('[TOOLTIP] 勤務区分 툴팁 숨김');
     }
 }
 
