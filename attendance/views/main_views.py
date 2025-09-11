@@ -174,8 +174,11 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
         )
         context['monthly_data'] = monthly_data
         
-        # トグル状態の処理
-        toggle_state = self.request.GET.get('toggle_state', '0')  # デフォルト: 0 (green)
+        # トグル状態の処理 - 月情報 유무에 따라 동적 설정
+        toggle_state = self.request.GET.get('toggle_state')
+        if toggle_state is None:
+            # URL 파라미터가 없으면 월정보 유무에 따라 기본값 설정
+            toggle_state = '1' if monthly_data is None else '0'
         context['toggle_state'] = toggle_state
         
         # タブスイッチャーの位置決定: 月情報が開いている場合は月情報の下に、そうでない場合はトグルボタンの下に
@@ -432,8 +435,12 @@ class CalendarPartialView(MainView):
         context.pop('daily_form', None)
         context.pop('default_day', None)
         
-        # トグル状態の処理
-        toggle_state = self.request.GET.get('toggle_state', '0')  # デフォルト: 0 (green)
+        # トグル状態の処理 - 月情報 유무에 따라 동적 설정
+        toggle_state = self.request.GET.get('toggle_state')
+        if toggle_state is None:
+            # URL 파라미터가 없으면 월정보 유무에 따라 기본값 설정
+            monthly_data = context.get('monthly_data')
+            toggle_state = '1' if monthly_data is None else '0'
         context['toggle_state'] = toggle_state
         
         # calendar contextが正しくあるか確認
@@ -511,15 +518,15 @@ class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
         
         # 基本勤務区分の設定 (日次データがない場合)
         if not selected_daily_data:
-            # API 公휴일 정보 확인
+            # API祝日情報確認
             api_holidays = get_holidays_for_months(selected_date.year, selected_date.month)
             selected_date_str = selected_date.strftime('%Y-%m-%d')
             is_api_holiday = selected_date_str in api_holidays
             
-            # 공휴일 우선, 그 다음 요일별 기본 근무구분 설정
+            # 祝日優先, 次に曜日別の基本勤務区分を設定
             if is_api_holiday:
                 context['default_work_type'] = '祝日'
-                print(f"DEBUG: FormPartialView - API 공휴일 발견: {selected_date_str} -> 祝日")
+                print(f"DEBUG: FormPartialView - API 祝日発見: {selected_date_str} -> 祝日")
             else:
                 # 曜日別の基本勤務区分の設定
                 day_of_week = selected_date.weekday()  # 0=月曜日, 6=日曜日
@@ -529,12 +536,26 @@ class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
                     context['default_work_type'] = '休日'
                 else:  # 平日
                     context['default_work_type'] = '出勤'
-                print(f"DEBUG: FormPartialView - 요일별 기본 구분: {selected_date_str} -> {context['default_work_type']}")
+                print(f"DEBUG: FormPartialView - 曜日別基本区分: {selected_date_str} -> {context['default_work_type']}")
         else:
             context['default_work_type'] = None
         
-        # daily_form 作成 (monthly_dataがない場合はdisabled)
+        # daily_form 作成 (monthly_dataがない場合は無効化)
         context['daily_form'] = DailyAttendanceForm(disabled=monthly_data is None)
+        
+        # Calendar 객체를 별도로 전달 (HTML에서 start_time, end_time 접근용)
+        if monthly_data and monthly_data.base_calendar:
+            try:
+                from ..models import Calendar
+                # base_calendar가 문자열인 경우 calendar_name으로 찾기
+                calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
+                if calendar_obj:
+                    context['calendar_obj'] = calendar_obj
+                    print(f"DEBUG: FormPartialView - Calendar 객체 전달: {calendar_obj.calendar_name} ({calendar_obj.start_time} - {calendar_obj.end_time})")
+                else:
+                    print(f"DEBUG: FormPartialView - Calendar를 찾을 수 없음: {monthly_data.base_calendar}")
+            except Exception as e:
+                print(f"DEBUG: FormPartialView - Calendar 조회 오류: {e}")
         
         return context
 
