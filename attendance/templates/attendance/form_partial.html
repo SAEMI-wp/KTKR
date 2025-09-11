@@ -11,7 +11,8 @@
         <h3 id="daily-entry-title">勤怠登録</h3>
         <button id="normal-hours-btn" class="btn-normal" title="通常勤務時間を設定" 
                 {# {% if not monthly_data %}disabled{% endif %} #}
-                data-base-calendar="{% if monthly_data %}{{ monthly_data.base_calendar }}{% endif %}">
+                data-start-time="{% if calendar_obj %}{{ calendar_obj.start_time|date:'H:i' }}{% endif %}"
+                data-end-time="{% if calendar_obj %}{{ calendar_obj.end_time|date:'H:i' }}{% endif %}">
             <i class="fa-solid fa-clock"></i> 通常
         </button>
     </div>
@@ -25,7 +26,6 @@
                     <button type="button" id="day-arrow-left" class="day-arrow">&lt; 前の日</button>
                     <div class="date-full">
                         <span id="day-display">{{ selected_date|date:"Y/n/j" }}</span>
-                        <!-- DEBUG: selected_date = {{ selected_date }} -->
                     </div>
                     <input type="hidden" id="day-input-hidden" name="day" value="{{ selected_date|date:'j' }}">
                     <button type="button" id="day-arrow-right" class="day-arrow">次の日 &gt;</button>
@@ -62,12 +62,6 @@
                                 <strong>年休(半)</strong>: 半日年次有給休暇を取得すること。
                             </div>
                             <div class="worktype-item">
-                                <strong>代休(勤)</strong>: 休日出勤し、代わりに休みを取得する権利が発生すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>代休(休)</strong>: 休日出勤の代わりに、休みを取得すること。
-                            </div>
-                            <div class="worktype-item">
                                 <strong>振替(勤)</strong>: 休日と勤務日を入れ替えて、休日に勤務すること。
                             </div>
                             <div class="worktype-item">
@@ -78,6 +72,9 @@
                             </div>
                             <div class="worktype-item">
                                 <strong>欠勤</strong>: 無断、または正当な理由なく休むこと。
+                            </div>
+                            <div class="worktype-item">
+                                <strong>代休</strong>: 休日出勤の代わりに、休みを取得すること。
                             </div>
                             <div class="worktype-item">
                                 <strong>休日</strong>: 会社が定めた、通常の休日。
