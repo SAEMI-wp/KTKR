@@ -52,15 +52,45 @@
                 <strong class="value">{{ monthly_data.total_regular_work_hours|floatformat:2 }}h / {{ monthly_data.total_deduction_hours|floatformat:2 }}h</strong>
             </div>
             <div class="monthly-info-item">
-                <span class="label">残業:</span> 
+                <span class="label">
+                    <span class="overtime-help-icon" id="overtime-help-icon" title="残業時間の説明">
+                    <i class="fa-solid fa-circle-question"></i>
+                    </span>
+                     残業:
+                </span>
                 <strong class="value">{{ monthly_data.total_overtime_hours|floatformat:2 }}h</strong>
             </div>
             <div class="monthly-info-item">
                 <span class="label">深夜:</span> 
                 <strong class="value">{{ monthly_data.total_late_night_overtime_hours|floatformat:2 }}h</strong>
+        </div>
+    </div>
+</div>
+
+<!-- 残業時間のツールチップ（中央モーダル） -->
+<div class="overtime-tooltip-modal" id="overtime-tooltip-modal" style="display:none;">
+    <div class="modal-overlay" id="overtime-modal-overlay"></div>
+    <div class="modal-content">
+        <div class="tooltip-content">
+            <button type="button" class="tooltip-close-btn" id="overtime-tooltip-close" title="閉じる">&times;</button>
+            <div class="tooltip-title">残業/休憩/深夜</div>
+            <div class="tooltip-body">
+                <div class="overtime-item">
+                    <strong>残業時間(30分)</strong>: 実際の勤務時間 - 標準勤務時間 - 休憩時間 - 深夜時間
+                </div>
+                <div class="overtime-item">
+                    <strong>休憩時間</strong>: (H大甕:17:10～17:25)<br>19:30～20:00、22:00～22:30、03:00～03:30
+                </div>
+                <div class="overtime-item">
+                    <strong>深夜残業</strong>: 22:00～05:00
+                </div>
+                <div class="overtime-item">
+                    <strong>注意</strong>: 月の残業時間は 45時間を超えることはできません。
+                </div>
             </div>
         </div>
     </div>
+</div>
 </section>
 {% else %}
 <div class="no-data-prompt">

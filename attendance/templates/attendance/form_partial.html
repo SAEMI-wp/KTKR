@@ -46,51 +46,6 @@
                             {% endif %}>{{ display }}</option>
                     {% endfor %}
                 </select>
-                <!-- 勤務区分のツールチップ（内容は後で追加） -->
-                <div class="worktype-tooltip" id="worktype-tooltip" style="display:none;">
-                    <div class="tooltip-content">
-                        <button type="button" class="tooltip-close-btn" id="worktype-tooltip-close" title="閉じる">&times;</button>
-                        <div class="tooltip-title">勤務区分の説明</div>
-                        <div class="tooltip-body">
-                            <div class="worktype-item">
-                                <strong>出勤</strong>: 休暇や欠勤ではない、通常の勤務。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>年休</strong>: 年次有給休暇を取得すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>年休(半)</strong>: 半日年次有給休暇を取得すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>振替(勤)</strong>: 休日と勤務日を入れ替えて、休日に勤務すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>振替(休)</strong>: 振替休日を取得すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>特別休暇</strong>: 慶弔など、特別な理由による休暇。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>欠勤</strong>: 無断、または正当な理由なく休むこと。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>代休</strong>: 休日出勤の代わりに、休みを取得すること。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>休日</strong>: 会社が定めた、通常の休日。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>休日(法)</strong>: 法律で定められた休日。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>祝日</strong>: 国民の祝日。
-                            </div>
-                            <div class="worktype-item">
-                                <strong>その他</strong>: 上記に該当しない勤務・休暇。
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="form-group">
                 <label for="{{ daily_form.start_time.id_for_label }}">作業開始時刻</label>
@@ -171,4 +126,52 @@
         <p><i class="fa-solid fa-info-circle"></i> 月別情報を先に登録してください。</p>
     </div>
     {% endif %}
+    
+    <!-- 勤務区分のツールチップ（中央モーダル） -->
+    <div class="worktype-tooltip" id="worktype-tooltip" style="display:none;">
+        <div class="modal-content">
+            <div class="tooltip-content">
+                <button type="button" class="tooltip-close-btn" id="worktype-tooltip-close" title="閉じる">&times;</button>
+                <div class="tooltip-title">勤務区分の説明</div>
+                <div class="tooltip-body">
+                <div class="worktype-item">
+                    <strong>出勤</strong>: 休暇や欠勤ではない、通常の勤務。
+                </div>
+                <div class="worktype-item">
+                    <strong>年休</strong>: 年次有給休暇を取得すること。
+                </div>
+                <div class="worktype-item">
+                    <strong>年休(半)</strong>: 半日年次有給休暇を取得すること。
+                </div>
+                <div class="worktype-item">
+                    <strong>振替(勤)</strong>: 休日と勤務日を入れ替えて、休日に勤務すること。
+                </div>
+                <div class="worktype-item">
+                    <strong>振替(休)</strong>: 振替休日を取得すること。
+                </div>
+                <div class="worktype-item">
+                    <strong>特別休暇</strong>: 慶弔など、特別な理由による休暇。
+                </div>
+                <div class="worktype-item">
+                    <strong>欠勤</strong>: 無断、または正当な理由なく休むこと。
+                </div>
+                <div class="worktype-item">
+                    <strong>代休</strong>: 休日出勤の代わりに、休みを取得すること。
+                </div>
+                <div class="worktype-item">
+                    <strong>休日</strong>: 会社が定めた、通常の休日。
+                </div>
+                <div class="worktype-item">
+                    <strong>休日(法)</strong>: 法律で定められた休日。
+                </div>
+                <div class="worktype-item">
+                    <strong>祝日</strong>: 国民の祝日。
+                </div>
+                <div class="worktype-item">
+                    <strong>その他</strong>: 上記に該当しない勤務・休暇。
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section> 
