@@ -77,7 +77,7 @@
     margin-top: 2px;
 }
 
-/* DB holidays_db - base_calendar(Techave, H大甕 등) */
+/* DB holidays_db - calendar_name(Techave, H大甕 등) */
 .calendar-table .holiday-cat-item.db.base {
     color: #1976d2;
     font-weight: bold;
