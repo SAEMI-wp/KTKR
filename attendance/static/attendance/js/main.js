@@ -1792,7 +1792,7 @@ function updateYearMonthPicker(year) {
     }
 
     /**
-     * DB holidays_db에서 공통/개별(base_calendar) 공휴일을 캘린더에 표시
+     * DB holidays_db에서 공통/개별(calendar_name) 공휴일을 캘린더에 표시
      * 데이터베이스에 저장된 공휴일 정보를 캘린더 셀에 적용
      */
     function applyDbHolidaysToCalendar() {
@@ -2527,7 +2527,7 @@ const MonthlyUpdateModalModule = {
         if (detailStrongs.length >= 4) {
             if (projectNameInput) projectNameInput.value = detailStrongs[0].textContent.trim();
             
-            // base_calendar는 data-calendar-id 속성에서 ID를 직접 가져오기
+            // calendar_id는 data-calendar-id 속성에서 ID를 직접 가져오기
             const calendarElement = detailStrongs[1];
             const calendarId = calendarElement.getAttribute('data-calendar-id');
             console.log(`[MONTHLY_UPDATE] 찾는 Calendar ID: "${calendarId}"`);
@@ -2682,7 +2682,7 @@ function bindMonthlyUpdateModalFieldLogic() {
         // 昼休み区分은 readonly 유지 (기준카레더에 따라 자동 설정되므로)
         ['input', 'change', 'keydown'].forEach(evt => {
             lunchBreak.addEventListener(evt, e => { 
-                if (e.type === 'change' && e.target === baseCalendar) return; // base_calendar 변경은 허용
+                if (e.type === 'change' && e.target === baseCalendar) return; // calendar 변경은 허용
                 e.preventDefault(); 
                 e.stopPropagation(); 
                 return false; 
