@@ -107,7 +107,13 @@
                 </div>
             </div>
             <div class="form-group-full">
-                <label for="{{ daily_form.notes.id_for_label }}">実施作業内容/備考</label>
+                <div class="label-with-button">
+                    <label for="{{ daily_form.notes.id_for_label }}">実施作業内容/備考</label>
+                    <button type="button" class="zaitaku-btn" onclick="addZaitakuToNotes()" 
+                            {% if not monthly_data %}disabled{% endif %} title="在宅を備考に追加">
+                        在宅
+                    </button>
+                </div>
                 <textarea name="notes" id="{{ daily_form.notes.id_for_label }}" 
                           {% if not monthly_data %}disabled{% endif %}>{% if selected_daily_data and selected_daily_data.notes %}{{ selected_daily_data.notes }}{% endif %}</textarea>
             </div>
