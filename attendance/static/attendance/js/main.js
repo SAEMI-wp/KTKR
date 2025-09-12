@@ -2404,6 +2404,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 날짜 변경 시에만 updateMonthlyDataWarning() 호출됨
     setupEmailSendLogic(); // メール送信ロジックの初期化
     setupFileTypeModalEvents(); // ファイル選択モーダルイベントの初期化
+    setupOvertimeTooltip(); // 残業時間ツールチップの初期化
+    setupWorkTypeTooltip(); // 勤務区分ツールチップの初期化
     setupPrintPreviewLogic(); // 印刷プレビューボタンの初期化
     
     // 初期設定 (一度だけ実行)
@@ -2841,40 +2843,167 @@ if (appPasswordHelpIcon && appPasswordTooltip) {
 // ===================== 勤務区分ヘルプ =====================
 const worktypeHelpIcon = document.getElementById('worktype-help-icon');
 const worktypeTooltip = document.getElementById('worktype-tooltip');
-if (worktypeHelpIcon && worktypeTooltip) {
-    // ヘルプアイコンをクリックでツールチップを必ず表示（トグルしない）
-    worktypeHelpIcon.addEventListener('click', function(e) {
-        e.stopPropagation();
-        // 位置調整（?アイコンの右隣・同じ高さに表示）
-        worktypeTooltip.style.top = worktypeHelpIcon.offsetTop + 'px';
-        worktypeTooltip.style.left = (worktypeHelpIcon.offsetLeft + worktypeHelpIcon.offsetWidth + 8) + 'px';
-        worktypeTooltip.style.display = 'block';
-    });
-    // フォーカスでも開く
-    worktypeHelpIcon.addEventListener('focus', function(e) {
-        worktypeTooltip.style.display = 'block';
-    });
-    // Xボタンで閉じる
-    const worktypeTooltipCloseBtn = document.getElementById('worktype-tooltip-close');
-    if (worktypeTooltipCloseBtn) {
-        worktypeTooltipCloseBtn.addEventListener('click', function(e) {
-            worktypeTooltip.style.display = 'none';
-        });
-    }
-    // 外部クリックでツールチップを閉じる
-    document.addEventListener('mousedown', function(e) {
-        if (worktypeTooltip.style.display === 'block') {
-            if (!worktypeTooltip.contains(e.target) && !worktypeHelpIcon.contains(e.target)) {
-                worktypeTooltip.style.display = 'none';
+
+// ===================== 残業時間ヘルプ =====================
+function setupOvertimeTooltip() {
+    console.log('[OVERTIME] 툴팁 이벤트 위임 설정 시작');
+    
+    // 이벤트 위임을 사용해서 동적으로 생성되는 요소에도 대응
+    document.addEventListener('click', function(e) {
+        // 잔업 시간 도움말 아이콘 클릭
+        if (e.target.closest('#overtime-help-icon')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[OVERTIME] 클릭 이벤트 발생');
+            
+            const modal = document.getElementById('overtime-tooltip-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                console.log('[OVERTIME] 모달 표시');
+            } else {
+                console.warn('[OVERTIME] 모달 요소를 찾을 수 없습니다');
+            }
+        }
+        
+        // 닫기 버튼 클릭
+        if (e.target.closest('#overtime-tooltip-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[OVERTIME] 닫기 버튼 클릭');
+            
+            const modal = document.getElementById('overtime-tooltip-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('[OVERTIME] 모달 숨김');
+            }
+        }
+        
+        // 오버레이 클릭
+        if (e.target.closest('#overtime-modal-overlay')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[OVERTIME] 오버레이 클릭');
+            
+            const modal = document.getElementById('overtime-tooltip-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('[OVERTIME] 모달 숨김');
             }
         }
     });
-    // Escキーで閉じる
+    
+    // 포커스 이벤트도 이벤트 위임으로 처리
+    document.addEventListener('focus', function(e) {
+        if (e.target.closest('#overtime-help-icon')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[OVERTIME] 포커스 이벤트 발생');
+            
+            const modal = document.getElementById('overtime-tooltip-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                console.log('[OVERTIME] 모달 표시');
+            }
+        }
+    }, true);
+    
+    // ESC 키로 닫기
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            worktypeTooltip.style.display = 'none';
+            const modal = document.getElementById('overtime-tooltip-modal');
+            if (modal && modal.style.display === 'flex') {
+                console.log('[OVERTIME] ESC 키 눌림');
+                modal.style.display = 'none';
+            }
         }
     });
+    
+    console.log('[OVERTIME] 툴팁 이벤트 위임 설정 완료');
+}
+
+// 근무 구분 툴팁 이벤트 위임 설정
+function setupWorkTypeTooltip() {
+    console.log('[WORKTYPE] 툴팁 이벤트 위임 설정 시작');
+    
+    // 이벤트 위임을 사용해서 동적으로 생성되는 요소에도 대응
+    document.addEventListener('click', function(e) {
+        // 근무 구분 도움말 아이콘 클릭
+        if (e.target.closest('#worktype-help-icon')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[WORKTYPE] 클릭 이벤트 발생');
+            
+            const modal = document.getElementById('worktype-tooltip');
+            if (modal) {
+                modal.style.display = 'flex';
+                console.log('[WORKTYPE] 모달 표시');
+            } else {
+                console.warn('[WORKTYPE] 모달 요소를 찾을 수 없습니다');
+            }
+        }
+        
+        // 닫기 버튼 클릭
+        if (e.target.closest('#worktype-tooltip-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[WORKTYPE] 닫기 버튼 클릭');
+            
+            const modal = document.getElementById('worktype-tooltip');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('[WORKTYPE] 모달 숨김');
+            }
+        }
+        
+        // 모달 밖 클릭으로 닫기
+        const modal = document.getElementById('worktype-tooltip');
+        if (modal && modal.style.display === 'flex') {
+            // 모달이 열려있고, 모달 밖을 클릭했을 때
+            if (!e.target.closest('#worktype-tooltip')) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[WORKTYPE] 모달 밖 클릭');
+                modal.style.display = 'none';
+                console.log('[WORKTYPE] 모달 숨김');
+            }
+            // 모달 배경(오버레이) 클릭했을 때
+            else if (e.target.closest('#worktype-tooltip') && !e.target.closest('.modal-content')) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[WORKTYPE] 모달 배경 클릭');
+                modal.style.display = 'none';
+                console.log('[WORKTYPE] 모달 숨김');
+            }
+        }
+    });
+    
+    // 포커스 이벤트도 이벤트 위임으로 처리
+    document.addEventListener('focus', function(e) {
+        if (e.target.closest('#worktype-help-icon')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[WORKTYPE] 포커스 이벤트 발생');
+            
+            const modal = document.getElementById('worktype-tooltip');
+            if (modal) {
+                modal.style.display = 'flex';
+                console.log('[WORKTYPE] 모달 표시');
+            }
+        }
+    }, true);
+    
+    // ESC 키로 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('worktype-tooltip');
+            if (modal && modal.style.display === 'flex') {
+                console.log('[WORKTYPE] ESC 키 눌림');
+                modal.style.display = 'none';
+            }
+        }
+    });
+    
+    console.log('[WORKTYPE] 툴팁 이벤트 위임 설정 완료');
 }
 
 // ===================== 勤務区分・休日ユーティリティ =====================
