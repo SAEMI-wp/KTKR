@@ -305,10 +305,15 @@ class ExcelReportGenerator:
                         self.worksheet[f'{col}{current_row}'] = ""
                     
                     # 代休/振替の勤務日は常に表示
-                    if daily.alternative_work_date:
-                        self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
-                    else:
-                        self.worksheet[f'E{current_row}'] = ""
+                    alt_dates = []
+                    if daily.alternative_work_date1:
+                        alt_dates.append(daily.alternative_work_date1.strftime("%m/%d"))
+                    if daily.alternative_work_date2:
+                        alt_dates.append(daily.alternative_work_date2.strftime("%m/%d"))
+                    if daily.alternative_work_date3:
+                        alt_dates.append(daily.alternative_work_date3.strftime("%m/%d"))
+                    
+                    self.worksheet[f'E{current_row}'] = "\n".join(alt_dates) if alt_dates else ""
                     
                     # 実施作業内容・備考は常に表示
                     self.worksheet[f'M{current_row}'] = daily.notes or ""
@@ -316,10 +321,15 @@ class ExcelReportGenerator:
                 elif daily.start_time and daily.end_time and daily.start_time != daily.end_time:
                     try:
                         # 代休/振替の勤務日
-                        if daily.alternative_work_date:
-                            self.worksheet[f'E{current_row}'] = daily.alternative_work_date.strftime("%m/%d")
-                        else:
-                            self.worksheet[f'E{current_row}'] = ""
+                        alt_dates = []
+                        if daily.alternative_work_date1:
+                            alt_dates.append(daily.alternative_work_date1.strftime("%m/%d"))
+                        if daily.alternative_work_date2:
+                            alt_dates.append(daily.alternative_work_date2.strftime("%m/%d"))
+                        if daily.alternative_work_date3:
+                            alt_dates.append(daily.alternative_work_date3.strftime("%m/%d"))
+                        
+                        self.worksheet[f'E{current_row}'] = "\n".join(alt_dates) if alt_dates else ""
                         # 作業開始時刻 (앞의 0 제거)
                         start_time_str = daily.start_time.strftime("%H:%M")
                         if start_time_str.startswith("0"):

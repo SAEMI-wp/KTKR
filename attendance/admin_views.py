@@ -106,7 +106,7 @@ def employee_detail_view(request, employee_no, year=None, month=None):
         user = request.user
         employee = get_object_or_404(Employee, employee_no=employee_no)
         
-        # 권한 체크
+        # 権限チェック
         if not can_access_employee_data(user, employee):
             raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
         
@@ -251,7 +251,9 @@ def employee_detail_view(request, employee_no, year=None, month=None):
                     work_type=daily.work_type,
                     start_time=daily.start_time,
                     end_time=daily.end_time,
-                    alternative_work_date=daily.alternative_work_date,
+                    alternative_work_date1=daily.alternative_work_date1,
+                    alternative_work_date2=daily.alternative_work_date2,
+                    alternative_work_date3=daily.alternative_work_date3,
                     notes=daily.notes,
                     is_required=daily.is_required,
                     is_confirmed=daily.is_confirmed,

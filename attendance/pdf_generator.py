@@ -170,7 +170,7 @@ class PDFReportGenerator:
             ["", "", ""],
             ["", "", ""],
             ["", "", ""]
-        ], colWidths=[15*mm, 15*mm, 15*mm])
+        ], colWidths=[13.5*mm, 13.5*mm, 13.5*mm])
 
         stamp_table.setStyle(TableStyle([
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),  # 바깥 테두리
@@ -277,9 +277,16 @@ class PDFReportGenerator:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
                     
                     # 代休/振替の勤務日は常に表示
-                    if daily.alternative_work_date:
-                        alt_date_str = f"{daily.alternative_work_date.month}/{daily.alternative_work_date.day}"
-                        row_data.append(Paragraph(alt_date_str, self.styles.STYLES['NormalCenter']))
+                    alt_dates = []
+                    if daily.alternative_work_date1:
+                        alt_dates.append(f"{daily.alternative_work_date1.month}/{daily.alternative_work_date1.day}")
+                    if daily.alternative_work_date2:
+                        alt_dates.append(f"{daily.alternative_work_date2.month}/{daily.alternative_work_date2.day}")
+                    if daily.alternative_work_date3:
+                        alt_dates.append(f"{daily.alternative_work_date3.month}/{daily.alternative_work_date3.day}")
+                    
+                    if alt_dates:
+                        row_data.append(Paragraph("<br/>".join(alt_dates), self.styles.STYLES['NormalCenter']))
                     else:
                         row_data.append('')
                     
@@ -292,9 +299,16 @@ class PDFReportGenerator:
                 else:
                     row_data.append(Paragraph(work_type if work_type != "出勤" else "", self.styles.STYLES['NormalCenter']))
                     # 代休/振替の勤務日: 8/1 형식으로 변경 (앞의 0 제거)
-                    if daily.alternative_work_date:
-                        alt_date_str = f"{daily.alternative_work_date.month}/{daily.alternative_work_date.day}"
-                        row_data.append(Paragraph(alt_date_str, self.styles.STYLES['NormalCenter']))
+                    alt_dates = []
+                    if daily.alternative_work_date1:
+                        alt_dates.append(f"{daily.alternative_work_date1.month}/{daily.alternative_work_date1.day}")
+                    if daily.alternative_work_date2:
+                        alt_dates.append(f"{daily.alternative_work_date2.month}/{daily.alternative_work_date2.day}")
+                    if daily.alternative_work_date3:
+                        alt_dates.append(f"{daily.alternative_work_date3.month}/{daily.alternative_work_date3.day}")
+                    
+                    if alt_dates:
+                        row_data.append(Paragraph("<br/>".join(alt_dates), self.styles.STYLES['NormalCenter']))
                     else:
                         row_data.append(Paragraph("", self.styles.STYLES['NormalCenter']))
                     # 작업시작시각 (앞의 0 제거)
