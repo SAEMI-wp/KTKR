@@ -127,7 +127,7 @@ def employee_detail_view(request, employee_no, year=None, month=None):
         daily_list = []
     # 잔업시간, 유급휴가(임시: 0)
     overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
-    paid_leave_used = sum([1 for d in daily_list if d.work_type and '有給' in d.work_type])
+    paid_leave_used = sum([1 for d in daily_list if d.work_type and '年休' in d.work_type])
     # 월 이동용
     prev_month = (date(year, month, 1).replace(day=1) - timezone.timedelta(days=1))
     next_month = (date(year, month, monthrange(year, month)[1]) + timezone.timedelta(days=1))

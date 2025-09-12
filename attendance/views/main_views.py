@@ -240,14 +240,10 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
                     print(f"DEBUG: Week {week_idx}, Day {day_idx}: {day['date']} (data-date will be: {day['date'].strftime('%Y-%m-%d')})")
 
         # holidays_db: 3개월분(전월, 당월, 다음월) 휴일 정보를 DB에서 가져와서 context에 추가
-        base_calendar = None
-        if monthly_data and monthly_data.base_calendar:
-            if hasattr(monthly_data.base_calendar, 'calendar_name'):
-                base_calendar = monthly_data.base_calendar.calendar_name
-            else:
-                # base_calendar가 문자열인 경우 (이전 데이터)
-                base_calendar = str(monthly_data.base_calendar)
-        holidays_db, api_holiday_set = self._get_holiday_data(calendar_date, base_calendar)
+        calendar_name = None
+        if monthly_data and monthly_data.calendar_name:
+            calendar_name = monthly_data.calendar_name
+        holidays_db, api_holiday_set = self._get_holiday_data(calendar_date, calendar_name)
         
         # API公休日情報をパースしてセット化
         import json as _json
@@ -355,7 +351,7 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
             calendar_data.append(week_data)
         return calendar_data
 
-    def _get_holiday_data(self, calendar_date, base_calendar=None):
+    def _get_holiday_data(self, calendar_date, calendar_name=None):
         """3か月分(前月, 当月, 翌月)の休日データをDBから取得します."""
         current_year = calendar_date.year
         current_month = calendar_date.month
@@ -376,8 +372,8 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
         
         # 基本カレンダー名を設定
         calendars = ['Techave']
-        if base_calendar and base_calendar not in calendars:
-            calendars.append(base_calendar)
+        if calendar_name and calendar_name not in calendars:
+            calendars.append(calendar_name)
         
         # DBから休日情報を取得
         # Calendar 테이블이存在しない場合は空のクエリセットを返す
@@ -544,16 +540,14 @@ class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
         context['daily_form'] = DailyAttendanceForm(disabled=monthly_data is None)
         
         # Calendar 객체를 별도로 전달 (HTML에서 start_time, end_time 접근용)
-        if monthly_data and monthly_data.base_calendar:
+        if monthly_data and monthly_data.calendar_id:
             try:
                 from ..models import Calendar
-                # base_calendar가 문자열인 경우 calendar_name으로 찾기
-                calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
-                if calendar_obj:
-                    context['calendar_obj'] = calendar_obj
-                    print(f"DEBUG: FormPartialView - Calendar 객체 전달: {calendar_obj.calendar_name} ({calendar_obj.start_time} - {calendar_obj.end_time})")
-                else:
-                    print(f"DEBUG: FormPartialView - Calendar를 찾을 수 없음: {monthly_data.base_calendar}")
+                calendar_obj = Calendar.objects.get(id=monthly_data.calendar_id)
+                context['calendar_obj'] = calendar_obj
+                print(f"DEBUG: FormPartialView - Calendar 객체 전달: {calendar_obj.calendar_name} ({calendar_obj.start_time} - {calendar_obj.end_time})")
+            except Calendar.DoesNotExist:
+                print(f"DEBUG: FormPartialView - Calendar를 찾을 수 없음: ID {monthly_data.calendar_id}")
             except Exception as e:
                 print(f"DEBUG: FormPartialView - Calendar 조회 오류: {e}")
         
@@ -690,7 +684,8 @@ class MonthlyDataAPIView(AjaxLoginRequiredMixin, View):
                 
                 data = {
                     'project_name': monthly_record.project_name,
-                    'base_calendar': monthly_record.base_calendar.calendar_name if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'calendar_name') else (str(monthly_record.base_calendar) if monthly_record.base_calendar else None),
+                    'calendar_id': monthly_record.base_calendar.id if monthly_record.base_calendar else None,
+                    'calendar_name': monthly_record.base_calendar.calendar_name if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'calendar_name') else None,
                     'break_minutes': monthly_record.base_calendar.break_minutes if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'break_minutes') else None,
                     'standard_work_hours': float(monthly_record.base_calendar.standard_work_hours) if monthly_record.base_calendar and hasattr(monthly_record.base_calendar, 'standard_work_hours') else None,
                     'work_days': monthly_record.work_days,

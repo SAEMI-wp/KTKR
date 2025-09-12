@@ -211,18 +211,9 @@ class DailyDataUpdateView(View):
                 message = '更新しました'
             else:
                 # 새 데이터 생성
-                # base_calendar가 문자열인 경우 처리
-                break_minutes = 60  # 기본값
-                standard_work_hours = 8.0  # 기본값
-                
-                if monthly_data.base_calendar:
-                    if hasattr(monthly_data.base_calendar, 'break_minutes'):
-                        # Calendar 객체인 경우
-                        break_minutes = monthly_data.base_calendar.break_minutes
-                        standard_work_hours = monthly_data.base_calendar.standard_work_hours
-                    else:
-                        # 문자열인 경우 기본값 사용
-                        print(f"Warning: base_calendar가 문자열입니다: {monthly_data.base_calendar}")
+                # 월별 데이터에서 break_minutes와 standard_work_hours 사용
+                break_minutes = monthly_data.break_minutes
+                standard_work_hours = monthly_data.standard_work_hours
                 
                 new_daily = DailyData(
                     date=target_date,
