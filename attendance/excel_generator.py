@@ -195,7 +195,7 @@ class ExcelReportGenerator:
         """월별 정보 데이터를 입력합니다."""
         # 상단 정보 (6-7행)
         self.worksheet['C6'] = "カレンダー : "
-        self.worksheet['E6'] = monthly_data.base_calendar
+        self.worksheet['E6'] = monthly_data.calendar_name
         
         self.worksheet['H6'] = "PJ名 : "
         self.worksheet.merge_cells('I6:L6')
@@ -271,7 +271,7 @@ class ExcelReportGenerator:
         
         # --- 日別データ入力ロジック修正 ---
         current_row = 12  # 初期化を追加
-        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)", "祝日"]
+        special_types = ["欠勤", "年休", "特別休暇", "振替(休)", "代休", "祝日"]
         for day in range(1, last_day + 1):
             if current_row > 42:
                 break
@@ -298,7 +298,7 @@ class ExcelReportGenerator:
                     self.worksheet[f'D{current_row}'] = ""
                 else:
                     self.worksheet[f'D{current_row}'] = work_type
-                # 欠勤, 有給, 特別休暇, 振替(休), 代休(休)または出勤/退勤時間が同じ場合の処理
+                # 欠勤, 年休, 特別休暇, 振替(休), 代休または出勤/退勤時間が同じ場合の処理
                 if work_type in special_types or (daily.start_time and daily.end_time and daily.start_time == daily.end_time):
                     # 時間関連項目(F~L)は空欄にする
                     for col in ['F', 'G', 'H', 'I', 'J', 'K', 'L']:

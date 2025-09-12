@@ -46,7 +46,8 @@ def cache_monthly_data(employee_id: str, year: str, month: str, monthly_data: Mo
         'year': monthly_data.year,
         'month': monthly_data.month,
         'project_name': monthly_data.project_name,
-        'base_calendar': monthly_data.base_calendar,
+        'calendar_id': monthly_data.calendar_id,
+        'calendar_name': monthly_data.calendar_name,
         'break_minutes': monthly_data.break_minutes,
         'standard_work_hours': monthly_data.standard_work_hours,
         'daily_list': []
@@ -133,9 +134,12 @@ def get_cached_monthly_data(employee_id: str, year: str, month: str) -> Optional
             year=data_dict['year'],
             month=data_dict['month'],
             project_name=data_dict['project_name'],
-            base_calendar=data_dict['base_calendar'],
-            break_minutes=data_dict['break_minutes'],
-            standard_work_hours=data_dict['standard_work_hours'],
+            calendar_id=data_dict.get('calendar_id'),
+            calendar_name=data_dict.get('calendar_name'),
+            break_minutes=data_dict.get('break_minutes', 60),  # 기본값 60
+            standard_work_hours=data_dict.get('standard_work_hours', 8.0),  # 기본값 8.0
+            standard_start_time=datetime.fromisoformat(data_dict['standard_start_time']).time() if data_dict.get('standard_start_time') else None,
+            standard_end_time=datetime.fromisoformat(data_dict['standard_end_time']).time() if data_dict.get('standard_end_time') else None,
             daily_list=daily_list
         )
         
@@ -289,9 +293,12 @@ def set_monthly_attendance(employee_id, year, month, obj):
         'year': obj.year,
         'month': obj.month,
         'project_name': obj.project_name,
-        'base_calendar': obj.base_calendar,
+        'calendar_id': obj.calendar_id,
+        'calendar_name': obj.calendar_name,
         'break_minutes': obj.break_minutes,
         'standard_work_hours': obj.standard_work_hours,
+        'standard_start_time': obj.standard_start_time.isoformat() if obj.standard_start_time else None,
+        'standard_end_time': obj.standard_end_time.isoformat() if obj.standard_end_time else None,
         'is_confirmed': obj.is_confirmed,
         'is_required': obj.is_required,
     }

@@ -194,7 +194,7 @@ class PDFReportGenerator:
             # 3行：会社名(左)、年月(中央)
             [Paragraph("(株)TEchAve", ParagraphStyle('CompanyLeft', parent=S['Company'], alignment=TA_LEFT)), '', Paragraph(f"{self.year}年 {self.month}月", S['Header']), '', ''],
             # 4行：カレンダー、基準時間、PJ名 等
-            [Paragraph(f"カレンダー：{monthly_data.base_calendar or ''}", S['Normal']), Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', ''],
+            [Paragraph(f"カレンダー：{monthly_data.calendar_name or ''}", S['Normal']), Paragraph(f"基準時間：{monthly_data.standard_work_hours}Hr", S['Normal']), Paragraph(f"PJ名：{monthly_data.project_name or ''}", S['Normal']), '', ''],
             # 5行：昼休み区分、作成者名 等
             [Paragraph(f"昼休み区分：{monthly_data.break_minutes}分間", S['Normal']), Paragraph(f"作成者：{self.employee.display_name or self.employee.employee_no}", S['Normal']), '', '', '']
         ]
@@ -246,7 +246,7 @@ class PDFReportGenerator:
         # 合計計算用変数
         sums = {'H': 0.0, 'I': 0.0, 'J': 0.0, 'K': 0.0, 'L': 0.0}
 
-        special_types = ["欠勤", "有給", "特別休暇", "振替(休)", "代休(休)"]
+        special_types = ["欠勤", "年休", "特別休暇", "振替(休)", "代休"]
         # 日次データ行を追加
         for day in range(1, last_day + 1):
             calendar_date = date(self.year, self.month, day)

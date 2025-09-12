@@ -8,7 +8,7 @@ import urllib.parse
 def convert_daily_to_structure(daily_model: AttendanceDaily, 
                               break_minutes: int = 60,
                               standard_work_hours: float = 8.0) -> DailyData:
-    """AttendanceDaily 모델을 DailyData 구조체로 변환 (break_minutes는 분 단위)"""
+    """AttendanceDailyモデルをDailyData構造体に変換"""
     return DailyData(
         date=daily_model.date,
         work_type=daily_model.work_type,
@@ -25,18 +25,35 @@ def convert_daily_to_structure(daily_model: AttendanceDaily,
     )
 
 def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyData:
-    """AttendanceMonthly 모델을 MonthlyData 구조체로 변환"""
-    # 일별 데이터 리스트 생성
+    """AttendanceMonthlyモデルをMonthlyData構造体に変換"""
+    # 日別データリストを作成
     daily_list = []
     daily_models = AttendanceDaily.objects.filter(
         monthly_attendance=monthly_model
     ).order_by('date')
     
+    # base_calendar属性を安全に取得
+    base_calendar = monthly_model.base_calendar
+    calendar_id = None
+    calendar_name = None
+    break_minutes = 60  # default
+    standard_work_hours = 8.0  # default
+    standard_start_time = None
+    standard_end_time = None
+    
+    if base_calendar:
+        calendar_id = base_calendar.id
+        calendar_name = getattr(base_calendar, 'calendar_name', None) or str(base_calendar)
+        break_minutes = getattr(base_calendar, 'break_minutes', 60)
+        standard_work_hours = getattr(base_calendar, 'standard_work_hours', 8.0)
+        standard_start_time = getattr(base_calendar, 'start_time', None)
+        standard_end_time = getattr(base_calendar, 'end_time', None)
+    
     for daily_model in daily_models:
         daily_data = convert_daily_to_structure(
             daily_model,
-            break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar else 60,
-            standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar else 8.0
+            break_minutes=break_minutes,
+            standard_work_hours=standard_work_hours
         )
         daily_list.append(daily_data)
     
@@ -45,9 +62,12 @@ def convert_monthly_to_structure(monthly_model: AttendanceMonthly) -> MonthlyDat
         year=monthly_model.year,
         month=monthly_model.month,
         project_name=monthly_model.project_name,
-        base_calendar=monthly_model.base_calendar.calendar_name if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'calendar_name') else (str(monthly_model.base_calendar) if monthly_model.base_calendar else None),
-        break_minutes=monthly_model.base_calendar.break_minutes if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'break_minutes') else 60,
-        standard_work_hours=monthly_model.base_calendar.standard_work_hours if monthly_model.base_calendar and hasattr(monthly_model.base_calendar, 'standard_work_hours') else 8.0,
+        calendar_id=calendar_id,
+        calendar_name=calendar_name,
+        break_minutes=break_minutes,
+        standard_work_hours=standard_work_hours,
+        standard_start_time=standard_start_time,
+        standard_end_time=standard_end_time,
         daily_list=daily_list
     )
 
@@ -67,14 +87,22 @@ def get_monthly_structure(employee: Employee, year: str, month: str) -> Optional
 
 def create_monthly_structure(employee: Employee, year: str, month: str) -> MonthlyData:
     """月別構造体を新規作成"""
+    # デフォルトのCalendarを取得
+    default_calendar = Calendar.objects.first()
+    if not default_calendar:
+        # Calendarが存在しない場合は作成
+        default_calendar = Calendar.objects.create(
+            calendar_name='基準',
+            break_minutes=60,
+            standard_work_hours=8.0
+        )
+    
     monthly_model = AttendanceMonthly.objects.create(
         employee=employee,
         year=year,
         month=month.zfill(2),
         project_name='',
-        base_calendar='基準',
-        break_minutes=60,
-        standard_work_hours=8.00
+        base_calendar=default_calendar
     )
     monthly_data = convert_monthly_to_structure(monthly_model)
     monthly_data.calculate_all_daily_hours()
@@ -85,15 +113,15 @@ def get_or_create_monthly_structure(employee: Employee, year: str, month: str) -
     return get_monthly_structure(employee, year, month) or create_monthly_structure(employee, year, month)
 
 def save_daily_from_structure(daily_data: DailyData, monthly_model: AttendanceMonthly) -> AttendanceDaily:
-    """DailyData 구조체를 DB에 저장"""
-    # 기존 데이터가 있는지 확인
+    """DailyData構造体をDBに保存"""
+    # 既存のデータがあるか確認
     existing_daily = AttendanceDaily.objects.filter(
         monthly_attendance=monthly_model,
         date=daily_data.date
     ).first()
     
     if existing_daily:
-        # 기존 데이터 업데이트
+        # 既存のデータを更新
         existing_daily.work_type = daily_data.work_type
         existing_daily.start_time = daily_data.start_time
         existing_daily.end_time = daily_data.end_time
@@ -121,56 +149,36 @@ def save_daily_from_structure(daily_data: DailyData, monthly_model: AttendanceMo
             is_required=daily_data.is_required,
         )
 
+def _get_calendar_object(calendar_id=None):
+    """CalendarオブジェクトをIDで安全に取得"""
+    if calendar_id:
+        try:
+            return Calendar.objects.get(id=calendar_id)
+        except Calendar.DoesNotExist:
+            pass
+    
+    # デフォルトのCalendar使用
+    return Calendar.objects.first()
+
 def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee) -> AttendanceMonthly:
-    """MonthlyData 구조체를 DB에 저장/업데이트"""
-    # 기존 월별 데이터 조회
+    """MonthlyData構造体をDBに保存/更新"""
+    # 既存の月別データを取得
     monthly_model = AttendanceMonthly.objects.filter(
         employee=employee,
         year=monthly_data.year,
         month=monthly_data.month
     ).first()
     
+    # calendarオブジェクトを安全に取得
+    calendar_obj = _get_calendar_object(calendar_id=monthly_data.calendar_id)
+    
     if monthly_model:
-        # 기존 데이터 업데이트
+        # 既存のデータを更新
         monthly_model.project_name = monthly_data.project_name
-        # base_calendar는 Calendar 객체로 설정해야 함
-        if monthly_data.base_calendar:
-            try:
-                # Calendar 객체인 경우 그대로 사용
-                if hasattr(monthly_data.base_calendar, 'id'):
-                    calendar_obj = monthly_data.base_calendar
-                elif isinstance(monthly_data.base_calendar, str):
-                    # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
-                    calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
-                else:
-                    # 숫자인 경우 id로 찾기
-                    calendar_obj = Calendar.objects.get(id=monthly_data.base_calendar)
-                monthly_model.base_calendar = calendar_obj
-            except Calendar.DoesNotExist:
-                # 기본 Calendar 사용
-                calendar_obj = Calendar.objects.first()
-                if calendar_obj:
-                    monthly_model.base_calendar = calendar_obj
+        monthly_model.base_calendar = calendar_obj
         monthly_model.save()
     else:
-        # 새 데이터 생성
-        # base_calendar 처리
-        calendar_obj = None
-        if monthly_data.base_calendar:
-            try:
-                # Calendar 객체인 경우 그대로 사용
-                if hasattr(monthly_data.base_calendar, 'id'):
-                    calendar_obj = monthly_data.base_calendar
-                elif isinstance(monthly_data.base_calendar, str):
-                    # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
-                    calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
-                else:
-                    # 숫자인 경우 id로 찾기
-                    calendar_obj = Calendar.objects.get(id=monthly_data.base_calendar)
-            except Calendar.DoesNotExist:
-                # 기본 Calendar 사용
-                calendar_obj = Calendar.objects.first()
-        
+        # 新しいデータを作成
         monthly_model = AttendanceMonthly.objects.create(
             employee=employee,
             year=monthly_data.year,
@@ -179,7 +187,7 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
             base_calendar=calendar_obj
         )
     
-    # 일별 데이터도 함께 저장
+    # 日別データも保存
     for daily_data in monthly_data.daily_list:
         save_daily_from_structure(daily_data, monthly_model)
     

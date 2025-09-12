@@ -581,8 +581,8 @@ class DailyData:
         # _calculate_regular_work_hoursで計算されたjyokin_workを再利用
         jyokin_work = getattr(self, '_cached_jyokin_work', 0.0)
         
-        # 有給(半)の場合特別処理
-        if self.work_type == "有給(半)":
+        # 年休(半)の場合特別処理
+        if self.work_type == "年休(半)":
             deduction = self.standard_work_hours - self.regular_work_hours - 4
         else:
             deduction = self.standard_work_hours - jyokin_work
@@ -698,9 +698,12 @@ class MonthlyData:
     year: str
     month: str
     project_name: str
-    base_calendar: str
-    break_minutes: int
-    standard_work_hours: float
+    calendar_id: int = None
+    calendar_name: str = None
+    break_minutes: int = 60
+    standard_work_hours: float = 8.0
+    standard_start_time: Optional[time] = None                      # 標準開始時刻
+    standard_end_time: Optional[time] = None                        # 標準終了時刻
     daily_list: List[DailyData] = field(default_factory=list)
     # 計算 (基本値 = 0)
     total_work_days: int = 0                                         # 出勤日
@@ -712,7 +715,6 @@ class MonthlyData:
             # 月別情報を日別データに伝達
             daily.break_minutes = self.break_minutes
             daily.standard_work_hours = self.standard_work_hours
-            daily.base_calendar = self.base_calendar
             daily.calculate_work_hours()
 
     @property
@@ -801,12 +803,12 @@ class MonthlyData:
 
     @property
     def paid_leave_days(self) -> float:
-        """年次有給: 有給(半)=0.5, 有給=1"""
+        """年次年休: 年休(半)=0.5, 年休=1"""
         total = 0.0
         for d in self.daily_list:
-            if d.work_type == "有給(半)":
+            if d.work_type == "年休(半)":
                 total += 0.5
-            elif d.work_type == "有給":
+            elif d.work_type == "年休":
                 total += 1.0
         return total
 
@@ -821,11 +823,16 @@ class MonthlyData:
         """無給日"""
         count = 0
         for d in self.daily_list:
-            if d.work_type == "代休(勤)":
-                if d.alternative_work_date1:
-                    if (d.date.year != d.alternative_work_date1.year) or (d.date.month != d.alternative_work_date1.month):
-                        count += 1
+            if d.work_type == "代休":
+                if d.alternative_work_date1 or d.alternative_work_date2 or d.alternative_work_date3:
+                    # 各alternative_work_dateを確認し、別の月であればカウント
+                    alternative_dates = [d.alternative_work_date1, d.alternative_work_date2, d.alternative_work_date3]
+                    for alt_date in alternative_dates:
+                        if alt_date:
+                            if (d.date.year != alt_date.year) or (d.date.month != alt_date.month):
+                                count += 1
+                                break  # 一つでも別の月であればカウントして次のdailyへ
                 else:
-                    # alternative_work_date1がない時もカウント
+                    # alternative_work_dateが一つもない場合はカウント
                     count += 1
         return round(float(count), 1)
