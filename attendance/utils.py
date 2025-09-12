@@ -136,8 +136,10 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         # base_calendar는 Calendar 객체로 설정해야 함
         if monthly_data.base_calendar:
             try:
-                # calendar_name이 아닌 calendar_id로 찾기
-                if isinstance(monthly_data.base_calendar, str):
+                # Calendar 객체인 경우 그대로 사용
+                if hasattr(monthly_data.base_calendar, 'id'):
+                    calendar_obj = monthly_data.base_calendar
+                elif isinstance(monthly_data.base_calendar, str):
                     # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
                     calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
                 else:
@@ -156,7 +158,10 @@ def update_monthly_from_structure(monthly_data: MonthlyData, employee: Employee)
         calendar_obj = None
         if monthly_data.base_calendar:
             try:
-                if isinstance(monthly_data.base_calendar, str):
+                # Calendar 객체인 경우 그대로 사용
+                if hasattr(monthly_data.base_calendar, 'id'):
+                    calendar_obj = monthly_data.base_calendar
+                elif isinstance(monthly_data.base_calendar, str):
                     # 문자열인 경우 calendar_name으로 찾기 (첫 번째 것 선택)
                     calendar_obj = Calendar.objects.filter(calendar_name=monthly_data.base_calendar).first()
                 else:
