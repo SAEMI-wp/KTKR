@@ -223,7 +223,7 @@ class MonthlyAttendanceUpdateView(View):
                 try:
                     from ..models import Calendar
                     calendar_obj = Calendar.objects.get(id=base_calendar_id)
-                    monthly_data.base_calendar = calendar_obj.calendar_name  # 문자열로 저장
+                    monthly_data.base_calendar = calendar_obj  # Calendar 객체로 저장
                     print(f"[MONTHLY_UPDATE] Calendar 설정: {calendar_obj.calendar_name} (ID: {base_calendar_id})")
                 except Calendar.DoesNotExist:
                     print(f"[MONTHLY_UPDATE] Calendar를 찾을 수 없음: ID {base_calendar_id}")
