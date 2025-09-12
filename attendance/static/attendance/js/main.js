@@ -3362,6 +3362,34 @@ function checkDayChange() {
     console.log(`[DAY_CHANGE] 開始時刻: ${startTime}, 終了時刻: ${endTime}, 日替り: ${isDayChange}`);
 }
 
+// 在宅ボタンクリック時の処理
+function addZaitakuToNotes() {
+    const notesTextarea = document.getElementById('id_notes');
+    if (!notesTextarea) {
+        console.error('[ZAITAKU] 備考テキストエリアが見つかりません');
+        return;
+    }
+    
+    const currentValue = notesTextarea.value;
+    const zaitakuText = ' 在宅';
+    
+    // 既に「在宅」が含まれているかチェック
+    if (currentValue.includes('在宅')) {
+        console.log('[ZAITAKU] 既に「在宅」が含まれています');
+        return;
+    }
+    
+    // 現在の値の末尾に「 在宅」を追加
+    const newValue = currentValue + zaitakuText;
+    notesTextarea.value = newValue;
+    
+    // テキストエリアにフォーカスを当ててカーソルを末尾に移動
+    notesTextarea.focus();
+    notesTextarea.setSelectionRange(newValue.length, newValue.length);
+    
+    console.log('[ZAITAKU] 備考に「在宅」を追加しました');
+}
+
 // DOM読み込み完了時に初期化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
