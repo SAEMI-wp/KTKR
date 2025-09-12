@@ -2523,16 +2523,24 @@ const MonthlyUpdateModalModule = {
         const standardTimeInput = document.getElementById('update-standard-time');
         
         // 상세정보 패널에서 strong 태그들 추출
-        const detailStrongs = document.querySelectorAll('.monthly-details-grid .detail-item strong');
+        const detailStrongs = document.querySelectorAll('.monthly-details-grid .monthly-info-item strong.value');
         if (detailStrongs.length >= 4) {
             if (projectNameInput) projectNameInput.value = detailStrongs[0].textContent.trim();
             
-            // base_calendar는 calendar_name으로 표시되지만, 실제로는 ID를 찾아서 설정해야 함
-            const calendarName = detailStrongs[1].textContent.trim();
-            console.log(`[MONTHLY_UPDATE] 찾는 Calendar 이름: "${calendarName}"`);
+            // base_calendar는 data-calendar-id 속성에서 ID를 직접 가져오기
+            const calendarElement = detailStrongs[1];
+            const calendarId = calendarElement.getAttribute('data-calendar-id');
+            console.log(`[MONTHLY_UPDATE] 찾는 Calendar ID: "${calendarId}"`);
             
-            if (baseCalendarInput) {
-                // calendar_name으로 해당하는 option을 찾아서 value(ID)를 설정
+            if (baseCalendarInput && calendarId) {
+                // ID로 직접 설정
+                baseCalendarInput.value = calendarId;
+                console.log(`[MONTHLY_UPDATE] Calendar 설정: ID ${calendarId}`);
+            } else if (baseCalendarInput) {
+                // ID가 없는 경우 기존 로직 사용 (calendar_name으로 찾기)
+                const calendarName = detailStrongs[1].textContent.trim().replace(/\s*\(ID:\s*\d+\)\s*$/, '');
+                console.log(`[MONTHLY_UPDATE] 찾는 Calendar 이름: "${calendarName}"`);
+                
                 const options = baseCalendarInput.querySelectorAll('option');
                 let foundCalendarId = null;
                 
@@ -2603,7 +2611,7 @@ const MonthlyUpdateModalModule = {
             if (data.status === 'success') {
                 MonthlyUpdateModalModule.close();
                 updateCalendarSection(currentState.calendarYear, currentState.calendarMonth);
-                // 폼 섹션도 업데이트하여 비활성화 상태 해제
+                // 폼 섹션도 업데이트하여 비활성화 상태 해제 및 통상 버튼 시간 업데이트
                 if (currentState.selectedDate) {
                     updateFormSection(currentState.selectedDate);
                 }
