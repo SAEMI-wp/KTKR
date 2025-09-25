@@ -69,6 +69,17 @@ function parseDate(dateStr) {
         return result;
     }
     
+    // 日本語形式 (YYYY年M月D日) 処理
+    const japaneseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (japaneseMatch) {
+        const year = parseInt(japaneseMatch[1]);
+        const month = parseInt(japaneseMatch[2]);
+        const day = parseInt(japaneseMatch[3]);
+        const result = new Date(year, month - 1, day);
+        console.log(`[PARSE] YYYY年M月D日 형식 파싱 결과: ${result}`);
+        return result;
+    }
+    
     console.error(`[PARSE] 지원하지 않는 날짜 형식: ${dateStr}`);
     return new Date(); // 기본값 반환
 }
@@ -1016,9 +1027,9 @@ async function handleFormSubmit(event) {
     const alternativeWorkDate1 = formData.get('alternative_work_date1');
     const alternativeWorkDate2 = formData.get('alternative_work_date2');
     const alternativeWorkDate3 = formData.get('alternative_work_date3');
-    const showTypes = ['年休', '年休(半)', '代休', '振替(勤)', '振替(休)', '休日', '休日(法)', '祝日'];
+    const requiredAltWorkTypes = ['代休', '振替(勤)', '振替(休)']; // 필수 입력이 필요한 근무구분들
     
-    if (showTypes.includes(workType) && !alternativeWorkDate1) {
+    if (requiredAltWorkTypes.includes(workType) && !alternativeWorkDate1) {
         showFormWarning('代休/振替の勤務日を入力してください。');
         const altInput = document.getElementById('alt-work-date-group')?.querySelector('input[type="date"]');
         if (altInput) {
