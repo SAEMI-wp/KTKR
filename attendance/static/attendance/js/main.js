@@ -1041,7 +1041,7 @@ async function handleFormSubmit(event) {
     // 3. 勤務時間のチェック (出勤, 退勤, 代休, 代休退勤の場合)
     const startTime = formData.get('start_time');
     const endTime = formData.get('end_time');
-    const workTypesRequiringTime = ['出勤', '代休', '振替(勤)'];
+    const workTypesRequiringTime = ['出勤', '振替(勤)'];
     
     if (workTypesRequiringTime.includes(workType)) {
         if (!startTime || !endTime) {
