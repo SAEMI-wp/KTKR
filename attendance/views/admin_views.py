@@ -159,72 +159,179 @@ def employee_detail_view(request, employee_no, year=None, month=None):
             print(f"공휴일 데이터 가져오기 오류: {e}")
             api_holiday_dates = set()
         
-        # 월별 리스트 데이터 생성 (main_views.py의 build_month_days_list 함수 사용)
-        from ..views.main_views import build_month_days_list
-        month_days_list = build_month_days_list(
-            employee,
-            year,
-            month,
-            api_holiday_dates
-        )
+        # 월별 리스트 데이터 생성 (main_views.py의 build_month_days_list 함수를 직접 구현)
+        try:
+            print(f"[DEBUG] build_month_days_list 호출 시작")
+            import calendar
+            from datetime import date
+            from ..models import AttendanceDaily
+            days_in_month = calendar.monthrange(year, month)[1]
+            month_days_list = []
+            
+            for day in range(1, days_in_month + 1):
+                dt = date(year, month, day)
+                # DB에서 일별 데이터를 가져오기
+                try:
+                    record = AttendanceDaily.objects.get(monthly_attendance__employee=employee, date=dt)
+                except AttendanceDaily.DoesNotExist:
+                    record = None
+                is_saturday = (dt.weekday() == 5)
+                is_sunday = (dt.weekday() == 6)
+                is_api_holiday = dt in api_holiday_dates
+                
+                if is_api_holiday:
+                    default_work_type = '祝日'
+                elif is_sunday:
+                    default_work_type = '休日(法)'
+                elif is_saturday:
+                    default_work_type = '休日'
+                else:
+                    default_work_type = '出勤'
+                
+                month_days_list.append({
+                    'date': dt,
+                    'weekday': dt.weekday(),
+                    'record': record,
+                    'is_saturday': is_saturday,
+                    'is_sunday': is_sunday,
+                    'is_api_holiday': is_api_holiday,
+                    'default_work_type': default_work_type
+                })
+            print(f"[DEBUG] build_month_days_list 완료: {len(month_days_list)}개")
+        except Exception as e:
+            print(f"[DEBUG] build_month_days_list 오류: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
-        # 캘린더 데이터 생성 (main_views.py의 generate_calendar_data 함수 사용)
-        calendar_date = date(year, month, 1)
-        weekdays = ['日', '月', '火', '水', '木', '金', '土']
-        
-        # MainView의 generate_calendar_data 메서드 사용
-        from ..views.main_views import MainView
-        main_view = MainView()
-        main_view.request = request  # request 객체 설정
-        calendar_weeks = main_view.generate_calendar_data(
-            calendar_date,
-            daily_list,
-            monthly_data,
-            api_holiday_dates
-        )
+        # 캘린더 데이터 생성 (main_views.py의 generate_calendar_data 함수를 직접 구현)
+        try:
+            calendar_date = date(year, month, 1)
+            weekdays = ['日', '月', '火', '水', '木', '金', '土']
+            print(f"[DEBUG] 캘린더 데이터 생성 시작")
+            
+            # main_views.py의 generate_calendar_data 메서드를 직접 구현
+            import calendar
+            cal = calendar.monthcalendar(calendar_date.year, calendar_date.month)
+            calendar_weeks = []
+            for week in cal:
+                week_data = []
+                for day in week:
+                    if day == 0:
+                        week_data.append({'date': None, 'record': None, 'holiday_category': [], 'is_saturday': False, 'is_sunday': False, 'is_api_holiday': False, 'default_work_type': None})
+                    else:
+                        day_date = date(calendar_date.year, calendar_date.month, day)
+                        # main_views.py의 make_month_day 메서드를 직접 구현
+                        record = None
+                        if monthly_data and daily_list:
+                            for d in daily_list:
+                                if d.date == day_date:
+                                    record = d
+                                    break
+                        is_saturday = (day_date.weekday() == 5)
+                        is_sunday = (day_date.weekday() == 6)
+                        is_api_holiday = day_date in api_holiday_dates
+                        default_work_type = None
+                        if is_api_holiday:
+                            default_work_type = '祝日'
+                        elif is_sunday:
+                            default_work_type = '休日(法)'
+                        elif is_saturday:
+                            default_work_type = '休日'
+                        week_data.append({
+                            'date': day_date,
+                            'weekday': day_date.weekday(),
+                            'record': record,
+                            'is_saturday': is_saturday,
+                            'is_sunday': is_sunday,
+                            'is_api_holiday': is_api_holiday,
+                            'default_work_type': default_work_type
+                        })
+                calendar_weeks.append(week_data)
+            print(f"[DEBUG] 캘린더 데이터 생성 완료: {len(calendar_weeks)}주")
+        except Exception as e:
+            print(f"[DEBUG] 캘린더 데이터 생성 오류: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
         # 잔업시간, 유급휴가(임시: 0)
-        overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
-        paid_leave_used = sum([1 for d in daily_list if d.work_type and '年休' in d.work_type])
+        try:
+            print(f"[DEBUG] 잔업시간 계산 시작")
+            overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
+            paid_leave_used = sum([1 for d in daily_list if d.work_type and '年休' in d.work_type])
+            print(f"[DEBUG] 잔업시간 계산 완료: {overtime_total}")
+        except Exception as e:
+            print(f"[DEBUG] 잔업시간 계산 오류: {e}")
+            overtime_total = 0
+            paid_leave_used = 0
         
         # 월별 정보 (monthly_data가 있을 때만)
-        monthly_info = None
-        if monthly_data:
-            monthly_info = {
-                'project_name': monthly_data.project_name or '未設定',
-                'standard_work_hours': monthly_data.standard_work_hours,
-                'break_minutes': monthly_data.break_minutes,
-                'work_days': monthly_data.work_days,
-                'paid_leave_days': monthly_data.paid_leave_days,
-                'overtime_hours': monthly_data.total_overtime_hours,
-                'status': 'approved' if monthly and monthly.is_confirmed else 'pending' if monthly and monthly.is_required else 'waiting'
-            }
+        try:
+            print(f"[DEBUG] monthly_info 생성 시작")
+            monthly_info = None
+            if monthly_data:
+                monthly_info = {
+                    'project_name': monthly_data.project_name or '未設定',
+                    'standard_work_hours': monthly_data.standard_work_hours,
+                    'break_minutes': monthly_data.break_minutes,
+                    'work_days': monthly_data.work_days,
+                    'paid_leave_days': monthly_data.paid_leave_days,
+                    'overtime_hours': monthly_data.total_overtime_hours,
+                    'status': 'approved' if monthly and monthly.is_confirmed else 'pending' if monthly and monthly.is_required else 'waiting'
+                }
+            print(f"[DEBUG] monthly_info 생성 완료")
+        except Exception as e:
+            print(f"[DEBUG] monthly_info 생성 오류: {e}")
+            monthly_info = None
         
         # 월 이동용
-        prev_month = (date(year, month, 1).replace(day=1) - timedelta(days=1))
-        next_month = (date(year, month, monthrange(year, month)[1]) + timedelta(days=1))
+        try:
+            print(f"[DEBUG] 월 이동용 계산 시작")
+            prev_month = (date(year, month, 1).replace(day=1) - timedelta(days=1))
+            next_month = (date(year, month, monthrange(year, month)[1]) + timedelta(days=1))
+            print(f"[DEBUG] 월 이동용 계산 완료")
+        except Exception as e:
+            print(f"[DEBUG] 월 이동용 계산 오류: {e}")
+            prev_month = date(year, month, 1)
+            next_month = date(year, month, 1)
         
-        context = {
-            'employee': employee,
-            'year': year,
-            'month': month,
-            'monthly': monthly,
-            'monthly_data': monthly_data,  # 추가
-            'monthly_info': monthly_info,
-            'daily_list': daily_list,
-            'month_days_list': month_days_list,
-            'calendar_weeks': calendar_weeks,
-            'weekdays': weekdays,
-            'calendar_date': calendar_date,
-            'overtime_total': overtime_total,
-            'paid_leave_used': paid_leave_used,
-            'prev_year': prev_month.year,
-            'prev_month': prev_month.month,
-            'next_year': next_month.year,
-            'next_month': next_month.month,
-        }
+        try:
+            print(f"[DEBUG] context 생성 시작")
+            context = {
+                'employee': employee,
+                'year': year,
+                'month': month,
+                'monthly': monthly,
+                'monthly_data': monthly_data,  # 추가
+                'monthly_info': monthly_info,
+                'daily_list': daily_list,
+                'month_days_list': month_days_list,
+                'calendar_weeks': calendar_weeks,
+                'weekdays': weekdays,
+                'calendar_date': calendar_date,
+                'overtime_total': overtime_total,
+                'paid_leave_used': paid_leave_used,
+                'prev_year': prev_month.year,
+                'prev_month': prev_month.month,
+                'next_year': next_month.year,
+                'next_month': next_month.month,
+            }
+            print(f"[DEBUG] context 생성 완료")
+        except Exception as e:
+            print(f"[DEBUG] context 생성 오류: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
-        return render(request, 'admin/attendance/employee_detail.html', context)
+        try:
+            print(f"[DEBUG] 템플릿 렌더링 시작")
+            return render(request, 'admin/attendance/employee_detail.html', context)
+        except Exception as e:
+            print(f"[DEBUG] 템플릿 렌더링 오류: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
     except Exception as e:
         print(f"employee_detail_view 오류: {e}")
