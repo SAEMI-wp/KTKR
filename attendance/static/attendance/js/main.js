@@ -1038,7 +1038,7 @@ async function handleFormSubmit(event) {
         return;
     }
     
-    // 3. 勤務時間のチェック (出勤, 退勤, 代休, 代休退勤の場合)
+    // 3. 勤務時間のチェック (出勤, 退勤, 代休退勤の場合)
     const startTime = formData.get('start_time');
     const endTime = formData.get('end_time');
     const workTypesRequiringTime = ['出勤', '振替(勤)'];
@@ -3020,7 +3020,7 @@ function setupWorkTypeTooltip() {
 // ===================== 勤務区分・休日ユーティリティ =====================
 // 指定勤務区分が休日/休暇/欠勤等か判定
 function isDayOff(workType) {
-    return workType === '年休' || workType === '年休(半)' || workType === '代休' || workType === '振替(休)' || workType === '振替(勤)' || workType === '欠勤' || workType === '特別休暇';
+    return workType === '年休' || workType === '年休(半)' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇';
 }
 
 // 日付(YYYY-MM-DD)から休日種別('休日','休日(法)','祝日')を取得
@@ -3118,7 +3118,7 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
     console.log(`[SYNC] 월정보 존재: ${hasMonthlyData}`);
     
     // 휴가 타입인지 확인 (toggleAltWorkDateField처럼 직접 체크)
-    const isHolidayType = workType === '年休' || workType === '年休(半)' || workType === '代休' || workType === '振替(休)' || workType === '振替(勤)' || workType === '欠勤' || workType === '特別休暇' ;
+    const isHolidayType = workType === '年休' || workType === '年休(半)' || workType === '代休' || workType === '振替(休)' || workType === '欠勤' || workType === '特別休暇' ;
     
     console.log(`[SYNC] 휴가 타입 여부: ${isHolidayType}`);
     
