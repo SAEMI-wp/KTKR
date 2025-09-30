@@ -145,8 +145,8 @@
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                 {% elif day.record.work_type == '代休' or day.record.work_type == '振替(休)' %}
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
-                                                                    {% if day.record.alternative_work_date %}
-                                                                        <div class="alternative_work_date">({{ day.record.alternative_work_date|date:"Y.m.d" }})</div>
+                                                                    {% if day.record.alternative_work_date1 %}
+                                                                        <div class="alternative_work_date">({{ day.record.alternative_work_date1|date:"Y.m.d" }})</div>
                                                                     {% endif %}
                                                                 {% elif day.record.work_type == '振替(勤)' %}
                                                                     {% if day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
@@ -217,7 +217,7 @@
                                                 </td>
                                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.start_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
                                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.end_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
-                                                <td>{% if day.record %}{{ day.record.alternative_work_date|date:"n/j"|default:"" }}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}{{ day.record.alternative_work_date1|date:"n/j"|default:"" }}{% else %}&nbsp;{% endif %}</td>
                                                 <td class="notes-cell">
                                                     {% if day.record %}
                                                         <div class="notes-content">
