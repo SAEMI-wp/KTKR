@@ -217,7 +217,11 @@
                                                 </td>
                                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.start_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
                                                 <td>{% if day.record %}{% if day.record.start_time != day.record.end_time %}{{ day.record.end_time|time:"H:i"|default:"" }}{% else %}&nbsp;{% endif %}{% else %}&nbsp;{% endif %}</td>
-                                                <td>{% if day.record %}{{ day.record.alternative_work_date1|date:"n/j"|default:"" }}{% else %}&nbsp;{% endif %}</td>
+                                                <td>{% if day.record %}
+                                                    {% if day.record.alternative_work_date1 %}{{ day.record.alternative_work_date1|date:"n/j" }}{% endif %}
+                                                    {% if day.record.alternative_work_date2 %}<br>{{ day.record.alternative_work_date2|date:"n/j" }}{% endif %}
+                                                    {% if day.record.alternative_work_date3 %}<br>{{ day.record.alternative_work_date3|date:"n/j" }}{% endif %}
+                                                {% else %}&nbsp;{% endif %}</td>
                                                 <td class="notes-cell">
                                                     {% if day.record %}
                                                         <div class="notes-content">
