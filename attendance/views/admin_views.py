@@ -103,12 +103,15 @@ def payroll_view(request):
 @permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def employee_detail_view(request, employee_no, year=None, month=None):
     try:
+        print(f"[DEBUG] employee_detail_view 시작: employee_no={employee_no}, year={year}, month={month}")
         user = request.user
         employee = get_object_or_404(Employee, employee_no=employee_no)
+        print(f"[DEBUG] 직원 조회 완료: {employee.employee_no}")
         
         # 権限チェック
         if not can_access_employee_data(user, employee):
             raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
+        print(f"[DEBUG] 권한 체크 통과")
         
         today = timezone.now().date()
         if not year:
@@ -117,18 +120,30 @@ def employee_detail_view(request, employee_no, year=None, month=None):
             month = today.month
         year = int(year)
         month = int(month)
+        print(f"[DEBUG] 년/월 설정: {year}/{month}")
         
-        # 해당 월의 AttendanceMonthly
-        try:
-            monthly = AttendanceMonthly.objects.get(employee=employee, year=str(year), month=str(month).zfill(2))
-        except AttendanceMonthly.DoesNotExist:
-            monthly = None
+        # 캐시를 사용하여 월별 데이터 가져오기 (main_views.py와 동일한 방식)
+        from ..cache_utils import get_monthly_data_with_cache
+        monthly_data = get_monthly_data_with_cache(
+            employee=employee,
+            year=str(year),
+            month=str(month).zfill(2)
+        )
+        print(f"[DEBUG] monthly_data 로드 완료: {monthly_data is not None}")
         
-        # 해당 월의 AttendanceDaily 리스트
-        if monthly:
-            daily_list = AttendanceDaily.objects.filter(monthly_attendance=monthly).order_by('date')
-        else:
-            daily_list = []
+        # 기존 monthly 객체 (템플릿 호환성을 위해)
+        monthly = None
+        if monthly_data:
+            try:
+                monthly = AttendanceMonthly.objects.get(employee=employee, year=str(year), month=str(month).zfill(2))
+                print(f"[DEBUG] monthly 객체 로드 완료")
+            except AttendanceMonthly.DoesNotExist:
+                print(f"[DEBUG] monthly 객체 없음")
+                monthly = None
+        
+        # daily_list (템플릿 호환성을 위해)
+        daily_list = monthly_data.daily_list if monthly_data else []
+        print(f"[DEBUG] daily_list 크기: {len(daily_list)}")
         
         # API 공휴일 데이터 가져오기
         try:
@@ -144,152 +159,45 @@ def employee_detail_view(request, employee_no, year=None, month=None):
             print(f"공휴일 데이터 가져오기 오류: {e}")
             api_holiday_dates = set()
         
-        # 월별 리스트 데이터 생성 (calendar_partial.html과 동일한 구조)
-        month_days_list = []
-        days_in_month = calendar.monthrange(year, month)[1]
+        # 월별 리스트 데이터 생성 (main_views.py의 build_month_days_list 함수 사용)
+        from ..views.main_views import build_month_days_list
+        month_days_list = build_month_days_list(
+            employee,
+            year,
+            month,
+            api_holiday_dates
+        )
         
-        for day in range(1, days_in_month + 1):
-            dt = date(year, month, day)
-            
-            # 해당 날짜의 기록 찾기
-            daily_record = None
-            for daily in daily_list:
-                if daily.date == dt:
-                    daily_record = daily
-                    break
-            
-            # 공휴일, 토요일, 일요일 체크
-            is_saturday = (dt.weekday() == 5)
-            is_sunday = (dt.weekday() == 6)
-            is_api_holiday = dt in api_holiday_dates
-            
-            # 기본 근무 구분 설정
-            if is_api_holiday:
-                default_work_type = '祝日'
-            elif is_sunday:
-                default_work_type = '休日(法)'
-            elif is_saturday:
-                default_work_type = '休日'
-            else:
-                default_work_type = '出勤'
-            
-            month_days_list.append({
-                'date': dt,
-                'weekday': dt.weekday(),
-                'record': daily_record,
-                'is_saturday': is_saturday,
-                'is_sunday': is_sunday,
-                'is_api_holiday': is_api_holiday,
-                'default_work_type': default_work_type
-            })
-        
-        # 캘린더 데이터 생성 (calendar_partial.html과 동일한 구조)
+        # 캘린더 데이터 생성 (main_views.py의 generate_calendar_data 함수 사용)
         calendar_date = date(year, month, 1)
         weekdays = ['日', '月', '火', '水', '木', '金', '土']
         
-        # 월의 첫 번째 날과 마지막 날
-        first_day = calendar_date.replace(day=1)
-        last_day = (first_day.replace(month=first_day.month % 12 + 1, day=1) - timedelta(days=1)) if first_day.month < 12 else first_day.replace(year=first_day.year + 1, month=1, day=1) - timedelta(days=1)
-        
-        # 캘린더 그리드 생성
-        calendar_weeks = []
-        current_week = []
-        
-        # 이전 달의 마지막 날들
-        first_weekday = first_day.weekday()
-        if first_weekday == 6:  # 일요일
-            first_weekday = 0
-        else:
-            first_weekday += 1
-        
-        prev_month_last = first_day - timedelta(days=first_weekday)
-        for i in range(first_weekday):
-            prev_day = prev_month_last - timedelta(days=first_weekday - i - 1)
-            current_week.append({'date': prev_day, 'record': None})
-        
-        # 현재 달의 날들
-        current_date = first_day
-        while current_date <= last_day:
-            if len(current_week) == 7:
-                calendar_weeks.append(current_week)
-                current_week = []
-            
-            # 해당 날짜의 기록 찾기
-            daily_record = None
-            for daily in daily_list:
-                if daily.date == current_date:
-                    daily_record = daily
-                    break
-            
-            current_week.append({
-                'date': current_date,
-                'record': daily_record
-            })
-            current_date += timedelta(days=1)
-        
-        # 다음 달의 첫 번째 날들
-        while len(current_week) < 7:
-            next_day = last_day + timedelta(days=len(current_week) - 6)
-            current_week.append({'date': next_day, 'record': None})
-        
-        if current_week:
-            calendar_weeks.append(current_week)
+        # MainView의 generate_calendar_data 메서드 사용
+        from ..views.main_views import MainView
+        main_view = MainView()
+        main_view.request = request  # request 객체 설정
+        calendar_weeks = main_view.generate_calendar_data(
+            calendar_date,
+            daily_list,
+            monthly_data,
+            api_holiday_dates
+        )
         
         # 잔업시간, 유급휴가(임시: 0)
         overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
         paid_leave_used = sum([1 for d in daily_list if d.work_type and '年休' in d.work_type])
         
-        # 월별 정보 (monthly가 있을 때만)
+        # 월별 정보 (monthly_data가 있을 때만)
         monthly_info = None
-        if monthly:
-            # Calendar 모델에서 break_minutes와 standard_work_hours 가져오기
-            calendar_obj = monthly.base_calendar
-            break_minutes = calendar_obj.break_minutes if calendar_obj else 60
-            standard_work_hours = calendar_obj.standard_work_hours if calendar_obj else 8.0
-            
-            # structures.py를 사용한 정확한 계산
-            # DailyData 객체들 생성
-            daily_data_list = []
-            for daily in daily_list:
-                daily_data = DailyData(
-                    date=daily.date,
-                    work_type=daily.work_type,
-                    start_time=daily.start_time,
-                    end_time=daily.end_time,
-                    alternative_work_date1=daily.alternative_work_date1,
-                    alternative_work_date2=daily.alternative_work_date2,
-                    alternative_work_date3=daily.alternative_work_date3,
-                    notes=daily.notes,
-                    is_required=daily.is_required,
-                    is_confirmed=daily.is_confirmed,
-                    break_minutes=break_minutes,
-                    standard_work_hours=standard_work_hours
-                )
-                daily_data_list.append(daily_data)
-            
-            # MonthlyData 객체 생성 및 계산
-            monthly_data = MonthlyData(
-                employee_id=employee.employee_no,
-                year=str(year),
-                month=str(month).zfill(2),
-                project_name=monthly.project_name,
-                base_calendar=monthly.base_calendar,
-                break_minutes=break_minutes,
-                standard_work_hours=standard_work_hours,
-                daily_list=daily_data_list
-            )
-            
-            # 모든 일별 근무시간 계산
-            monthly_data.calculate_all_daily_hours()
-            
+        if monthly_data:
             monthly_info = {
-                'project_name': monthly.project_name or '未設定',
-                'standard_work_hours': standard_work_hours,
-                'break_minutes': break_minutes,
+                'project_name': monthly_data.project_name or '未設定',
+                'standard_work_hours': monthly_data.standard_work_hours,
+                'break_minutes': monthly_data.break_minutes,
                 'work_days': monthly_data.work_days,
                 'paid_leave_days': monthly_data.paid_leave_days,
                 'overtime_hours': monthly_data.total_overtime_hours,
-                'status': 'approved' if monthly.is_confirmed else 'pending' if monthly.is_required else 'waiting'
+                'status': 'approved' if monthly and monthly.is_confirmed else 'pending' if monthly and monthly.is_required else 'waiting'
             }
         
         # 월 이동용
@@ -301,6 +209,7 @@ def employee_detail_view(request, employee_no, year=None, month=None):
             'year': year,
             'month': month,
             'monthly': monthly,
+            'monthly_data': monthly_data,  # 추가
             'monthly_info': monthly_info,
             'daily_list': daily_list,
             'month_days_list': month_days_list,
