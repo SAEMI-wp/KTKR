@@ -132,23 +132,31 @@
                                         {% for week in calendar_weeks %}
                                         <tr>
                                             {% for day in week %}
-                                                {% if day.date %}
-                                                <td class="{% if day.date.month != month %}other-month{% endif %}{% if day.record %} has-record{% endif %}">
+                                                {% if day.date and day.date.month == month %}
+                                                <td class="{% if day.record %} has-record{% endif %}{% if day.is_api_holiday %} holiday{% elif day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}" data-date="{{ day.date|date:'Y-m-d' }}" data-default-work-type="{{ day.default_work_type|default_if_none:'' }}" data-has-record="{% if day.record %}1{% else %}0{% endif %}" {% if day.record %}data-work-type="{{ day.record.work_type }}" data-start-time="{{ day.record.start_time|time:'H:i'|default:'' }}" data-end-time="{{ day.record.end_time|time:'H:i'|default:'' }}" data-alternative-work-date1="{{ day.record.alternative_work_date1|date:'Y-m-d'|default:'' }}" data-alternative-work-date2="{{ day.record.alternative_work_date2|date:'Y-m-d'|default:'' }}" data-alternative-work-date3="{{ day.record.alternative_work_date3|date:'Y-m-d'|default:'' }}" data-notes="{{ day.record.notes|default:'' }}"{% endif %}>
                                                     <div class="cell-inner">
                                                         <div class="cell-header">
-                                                            <span class="date-number">{{ day.date.day }}</span>
+                                                            <span class="date-number{% if day.is_api_holiday %} holiday{% elif day.is_sunday %} sunday{% elif day.is_saturday %} saturday{% endif %}">{{ day.date.day }}</span>
                                                             <span class="holiday-category"></span>
                                                         </div>
                                                         <div class="record-time">
                                                             {% if day.record %}
                                                                 {% if day.record.work_type == '年休' %}
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                {% elif day.record.work_type == '欠勤' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                {% elif day.record.work_type == '特別休暇' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                {% elif day.record.work_type == '休日' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                {% elif day.record.work_type == 'その他' %}
+                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                 {% elif day.record.work_type == '代休' or day.record.work_type == '振替(休)' %}
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                     {% if day.record.alternative_work_date1 %}
                                                                         <div class="alternative_work_date">({{ day.record.alternative_work_date1|date:"Y.m.d" }})</div>
                                                                     {% endif %}
-                                                                {% elif day.record.work_type == '振替(勤)' %}
+                                                                {% elif day.record.work_type == '代休' or day.record.work_type == '振替(勤)' %}
                                                                     {% if day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
                                                                         {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
                                                                     {% endif %}
@@ -253,6 +261,14 @@
         </div>
     </div>
 </div>
+
+<!-- 공휴일 데이터 (calendar_partial.html과 동일) -->
+<script>
+    window.apiHolidays = {{ api_holidays_json|default:'{}'|safe }};  // 日本の祝日 API（昨年-今年-来年）
+</script>
+<script id="holidays-db-data" type="application/json">
+    {{ holidays_db_json|safe }}
+</script>
 
 <!-- 월/년 선택 모달 -->
 <div id="year-month-picker-modal" class="modal-overlay">
