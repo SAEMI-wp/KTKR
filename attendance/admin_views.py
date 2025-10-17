@@ -5,25 +5,23 @@ from .models import Employee, AttendanceMonthly, AttendanceDaily, PaidLeave, Pay
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from calendar import monthrange
-from datetime import date
+from datetime import date, timedelta
 from django import forms
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from .paroll_pdf import generate_payslip_pdf
 from django.contrib import messages
 import calendar
 from django.contrib.auth.models import Group, Permission
-
-def admin_permission_required(view_func):
-    def _wrapped_view(request, *args, **kwargs):
-        user = request.user
-        if not (user.is_authenticated and user.is_active and user.has_perm('attendance.can_access_admin')):
-            raise PermissionDenied
-        return view_func(request, *args, **kwargs)
-    return _wrapped_view
+from .views.main_views import get_holidays_for_months
+from .structures import DailyData, MonthlyData
+from .permissions import (
+    permission_required, group_permission_required, 
+    can_access_employee_data, PERMISSIONS
+)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def profile_view(request):
     """
     내 프로필 페이지: 성명, 사번, 근무지, 소속 그룹 표시
@@ -37,7 +35,7 @@ def profile_view(request):
     return render(request, 'admin/attendance/profile.html', context)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def attendance_overview(request):
     """
     근태관리 메인 페이지: 전체/부서별 월별 근태정보 표
@@ -51,7 +49,7 @@ def attendance_overview(request):
     return render(request, 'admin/attendance/attendance_overview.html', context)
 
 @login_required
-@admin_permission_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_view(request):
     """
     給与明細書管理ページ: 月/年別一覧・PDF保存/印刷ボタン
@@ -63,6 +61,15 @@ def payroll_view(request):
     # 권한별 직원 필터링
     if user.is_superuser or user.groups.filter(name__in=['社長', '人事', '経理']).exists():
         employees = Employee.objects.filter(is_active=True)
+    elif user.groups.filter(name='部長').exists():
+        # 부장님은 급여명세서 접근 불가
+        from .permissions import get_accessible_work_places
+        accessible_places = get_accessible_work_places(user)
+        from django.db.models import Q
+        place_filters = Q()
+        for place in accessible_places:
+            place_filters |= Q(place_work=place)
+        employees = Employee.objects.filter(is_active=True).filter(place_filters)
     else:
         employees = Employee.objects.filter(is_active=True, employee_no=user.employee_no)
     # 급여명세서 데이터
@@ -92,58 +99,309 @@ def payroll_view(request):
     }
     return render(request, 'admin/attendance/payroll.html', context)
 
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def employee_detail_view(request, employee_no, year=None, month=None):
-    user = request.user
-    employee = get_object_or_404(Employee, employee_no=employee_no)
-    
-    # superuser 또는 사장님(社長)은 무조건 허용
-    if user.is_superuser or '社長' in user.groups.values_list('name', flat=True):
-        pass
-    else:
-        # 部長：同じ work_place の従業員のみアクセス可能
-        user_groups = user.groups.values_list('name', flat=True)
-        if '部長' in user_groups:
-            # 대소문자 무시, 공백 제거로 비교
-            if employee.place_work.strip().lower() != user.place_work.strip().lower():
-                raise PermissionDenied(f'勤務先({user.place_work})의 정보만 확인할 수 있습니다。')
-        else:
-            raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
-    today = timezone.now().date()
-    if not year:
-        year = today.year
-    if not month:
-        month = today.month
-    year = int(year)
-    month = int(month)
-    # 해당 월의 AttendanceMonthly
     try:
-        monthly = AttendanceMonthly.objects.get(employee=employee, year=str(year), month=str(month).zfill(2))
-    except AttendanceMonthly.DoesNotExist:
-        monthly = None
-    # 해당 월의 AttendanceDaily 리스트
-    if monthly:
-        daily_list = AttendanceDaily.objects.filter(monthly_attendance=monthly).order_by('date')
-    else:
-        daily_list = []
-    # 잔업시간, 유급휴가(임시: 0)
-    overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
-    paid_leave_used = sum([1 for d in daily_list if d.work_type and '年休' in d.work_type])
-    # 월 이동용
-    prev_month = (date(year, month, 1).replace(day=1) - timezone.timedelta(days=1))
-    next_month = (date(year, month, monthrange(year, month)[1]) + timezone.timedelta(days=1))
-    context = {
-        'employee': employee,
-        'year': year,
-        'month': month,
-        'daily_list': daily_list,
-        'overtime_total': overtime_total,
-        'paid_leave_used': paid_leave_used,
-        'prev_year': prev_month.year,
-        'prev_month': prev_month.month,
-        'next_year': next_month.year,
-        'next_month': next_month.month,
-    }
-    return render(request, 'admin/attendance/employee_detail.html', context)
+        user = request.user
+        employee = get_object_or_404(Employee, employee_no=employee_no)
+        
+        # 権限チェック
+        if not can_access_employee_data(user, employee):
+            raise PermissionDenied('この機能は社長または部長のみ利用可能です。')
+        
+        today = timezone.now().date()
+        if not year:
+            year = today.year
+        if not month:
+            month = today.month
+        year = int(year)
+        month = int(month)
+        
+        # 해당 월의 AttendanceMonthly
+        try:
+            monthly = AttendanceMonthly.objects.get(employee=employee, year=str(year), month=str(month).zfill(2))
+        except AttendanceMonthly.DoesNotExist:
+            monthly = None
+        
+        # 해당 월의 AttendanceDaily 리스트
+        if monthly:
+            daily_list = AttendanceDaily.objects.filter(monthly_attendance=monthly).order_by('date')
+        else:
+            daily_list = []
+        
+        # API 공휴일 데이터 가져오기
+        try:
+            api_holidays = get_holidays_for_months(year, month)
+            api_holiday_dates = set()
+            for date_str in api_holidays.keys():
+                try:
+                    holiday_date = date.fromisoformat(date_str)
+                    api_holiday_dates.add(holiday_date)
+                except ValueError:
+                    continue
+        except Exception as e:
+            print(f"공휴일 데이터 가져오기 오류: {e}")
+            api_holiday_dates = set()
+        
+        # 월별 리스트 데이터 생성 (calendar_partial.html과 동일한 구조)
+        month_days_list = []
+        days_in_month = calendar.monthrange(year, month)[1]
+        
+        for day in range(1, days_in_month + 1):
+            dt = date(year, month, day)
+            
+            # 해당 날짜의 기록 찾기
+            daily_record = None
+            for daily in daily_list:
+                if daily.date == dt:
+                    daily_record = daily
+                    break
+            
+            # 공휴일, 토요일, 일요일 체크
+            is_saturday = (dt.weekday() == 5)
+            is_sunday = (dt.weekday() == 6)
+            is_api_holiday = dt in api_holiday_dates
+            
+            # 기본 근무 구분 설정
+            if is_api_holiday:
+                default_work_type = '祝日'
+            elif is_sunday:
+                default_work_type = '休日(法)'
+            elif is_saturday:
+                default_work_type = '休日'
+            else:
+                default_work_type = '出勤'
+            
+            month_days_list.append({
+                'date': dt,
+                'weekday': dt.weekday(),
+                'record': daily_record,
+                'is_saturday': is_saturday,
+                'is_sunday': is_sunday,
+                'is_api_holiday': is_api_holiday,
+                'default_work_type': default_work_type
+            })
+        
+        # 캘린더 데이터 생성 (calendar_partial.html과 동일한 구조)
+        calendar_date = date(year, month, 1)
+        weekdays = ['日', '月', '火', '水', '木', '金', '土']
+        
+        # 월의 첫 번째 날과 마지막 날
+        first_day = calendar_date.replace(day=1)
+        last_day = (first_day.replace(month=first_day.month % 12 + 1, day=1) - timedelta(days=1)) if first_day.month < 12 else first_day.replace(year=first_day.year + 1, month=1, day=1) - timedelta(days=1)
+        
+        # 캘린더 그리드 생성
+        calendar_weeks = []
+        current_week = []
+        
+        # 이전 달의 마지막 날들
+        first_weekday = first_day.weekday()
+        if first_weekday == 6:  # 일요일
+            first_weekday = 0
+        else:
+            first_weekday += 1
+        
+        prev_month_last = first_day - timedelta(days=first_weekday)
+        for i in range(first_weekday):
+            prev_day = prev_month_last - timedelta(days=first_weekday - i - 1)
+            current_week.append({'date': prev_day, 'record': None, 'default_work_type': '', 'is_api_holiday': False, 'is_saturday': False, 'is_sunday': False, 'holiday_name': None})
+        
+        # 현재 달의 날들
+        current_date = first_day
+        while current_date <= last_day:
+            if len(current_week) == 7:
+                calendar_weeks.append(current_week)
+                current_week = []
+            
+            # 해당 날짜의 기록 찾기
+            daily_record = None
+            for daily in daily_list:
+                if daily.date == current_date:
+                    daily_record = daily
+                    break
+            
+            # 공휴일, 토요일, 일요일 체크
+            is_saturday = (current_date.weekday() == 5)
+            is_sunday = (current_date.weekday() == 6)
+            is_api_holiday = current_date in api_holiday_dates
+            
+            # 기본 근무 구분 설정
+            if is_api_holiday:
+                default_work_type = '祝日'
+            elif is_sunday:
+                default_work_type = '休日(法)'
+            elif is_saturday:
+                default_work_type = '休日'
+            else:
+                default_work_type = '出勤'
+            
+            # 공휴일 이름 가져오기
+            holiday_name = None
+            if is_api_holiday:
+                date_str = current_date.strftime('%Y-%m-%d')
+                holiday_name = api_holidays.get(date_str, '祝日')
+            
+            current_week.append({
+                'date': current_date,
+                'record': daily_record,
+                'default_work_type': default_work_type,
+                'is_api_holiday': is_api_holiday,
+                'is_saturday': is_saturday,
+                'is_sunday': is_sunday,
+                'holiday_name': holiday_name
+            })
+            current_date += timedelta(days=1)
+        
+        # 다음 달의 첫 번째 날들
+        while len(current_week) < 7:
+            next_day = last_day + timedelta(days=len(current_week) - 6)
+            current_week.append({'date': next_day, 'record': None, 'default_work_type': '', 'is_api_holiday': False, 'is_saturday': False, 'is_sunday': False, 'holiday_name': None})
+        
+        if current_week:
+            calendar_weeks.append(current_week)
+        
+        # 잔업시간, 유급휴가(임시: 0)
+        overtime_total = sum([(d.end_time.hour - d.start_time.hour) if d.start_time and d.end_time else 0 for d in daily_list])
+        paid_leave_used = sum([1 for d in daily_list if d.work_type and '有給' in d.work_type])
+        
+        # 월별 정보 (monthly가 있을 때만)
+        monthly_info = None
+        if monthly:
+            # structures.py를 사용한 정확한 계산
+            # DailyData 객체들 생성
+            daily_data_list = []
+            for daily in daily_list:
+                daily_data = DailyData(
+                    date=daily.date,
+                    work_type=daily.work_type,
+                    start_time=daily.start_time,
+                    end_time=daily.end_time,
+                    alternative_work_date1=daily.alternative_work_date1,
+                    alternative_work_date2=daily.alternative_work_date2,
+                    alternative_work_date3=daily.alternative_work_date3,
+                    notes=daily.notes,
+                    is_required=daily.is_required,
+                    is_confirmed=daily.is_confirmed,
+                    break_minutes=monthly.base_calendar.break_minutes,
+                    standard_work_hours=monthly.base_calendar.standard_work_hours
+                )
+                daily_data_list.append(daily_data)
+            
+            # MonthlyData 객체 생성 및 계산
+            monthly_data = MonthlyData(
+                employee_id=employee.employee_no,
+                year=str(year),
+                month=str(month).zfill(2),
+                project_name=monthly.project_name,
+                calendar_id=monthly.base_calendar.id,
+                calendar_name=monthly.base_calendar.calendar_name,
+                break_minutes=monthly.base_calendar.break_minutes,
+                standard_work_hours=monthly.base_calendar.standard_work_hours,
+                daily_list=daily_data_list
+            )
+            
+            # 모든 일별 근무시간 계산
+            monthly_data.calculate_all_daily_hours()
+            
+            monthly_info = {
+                'project_name': monthly.project_name or '未設定',
+                'standard_work_hours': monthly.base_calendar.standard_work_hours or 0,
+                'break_minutes': monthly.base_calendar.break_minutes or 0,
+                'work_days': monthly_data.work_days,
+                'paid_leave_days': monthly_data.paid_leave_days,
+                'overtime_hours': monthly_data.total_overtime_hours,
+                'status': 'approved' if monthly.is_confirmed else 'pending' if monthly.is_required else 'waiting'
+            }
+        
+        # 월 이동용
+        prev_month = (date(year, month, 1).replace(day=1) - timedelta(days=1))
+        next_month = (date(year, month, monthrange(year, month)[1]) + timedelta(days=1))
+        
+        # 공휴일 데이터 추가 (calendar_partial.html과 동일하게)
+        import json
+        holidays_db = {}
+        try:
+            # API 공휴일 데이터를 holidays_db 형식으로 변환
+            for date_str, holiday_name in api_holidays.items():
+                try:
+                    holiday_date = date.fromisoformat(date_str)
+                    holidays_db[date_str] = holiday_name
+                except ValueError:
+                    continue
+        except Exception as e:
+            print(f"공휴일 데이터 변환 오류: {e}")
+            holidays_db = {}
+        
+        context = {
+            'employee': employee,
+            'year': year,
+            'month': month,
+            'monthly': monthly,
+            'monthly_info': monthly_info,
+            'daily_list': daily_list,
+            'month_days_list': month_days_list,
+            'calendar_weeks': calendar_weeks,
+            'weekdays': weekdays,
+            'calendar_date': calendar_date,
+            'overtime_total': overtime_total,
+            'paid_leave_used': paid_leave_used,
+            'holidays_db_json': json.dumps(holidays_db),
+            'api_holidays_json': json.dumps(api_holidays),
+            'prev_year': prev_month.year,
+            'prev_month': prev_month.month,
+            'next_year': next_month.year,
+            'next_month': next_month.month,
+        }
+        
+        return render(request, 'admin/attendance/employee_detail.html', context)
+        
+    except Exception as e:
+        print(f"employee_detail_view 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
+def employee_monthly_data_check_view(request, employee_no):
+    """직원의 월별 데이터 존재 여부를 확인하는 API"""
+    try:
+        employee = get_object_or_404(Employee, employee_no=employee_no)
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        
+        if not year or not month:
+            return JsonResponse({'error': 'Year and month parameters required'}, status=400)
+        
+        try:
+            year = int(year)
+            month = int(month)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid year or month'}, status=400)
+        
+        # 해당 월의 AttendanceMonthly 확인
+        try:
+            monthly = AttendanceMonthly.objects.get(
+                employee=employee, 
+                year=str(year), 
+                month=str(month).zfill(2)
+            )
+            has_data = True
+        except AttendanceMonthly.DoesNotExist:
+            has_data = False
+        
+        return JsonResponse({
+            'employee_no': employee_no,
+            'year': year,
+            'month': month,
+            'has_data': has_data
+        })
+        
+    except Exception as e:
+        print(f"employee_monthly_data_check_view 오류: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 class PaySlipForm(forms.ModelForm):
     class Meta:
@@ -156,7 +414,8 @@ class PaySlipForm(forms.ModelForm):
             'notes': '備考',
         }
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_detail_view(request, employee_no, year, month):
     employee = get_object_or_404(Employee, employee_no=employee_no)
     payslip, created = PaySlip.objects.get_or_create(employee=employee, year=year, month=month)
@@ -175,7 +434,8 @@ def payroll_detail_view(request, employee_no, year, month):
     }
     return render(request, 'admin/attendance/payroll_detail.html', context)
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def payroll_pdf_download_view(request, employee_no, year, month):
     employee = get_object_or_404(Employee, employee_no=employee_no)
     payslip = get_object_or_404(PaySlip, employee=employee, year=year, month=month)
@@ -185,7 +445,8 @@ def payroll_pdf_download_view(request, employee_no, year, month):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def monthly_approval_action(request, monthly_id, action):
     monthly = get_object_or_404(AttendanceMonthly, pk=monthly_id)
     if action == 'request':
@@ -212,7 +473,8 @@ def monthly_approval_action(request, monthly_id, action):
         messages.error(request, '不正な操作です。')
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/admin/'))
 
-@admin_permission_required
+@login_required
+@permission_required(PERMISSIONS['ADMIN_ACCESS'])
 def daily_calendar_view(request, year=None, month=None):
     today = timezone.now().date()
     year = int(year) if year else today.year
@@ -238,6 +500,3 @@ def daily_calendar_view(request, year=None, month=None):
         'daily_list': daily_list,
     }
     return render(request, 'admin/attendance/daily_calendar.html', context)
-
-# WeasyPrint 관련 import 및 payroll_pdf_view 함수 삭제
-# 이후 pdf_generator.py의 generate_payslip_pdf 함수 등을 활용할 예정 
