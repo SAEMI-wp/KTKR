@@ -147,7 +147,7 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
         # 初期選択された日付は常に今日の日付 (要件)
         context['selected_date'] = today
         
-        # Calendar 데이터 추가
+        # Calendar データ追加
         from ..models import Calendar
         context['calendars'] = Calendar.objects.all().order_by('id')
         
@@ -173,6 +173,40 @@ class MainView(AjaxLoginRequiredMixin, TemplateView):
             month=str(calendar_date.month)
         )
         context['monthly_data'] = monthly_data
+        
+        # Calendar 객체를 별도로 전달 (HTML에서 start_time, end_time 접근용)
+        if monthly_data and monthly_data.calendar_id:
+            try:
+                from ..models import Calendar
+                calendar_obj = Calendar.objects.get(id=monthly_data.calendar_id)
+                context['calendar_obj'] = calendar_obj
+                print(f"DEBUG: MainView - Calendar 객체 전달: {calendar_obj.calendar_name} ({calendar_obj.start_time} - {calendar_obj.end_time})")
+            except Calendar.DoesNotExist:
+                print(f"DEBUG: MainView - Calendar를 찾을 수 없음: ID {monthly_data.calendar_id}")
+            except Exception as e:
+                print(f"DEBUG: MainView - Calendar 조회 오류: {e}")
+        else:
+            # calendar_obj가 없을 때 기본값 설정 (통상 버튼용)
+            from datetime import time, timedelta
+            
+            if monthly_data:
+                # 월별 데이터가 있으면 기준시간을 사용하여 계산
+                start_time = time(9, 0)  # 기본 시작시간
+                # 기준근무시간 + 점심시간을 더해서 종료시간 계산
+                total_minutes = (monthly_data.standard_work_hours * 60) + monthly_data.break_minutes
+                end_time = time(9, 0) + timedelta(minutes=total_minutes)
+                print(f"DEBUG: MainView - 월별 데이터 기반 시간 계산: {start_time} - {end_time} (기준: {monthly_data.standard_work_hours}시간, 점심: {monthly_data.break_minutes}분)")
+            else:
+                # 월별 데이터도 없으면 기본값
+                start_time = time(9, 0)  # 09:00
+                end_time = time(18, 0)   # 18:00
+                print(f"DEBUG: MainView - 기본 Calendar 객체 설정: 09:00 - 18:00")
+            
+            # dict 사용 (Django 템플릿에서 더 안정적)
+            context['calendar_obj'] = {
+                'start_time': start_time,
+                'end_time': end_time
+            }
         
         # トグル状態の処理 - 月情報 유무에 따라 동적 설정
         toggle_state = self.request.GET.get('toggle_state')
@@ -550,6 +584,29 @@ class FormPartialView(AjaxLoginRequiredMixin, TemplateView):
                 print(f"DEBUG: FormPartialView - Calendar를 찾을 수 없음: ID {monthly_data.calendar_id}")
             except Exception as e:
                 print(f"DEBUG: FormPartialView - Calendar 조회 오류: {e}")
+        else:
+            # calendar_obj가 없을 때 기본값 설정 (통상 버튼용)
+            from datetime import time, timedelta
+            from types import SimpleNamespace
+            
+            if monthly_data:
+                # 월별 데이터가 있으면 기준시간을 사용하여 계산
+                start_time = time(9, 0)  # 기본 시작시간
+                # 기준근무시간 + 점심시간을 더해서 종료시간 계산
+                total_minutes = (monthly_data.standard_work_hours * 60) + monthly_data.break_minutes
+                end_time = time(9, 0) + timedelta(minutes=total_minutes)
+                print(f"DEBUG: FormPartialView - 월별 데이터 기반 시간 계산: {start_time} - {end_time} (기준: {monthly_data.standard_work_hours}시간, 점심: {monthly_data.break_minutes}분)")
+            else:
+                # 월별 데이터도 없으면 기본값
+                start_time = time(9, 0)  # 09:00
+                end_time = time(18, 0)   # 18:00
+                print(f"DEBUG: FormPartialView - 기본 Calendar 객체 설정: 09:00 - 18:00")
+            
+            # SimpleNamespace 대신 dict 사용 (Django 템플릿에서 더 안정적)
+            context['calendar_obj'] = {
+                'start_time': start_time,
+                'end_time': end_time
+            }
         
         return context
 
