@@ -254,9 +254,11 @@ def employee_detail_view(request, employee_no, year=None, month=None):
             current_date += timedelta(days=1)
         
         # 다음 달의 첫 번째 날들
+        next_day_counter = 1
         while len(current_week) < 7:
-            next_day = last_day + timedelta(days=len(current_week) - 6)
+            next_day = last_day + timedelta(days=next_day_counter)
             current_week.append({'date': next_day, 'record': None, 'default_work_type': '', 'is_api_holiday': False, 'is_saturday': False, 'is_sunday': False, 'holiday_name': None})
+            next_day_counter += 1
         
         if current_week:
             calendar_weeks.append(current_week)
