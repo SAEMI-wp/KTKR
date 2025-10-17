@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 월별 데이터 캐시 (성능 향상을 위해) - 전역으로 설정
     window.monthDataCache = new Map();
 
+    // 공휴일 표시 초기화
+    applyAllHolidaysToCalendar();
+
     // 월 이동 기능
     window.navigateMonth = function(direction) {
         let newYear = CURRENT_YEAR;
@@ -281,4 +284,150 @@ async function checkMonthData(employeeId, year, month) {
         console.error(`월별 데이터 확인 오류 (${year}-${month}):`, error);
         return false;
     }
+}
+
+// ===================== 공휴일 처리 함수 =====================
+
+/**
+ * 공휴일 정보를 캘린더 셀에 적용
+ * @param {HTMLElement} td - 캘린더 셀 요소
+ * @param {string} holidayName - 공휴일 명칭
+ * @param {string} type - 공휴일 타입 ('api', 'db', 'common', 'base', 'green')
+ */
+function applyHolidayToCell(td, holidayName, type) {
+    // holiday-category 요소 찾기 또는 생성
+    let holidayCategory = td.querySelector('.holiday-category');
+    
+    if (!holidayCategory) {
+        const cellHeader = td.querySelector('.cell-header');
+        if (!cellHeader) {
+            return;
+        }
+        holidayCategory = document.createElement('span');
+        holidayCategory.className = 'holiday-category';
+        cellHeader.appendChild(holidayCategory);
+    }
+    
+    // 기존 공휴일 요소 제거 (중복 방지)
+    const existingItems = holidayCategory.querySelectorAll('.holiday-cat-item');
+    existingItems.forEach(item => {
+        if (item.classList.contains(type)) {
+            item.remove();
+        }
+    });
+    
+    // 새로운 공휴일 요소 생성
+    const holidaySpan = document.createElement('span');
+    holidaySpan.className = `holiday-cat-item ${type}`;
+    holidaySpan.textContent = holidayName;
+    holidayCategory.appendChild(holidaySpan);
+    
+    // 날짜 숫자에 holiday 클래스 추가 (빨간색 표시)
+    const dateNumber = td.querySelector('.date-number');
+    if (dateNumber && !dateNumber.classList.contains('holiday')) {
+        dateNumber.classList.add('holiday');
+    }
+}
+
+/**
+ * 일본 공휴일 API 데이터를 캘린더에 적용
+ */
+async function applyApiHolidaysToCalendar() {
+    const apiHolidays = window.apiHolidays || {};
+    const monthDisplay = document.getElementById('current-month-display');
+    if (!monthDisplay) return;
+    
+    const year = parseInt(monthDisplay.dataset.year);
+    const month = parseInt(monthDisplay.dataset.month);
+    const monthStr = String(month).padStart(2, '0');
+    
+    let appliedCount = 0;
+    
+    // 해당 월의 공휴일만 필터링하여 적용
+    Object.entries(apiHolidays).forEach(([date, holidayName]) => {
+        if (date.startsWith(`${year}-${monthStr}`)) {
+            const td = document.querySelector(`.calendar-table td[data-date='${date}']`);
+            if (td) {
+                applyHolidayToCell(td, holidayName, 'api');
+                appliedCount++;
+            }
+        }
+    });
+}
+
+/**
+ * DB holidays_db에서 공통/개별(calendar_name) 공휴일을 캘린더에 표시
+ */
+function applyDbHolidaysToCalendar() {
+    let holidaysDb = {};
+    
+    try {
+        const holidaysScript = document.getElementById('holidays-db-data');
+        if (holidaysScript) {
+            holidaysDb = JSON.parse(holidaysScript.textContent);
+        }
+    } catch (e) {
+        console.error('[HOLIDAY DB] holidays_db 파싱 에러:', e);
+        return;
+    }
+    
+    const tds = document.querySelectorAll('.calendar-table td[data-date]');
+    let appliedCount = 0;
+    
+    tds.forEach(td => {
+        const dateStr = td.getAttribute('data-date');
+        
+        if (holidaysDb[dateStr]) {
+            holidaysDb[dateStr].forEach(holiday => {
+                let type = 'db';
+                
+                if (holiday.calendar_name === '共通') {
+                    type = 'common';
+                } else if (holiday.category === '年休収得') {
+                    type = 'green';
+                } else {
+                    type = 'base';
+                }
+                
+                applyHolidayToCell(td, holiday.holiday_name, type);
+                appliedCount++;
+            });
+        }
+    });
+}
+
+/**
+ * 기존 공휴일 표시 초기화
+ */
+function clearAllHolidaysFromCalendar() {
+    const tds = document.querySelectorAll('.calendar-table td[data-date]');
+    
+    tds.forEach(td => {
+        // holiday-category 내의 모든 공휴일 요소 제거
+        const holidayCategory = td.querySelector('.holiday-category');
+        if (holidayCategory) {
+            holidayCategory.innerHTML = '';
+        }
+        
+        // date-number의 holiday 클래스 제거
+        const dateNumber = td.querySelector('.date-number');
+        if (dateNumber) {
+            dateNumber.classList.remove('holiday');
+        }
+    });
+}
+
+/**
+ * 모든 공휴일 표시 (초기화 포함)
+ * API 공휴일과 DB 공휴일을 모두 캘린더에 적용
+ */
+async function applyAllHolidaysToCalendar() {
+    // 1. 기존 공휴일 표시 초기화
+    clearAllHolidaysFromCalendar();
+    
+    // 2. API 공휴일 적용
+    await applyApiHolidaysToCalendar();
+    
+    // 3. DB 공휴일 적용
+    applyDbHolidaysToCalendar();
 } 
