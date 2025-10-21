@@ -284,7 +284,7 @@
     <script>
         window.csrfToken = '{{ csrf_token }}';
         window.initialData = {
-            selectedDate: '{{ selected_date }}',
+            selectedDate: '{{ selected_date|date:"Y-m-d" }}',
             currentYear: {{ calendar_date.year }},
             currentMonth: {{ calendar_date.month }},
             defaultDay: {{ default_day }}
