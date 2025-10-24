@@ -147,8 +147,6 @@
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                 {% elif day.record.work_type == '特別休暇' %}
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
-                                                                {% elif day.record.work_type == '休日' %}
-                                                                    <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                 {% elif day.record.work_type == 'その他' %}
                                                                     <div class="work-type-text">{{ day.record.work_type }}</div>
                                                                 {% elif day.record.work_type == '代休' or day.record.work_type == '振替(休)' %}
@@ -156,9 +154,14 @@
                                                                     {% if day.record.alternative_work_date1 %}
                                                                         <div class="alternative_work_date">({{ day.record.alternative_work_date1|date:"Y.m.d" }})</div>
                                                                     {% endif %}
-                                                                {% elif day.record.work_type == '代休' or day.record.work_type == '振替(勤)' %}
+                                                                {% elif day.record.work_type == '休日' or day.record.work_type == '祝日' or day.record.work_type == '休日(法)' or day.record.work_type == '振替(勤)' %}
                                                                     {% if day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
                                                                         {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
+                                                                    {% else %}
+                                                                        <div class="work-type-text">{{ day.record.work_type }}</div>
+                                                                    {% endif %}
+                                                                    {% if day.record.alternative_work_date1 %}
+                                                                        <div class="alternative_work_date">({{ day.record.alternative_work_date1|date:"Y.m.d" }})</div>
                                                                     {% endif %}
                                                                 {% elif day.record.start_time and day.record.end_time and day.record.start_time != day.record.end_time %}
                                                                     {{ day.record.start_time|time:"H:i" }} - {{ day.record.end_time|time:"H:i" }}
