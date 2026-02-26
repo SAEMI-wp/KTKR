@@ -3122,7 +3122,7 @@ function syncFormStateByWorkType(workType, startTimeInput, endTimeInput, normalH
     
     console.log(`[SYNC] 휴가 타입 여부: ${isHolidayType}`);
     
-    if (isHolidayType) {
+    if (isHolidayType && workType != '年休(半)') {
         // 휴가 타입: 시간 입력 필드만 비활성화 (通常 버튼은 활성화 유지)
         startTimeInput.value = '00:00';
         endTimeInput.value = '00:00';
