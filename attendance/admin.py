@@ -90,22 +90,22 @@ class EmployeeChangeForm(forms.ModelForm):
     
     class Meta:
         model = Employee
+        # passwordはモデルフィールドから除外し、上記のカスタムCharFieldのみ使用する
+        # fields='__all__'だと空欄送信時にemployee.passwordが''で上書きされる
         exclude = ['password']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            # 既存のユーザーの場合はパスワードフィールドを空欄にする
             self.fields['password'].help_text = 'パスワードを変更する場合は新しいパスワードを入力してください。変更しない場合は空欄のままにしてください。'
-            # 既存のパスワードフィールドの初期値を削除
             self.fields['password'].initial = ''
     
     def save(self, commit=True):
-        original_passwowrd = self.instance.password if self.instance.pk else None
+        original_password = self.instance.password if self.instance.pk else None
         employee = super().save(commit=False)
 
         new_password = self.cleaned_data.get('password')
-        if newpassword:
+        if new_password:
             employee.set_password(new_password)
         elif original_password:
             employee.password = original_password
