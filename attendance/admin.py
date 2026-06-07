@@ -90,7 +90,7 @@ class EmployeeChangeForm(forms.ModelForm):
     
     class Meta:
         model = Employee
-        fields = '__all__'
+        exclude = ['password']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -101,17 +101,15 @@ class EmployeeChangeForm(forms.ModelForm):
             self.fields['password'].initial = ''
     
     def save(self, commit=True):
+        original_passwowrd = self.instance.password if self.instance.pk else None
         employee = super().save(commit=False)
-        
-        # パスワードが入力された場合にのみ暗号化して保存
-        if self.cleaned_data.get('password'):
-            employee.set_password(self.cleaned_data['password'])
-            # パスワード変更のログを追加
-            print(f"[DEBUG] パスワード変更: {employee.employee_no}")
-        else:
-            # パスワードが入力されない場合は既存のパスワードを維持
-            print(f"[DEBUG] パスワード変更なし: {employee.employee_no}")
-        
+
+        new_password = self.cleaned_data.get('password')
+        if newpassword:
+            employee.set_password(new_password)
+        elif original_password:
+            employee.password = original_password
+            
         if commit:
             employee.save()
         return employee
