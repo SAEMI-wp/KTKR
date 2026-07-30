@@ -621,7 +621,8 @@ class DailyData:
             overtime_value = end_value - start_value
         
         # jk_overtime 追加
-        overtime_value += self.jk_overtime
+        if self.self.work_type != "年休(半)":
+            overtime_value += self.jk_overtime
         
         # break_minutes=45 特別処理
         if self._should_add_45min_break_bonus():
