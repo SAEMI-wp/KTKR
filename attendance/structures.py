@@ -599,9 +599,10 @@ class DailyData:
         """残業時間計算"""
 
         # 実行条件チェック: 退勤時間が18:00以降または出勤時間が9:00以前
-        if not (self.end_time.hour >= 18 or self.end_time.hour < 9):
-            self.overtime_hours = self.jk_overtime
-            return
+        if not (self.end_time.hour >= 18 or self.end_time.hour < 9 ):
+            if self.work_type != "年休(半)":
+                self.overtime_hours = self.jk_overtime
+                return
         
         # 日付変更がある場合、特別処理
         if self.start_time > self.end_time:
