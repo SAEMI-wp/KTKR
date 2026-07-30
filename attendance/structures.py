@@ -786,9 +786,8 @@ class MonthlyData:
         late_night = self.total_late_night_overtime_hours * 1.5 / 1.25
         holiday = self.total_holiday_work_hours * 1.35 / 1.25
         holiday_night = self.holiday_work_hours_night * 1.6 / 1.25
-        deduction = self.total_deduction_hours * 1.0 / 1.25
         
-        total = overtime + late_night + holiday + holiday_night - deduction
+        total = overtime + late_night + holiday + holiday_night
         return round(max(0.0, total), 2)
 
     @property
